@@ -1,4 +1,9 @@
 {
+  "version": "1.0.0",
+  "description": "Sistema Daico - Projeto privado de Igor Haas",
+  "author": "Igor Haas <igordhaas@gmail.com>",
+  "license": "UNLICENSED",
+  "private": true,
   "dependencies": {
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
