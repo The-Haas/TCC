@@ -1,11 +1,45 @@
 const db = require('../config');
 const fs = require('fs');
 const xml2js = require('xml2js');
+const path = require('path');
 
 const parser = new xml2js.Parser({ explicitArray: false });
 
 function escape(str) {
     return String(str || "").replace(/'/g, "''");
+}
+
+async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
+    // Pasta uploads na raiz do projeto (2 níveis acima do __dirname)
+    const pastaUploads = path.resolve(__dirname, '..', '..', 'uploads');
+    await fs.mkdir(pastaUploads, { recursive: true });
+
+    // Nome do arquivo = timestamp + extensão original ou .xml
+    const timestamp = Date.now();
+    const ext = path.extname(nomeOriginal) || '.xml';
+    const nomeArquivo = `${timestamp}${ext}`;
+
+    const caminhoCompleto = path.join(pastaUploads, nomeArquivo);
+
+    // Salva arquivo no disco
+    await fs.writeFile(caminhoCompleto, conteudoBuffer);
+
+    // Caminho relativo para salvar no banco
+    const caminhoParaBD = path.join('uploads', nomeArquivo);
+
+    // Insert no banco
+    const sql = `
+    INSERT INTO Arquivos (caminho, id_pedido)
+    VALUES ($1, $2)
+    RETURNING id_arquivo;
+  `;
+
+    const result = await db.query(sql, [caminhoParaBD, idPedido]);
+
+    return {
+        caminho: caminhoParaBD,
+        idArquivo: result.rows[0].id_arquivo,
+    };
 }
 
 async function decodeXML(xmlPath) {
@@ -15,7 +49,7 @@ async function decodeXML(xmlPath) {
             return;
         }
 
-        parser.parseString(data, (err, result) => {
+        parser.parseString(data, async (err, result) => {
             if (err) {
                 console.error("Erro ao fazer o parse do XML:", err);
                 return;
@@ -138,20 +172,38 @@ async function decodeXML(xmlPath) {
                 sql += ")\n";
             }
 
-            sql += "\nSELECT 1 FROM novo_cliente;\n\n";
+            sql += "\nSELECT (SELECT id FROM novo_pedido) AS id_pedido;\n\n";
 
             //chamando a função de inserção SQL com try catch
-            insertSQL(sql).then((result) => {
-                try {
-                    if (result.success) {
-                        console.log(result.message);
-                    } else {
-                        console.error("Erro ao inserir dados:", result.message);
-                    }
-                } catch (error) {
-                    console.error("Erro ao processar a inserção:", error);
+            try {
+                const result = await insertSQL(sql);
+                if (result.success) {
+                    console.log(result.message);
+                } else {
+                    console.error("Erro ao inserir dados:", result.message);
                 }
-            })
+            } catch (error) {
+                console.error("Erro ao processar a inserção:", error);
+            }
+
+
+
+
+
+            /*
+
+            aqui preciso chamar a função salva arquivo 
+            passando o XML que veio como parametro, 
+            e o id do pedido que foi inserido no BD
+            */
+
+
+
+
+
+
+
+
         });
     });
 }
@@ -162,23 +214,27 @@ async function decodeXML(xmlPath) {
 // Se ocorrer algum erro, ela faz o rollback e retorna uma mensagem de erro
 // Se tudo ocorrer bem, ela faz o commit e retorna uma mensagem de sucesso
 async function insertSQL(sql) {
-  const client = await db.pool.connect();
+    const client = await db.pool.connect();
 
-  try {
-    await client.query('BEGIN');
+    try {
+        await client.query('BEGIN');
 
-    await client.query(sql);
+        await client.query(sql);
 
-    await client.query('COMMIT');
-    return { success: true, message: 'Inserção feita com sucesso.' };
+        await client.query('COMMIT');
+        return {
+            success: true,
+            message: 'Inserção feita com sucesso.',
+            rows: []  // Resultado da query final
+        };
 
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Erro na transação:', error.message);
-    return { success: false, message: 'Não foi possível fazer o insert.', error: error.message };
-  } finally {
-    client.release(); // libera o client de volta ao pool
-  }
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro na transação:', error.message);
+        return { success: false, message: 'Não foi possível fazer o insert.', error: error.message };
+    } finally {
+        client.release(); // libera o client de volta ao pool
+    }
 }
 
 
