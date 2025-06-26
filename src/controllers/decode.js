@@ -1,14 +1,23 @@
-const service = require('../services/decode.js');
+const fs = require('fs');
+const path = require('path');
+const { decodeXML } = require('../services/decode.js');
 
 async function importarXml(req, res) {
-  const { xmlPath } = req.body;
-
-  if (!xmlPath) {
-    return res.status(400).json({ success: false, message: "Parâmetro 'xmlPath' é obrigatório" });
+  if (!req.file || !req.file.buffer) {
+    return res.status(400).json({ success: false, message: "Arquivo XML não enviado no campo 'xml'" });
   }
 
   try {
-    const result = await decodeXML(xmlPath);
+    // Cria um arquivo temporário com o buffer recebido
+    const nomeArquivoTemp = `xml_${Date.now()}.xml`;
+    const caminhoTemp = path.resolve(__dirname, '..', 'temp', nomeArquivoTemp);
+
+    fs.mkdirSync(path.dirname(caminhoTemp), { recursive: true });
+    await fs.promises.writeFile(caminhoTemp, req.file.buffer);
+
+    // Chama o decode passando o caminho do XML
+    const result = await decodeXML(caminhoTemp);
+
     res.status(200).json({ success: true, message: "Arquivo XML processado com sucesso", data: result });
   } catch (error) {
     console.error("Erro no importarXml:", error);
@@ -16,32 +25,6 @@ async function importarXml(req, res) {
   }
 }
 
-
 module.exports = {
-
-    /*
-    getFilmes,
-    getSerie,
-    getFilmesFiltros,
-    getSeriesFiltros,
-    getGeneros,
-    getGenerosNome,
-
-    postFilme,
-    postSerie,
-    postTemporada,
-    postEpisodio,
-    postGenero,
-
-    putFilme,
-    putSerie,
-    putEpisodio,
-    putGenero,
-
-    deleteFilme,
-    deleteSerie,
-    deleteTemporada,
-    deleteEpisodio,
-    deleteGenero,
-    */
+  importarXml,
 };
