@@ -5,15 +5,15 @@ const path = require('path');
 
 const parser = new xml2js.Parser({ explicitArray: false });
 
+// Função não exportada, usada internamente na decodeXML para escapar strings antes de inserir no banco de dados
 function escape(str) {
     return String(str || "").replace(/'/g, "''");
 }
 
+//Função não exportada, usada internamente na decodeXML para salvar o arquivo no disco e inserir o caminho no banco de dados
 async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
-  console.log("📦 Entrando na função salvaArquivo...");
 
   const pastaUploads = path.resolve(__dirname, '..', '..', 'uploads');
-  console.log("📂 Pasta de upload:", pastaUploads);
   await fs.promises.mkdir(pastaUploads, { recursive: true });
 
   const timestamp = Date.now();
@@ -185,7 +185,7 @@ async function decodeXML(xmlPath) {
             path.basename(xmlPath),
             idPedido
           );
-          console.log(`✅ Arquivo salvo em ${caminho} com id ${idArquivo}`);
+          console.log(`Arquivo salvo em ${caminho} com id ${idArquivo}`);
         } catch (erroArquivo) {
           console.error("Erro ao salvar o arquivo:", erroArquivo);
         }
@@ -210,6 +210,8 @@ async function decodeXML(xmlPath) {
 // Ela recebe o SQL como parâmetro e executa dentro de uma transação
 // Se ocorrer algum erro, ela faz o rollback e retorna uma mensagem de erro
 // Se tudo ocorrer bem, ela faz o commit e retorna uma mensagem de sucesso
+
+//Função não exportada, usada internamente na decodeXML para executar o SQL
 async function insertSQL(sql) {
     const client = await db.pool.connect();
 
@@ -235,7 +237,31 @@ async function insertSQL(sql) {
 }
 
 
+//// Função para criar um arquivo temporário com o conteúdo do buffer
+async function criarArquivoTemporario(buffer) {
+  const nomeArquivoTemp = `xml_${Date.now()}.xml`;
+  const caminhoTemp = path.resolve(__dirname, '..', 'temp', nomeArquivoTemp);
+
+  fs.mkdirSync(path.dirname(caminhoTemp), { recursive: true });
+  await fs.promises.writeFile(caminhoTemp, buffer);
+
+  return { caminhoTemp, nomeArquivoTemp };
+}
+
+// Função para excluir o arquivo temporário após o processamento
+async function excluirArquivoTemporario(caminhoTemp, nomeArquivoTemp) {
+  try {
+    await fs.promises.unlink(caminhoTemp);
+    console.log(`Arquivo temporário ${nomeArquivoTemp} excluído com sucesso.`);
+  } catch (err) {
+    console.log(`Não foi possível excluir o arquivo temporário: ${err.message}`);
+  }
+}
+
+
 
 module.exports = {
     decodeXML,
+    criarArquivoTemporario,
+    excluirArquivoTemporario,
 };
