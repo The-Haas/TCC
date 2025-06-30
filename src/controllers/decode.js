@@ -3,6 +3,8 @@ const path = require('path');
 const { decodeXML, criarArquivoTemporario, excluirArquivoTemporario } = require('../services/decode.js');
 
 async function importarXml(req, res) {
+  
+  // Verifica se o arquivo XML foi enviado no campo 'xml'
   if (!req.file || !req.file.buffer) {
     return res.status(400).json({ success: false, message: "Arquivo XML não enviado no campo 'xml'" });
   }
@@ -36,7 +38,7 @@ async function importarXml(req, res) {
     if (caminhoTemp && nomeArquivoTemp) {
       await excluirArquivoTemporario(caminhoTemp, nomeArquivoTemp);
     }
-    
+
   }
 }
 
