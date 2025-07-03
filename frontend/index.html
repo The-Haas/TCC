@@ -1,37 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>.:: Una ERP ::.</title>
+    <title>Daico Móveis Planejados</title>
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
-    <link rel="shortcut icon" href="https://app.unasistemas.com.br/packages/images/sistema/favicon.ico">
+    <link rel="shortcut icon" href="/frontend/img/logo_daico.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="/frontend/css/style.css">
 </head>
 
 <body>
+
+    <div>
+        <img src="/frontend/img/logo_daico_fundo_branco.png" alt="Logo" class="logo-mobile">
+    </div>
+    
+
     <div class="container" id="container">
         <div class="form-container register-container">
             <form action="#">
-                <h1>Registre-se Agora!</h1>
-                <input type="text" placeholder="Nome">
-                <input type="email" placeholder="Email">
-                <input type="text" placeholder="CPF/CNPJ">
-                <button>Registrar</button>
+                <h1>Crie sua Conta!</h1>
+                <input type="text" placeholder="Nome" id="nome_cadastro" required>
+                <input type="email" placeholder="Email" id="email_cadastro" required>
+                <input type="text" placeholder="CPF/CNPJ" id="cpfcnpj_cadastro" maxlength="18" required>
+                <div class="password-container">
+                    <input type="password" class="senha" placeholder="Senha" id="senha_cadastro">
+                    <i class="fa-solid fa-eye toggle-password"></i>
+                    <div id="senha-tooltip" class="tooltip">
+                        Mín. 8 Caract., 1 Letra, 1 Número e 1 Caract. Esp.
+                    </div>
+                </div>
+
+                <button id="btnRegistrar" disabled>Registrar</button>
                 <div class="mobile-login-link">
                     <span>Já tem uma conta?<br><a href="#" id="toLogin">Faça login aqui!</a></span>
                 </div>
                 <span>Siga-nos em nossas redes sociais!</span>
                 <div class="social-container">
-                    <a href="https://www.facebook.com/unasistemas" class="social" target="_blank"><i
+                    <a href="https://www.facebook.com/moveisdaico" class="social" target="_blank"><i
                             class="lni lni-facebook-fill"></i></a>
-                    <a href="https://www.instagram.com/unasistemas/" class="social" target="_blank"><i
+                    <a href="https://www.instagram.com/daicomoveisplanejados/" class="social" target="_blank"><i
                             class="lni lni-instagram"></i></a>
-                    <a href="https://br.linkedin.com/company/una-sistemas" class="social" target="_blank"><i
+                    <a href="https://www.linkedin.com/company/m%C3%B3veis-daico/" class="social" target="_blank"><i
                             class="lni lni-linkedin-original"></i></a>
-                    <a href="https://www.youtube.com/@UnaSistemaseTecnologia" class="social" target="_blank"><i
+                    <a href="https://www.youtube.com/@daicomoveisplanejados" class="social" target="_blank"><i
                             class="lni lni-youtube"></i></a>
                 </div>
             </form>
@@ -40,11 +55,13 @@
         <div class="form-container login-container">
             <form action="#">
                 <h1>Login</h1>
-                <input type="email" placeholder="Usuário">
-                <input type="password" placeholder="Senha">
+                <input type="email" placeholder="Email" id="email_login" required>
+                <div class="password-container">
+                    <input type="password" class="senha" placeholder="Senha" id="senha_login" required>
+                    <i class="fa-solid fa-eye toggle-password"></i>
+                </div>
                 <div class="content">
-                    <div class="pass-link"> <a href="#">Esqueceu a Senha?</a>
-                    </div>
+                    <div class="pass-link"> <a href="#">Esqueceu a Senha?</a></div>
                 </div>
                 <button>Entrar</button>
                 <div class="mobile-register-link">
@@ -52,13 +69,13 @@
                 </div>
                 <span>Siga-nos em nossas redes sociais!</span>
                 <div class="social-container">
-                    <a href="https://www.facebook.com/unasistemas" class="social" target="_blank"><i
+                    <a href="https://www.facebook.com/moveisdaico" class="social" target="_blank"><i
                             class="lni lni-facebook-fill"></i></a>
-                    <a href="https://www.instagram.com/unasistemas/" class="social" target="_blank"><i
+                    <a href="https://www.instagram.com/daicomoveisplanejados/" class="social" target="_blank"><i
                             class="lni lni-instagram"></i></a>
-                    <a href="https://br.linkedin.com/company/una-sistemas" class="social" target="_blank"><i
+                    <a href="https://www.linkedin.com/company/m%C3%B3veis-daico/" class="social" target="_blank"><i
                             class="lni lni-linkedin-original"></i></a>
-                    <a href="https://www.youtube.com/@UnaSistemaseTecnologia" class="social" target="_blank"><i
+                    <a href="https://www.youtube.com/@daicomoveisplanejados" class="social" target="_blank"><i
                             class="lni lni-youtube"></i></a>
                 </div>
             </form>
@@ -88,7 +105,7 @@
     <footer class="footer">
         <div class="footer-content">
             <p>&copy; <span id="current-year"></span> - Todos os direitos reservados. <a class="link_footer"
-                    href="https://www.unasistemas.com.br/" target="_blank">Una Sistemas e Tecnologia.</a></p>
+                    href="https://daico.com.br/pt" target="_blank">Daico Móveis Planejados.</a></p>
         </div>
     </footer>
 

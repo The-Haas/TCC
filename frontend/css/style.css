@@ -54,7 +54,7 @@ a {
 }
 
 a:hover {
-    color: #6051eb;
+    color: #ff8247;
 }
 
 .content {
@@ -72,7 +72,7 @@ a:hover {
 }
 
 .content input {
-    accent-color: #333;
+    accent-color: #ff8247;
     width: 12px;
     height: 12px;
 }
@@ -80,7 +80,7 @@ a:hover {
 input[type="email"]:focus,
 input[type="password"]:focus,
 input[type="text"]:focus {
-    border: 2px solid #493cc0;
+    border: 2px solid #ff8247;
     /* Altera a cor da borda quando o campo está em foco */
     outline: none;
     /* Remove o contorno padrão do navegador, se desejar */
@@ -95,8 +95,8 @@ input[type="text"]:focus {
 button {
     position: relative;
     border-radius: 20px;
-    border: 1px solid #493cc0;
-    background-color: #493cc0;
+    border: 1px solid #005033;
+    background-color: #005033;
     color: #fff;
     font-size: 15px;
     font-weight: 700;
@@ -243,7 +243,7 @@ input {
 }
 
 .overlay {
-    background-image: url('/frontend/img/imagem.gif');
+    background-image: url('/frontend/img/fundo_daico.gif');
     background-repeat: no-repeat;
     background-size: cover;
     background-position: 0 0;
@@ -321,8 +321,8 @@ input {
 }
 
 .social-container a:hover {
-    border: 1px solid #2a2178;
-    color: #493cc0;
+    border: 1px solid #ff8247;
+    color: #005033;
 }
 
 .footer {
@@ -374,7 +374,7 @@ input {
 }
 
 .link_footer:hover {
-    color: #a1a1a1;
+    color: #ff8247;
 }
 
 .footer * {
@@ -389,6 +389,76 @@ input {
 .mobile-login-link {
     display: none;
     /* Oculta por padrão no desktop */
+}
+
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.toggle-password {
+    position: absolute;
+    color: rgb(90, 90, 90);
+    opacity: 0.85;
+    top: 21px;
+    right: 11px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.password-container {
+    position: relative;
+    width: 100%;
+    
+    overflow: visible;
+    /* importante */
+}
+
+.tooltip {
+    position: absolute;
+    top: 100%;
+    /* abaixo do input */
+    left: 50%;
+    /* centraliza */
+    transform: translateX(-50%);
+
+    background-color: #f44336;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    display: none;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+}
+
+.tooltip::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent #f44336 transparent;
+}
+
+#btnRegistrar[data-invalida="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.logo-mobile {
+    display: none;
+    /* Oculta por padrão no desktop */
+}
+
+/* Esconde a logo se a altura da tela for menor que 785px */
+@media (max-height: 784px) {
+  .logo-mobile {
+    display: none !important;
+  }
 }
 
 
@@ -476,7 +546,17 @@ input {
     }
 
 
-    
+.logo-mobile {
+  display: block;
+  position: absolute;
+  top: 50px;       /* distância do topo da tela */
+  left: 50%;
+  transform: translateX(-50%); /* centraliza horizontalmente */
+  width: 225px !important;     /* maior largura */
+  height: auto !important;     /* altura automática para manter proporção */
+  object-fit: contain;
+  z-index: 10;
+}
 
 
 }
