@@ -409,7 +409,7 @@ input {
 .password-container {
     position: relative;
     width: 100%;
-    
+
     overflow: visible;
     /* importante */
 }
@@ -456,9 +456,9 @@ input {
 
 /* Esconde a logo se a altura da tela for menor que 785px */
 @media (max-height: 784px) {
-  .logo-mobile {
-    display: none !important;
-  }
+    .logo-mobile {
+        display: none !important;
+    }
 }
 
 
@@ -546,17 +546,21 @@ input {
     }
 
 
-.logo-mobile {
-  display: block;
-  position: absolute;
-  top: 50px;       /* distância do topo da tela */
-  left: 50%;
-  transform: translateX(-50%); /* centraliza horizontalmente */
-  width: 225px !important;     /* maior largura */
-  height: auto !important;     /* altura automática para manter proporção */
-  object-fit: contain;
-  z-index: 10;
-}
+    .logo-mobile {
+        display: block;
+        position: absolute;
+        top: 50px;
+        /* distância do topo da tela */
+        left: 50%;
+        transform: translateX(-50%);
+        /* centraliza horizontalmente */
+        width: 225px !important;
+        /* maior largura */
+        height: auto !important;
+        /* altura automática para manter proporção */
+        object-fit: contain;
+        z-index: 10;
+    }
 
 
 }
