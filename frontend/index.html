@@ -21,20 +21,21 @@
 
     <div class="container" id="container">
         <div class="form-container register-container">
-            <form action="#">
+            <form action="#" id="formCadastro">
                 <h1>Crie sua Conta!</h1>
-                <input type="text" placeholder="Nome" id="nome_cadastro" required>
-                <input type="email" placeholder="Email" id="email_cadastro" required>
-                <input type="text" placeholder="CPF/CNPJ" id="cpfcnpj_cadastro" maxlength="18" required>
+                <input type="text" placeholder="Nome" id="nome_cadastro" name="nome_cadastro" required>
+                <input type="email" placeholder="Email" id="email_cadastro" name="email_cadastro" required>
+                <input type="text" placeholder="CPF/CNPJ" id="cpfcnpj_cadastro" name="cpfcnpj_cadastro" maxlength="18" required>
                 <div class="password-container">
-                    <input type="password" class="senha" placeholder="Senha" id="senha_cadastro">
+                    <input type="password" class="senha" placeholder="Senha" id="senha_cadastro" name="senha_cadastro" required>
                     <i class="fa-solid fa-eye toggle-password"></i>
                     <div id="senha-tooltip" class="tooltip">
                         Mín. 8 Caract., 1 Letra, 1 Número e 1 Caract. Esp.
                     </div>
                 </div>
 
-                <button id="btnRegistrar" disabled>Registrar</button>
+                <button id="btnRegistrar" disabled type="submit">Registrar</button>
+                <div id="mensagemCadastro" class="mensagem"></div>
                 <div class="mobile-login-link">
                     <span>Já tem uma conta?<br><a href="#" id="toLogin">Faça login aqui!</a></span>
                 </div>
@@ -53,11 +54,11 @@
         </div>
 
         <div class="form-container login-container">
-            <form action="#">
+            <form action="#" id="formLogin">
                 <h1>Login</h1>
-                <input type="email" placeholder="Email" id="email_login" required>
+                <input type="email" placeholder="Email" id="email_login" name="email_login" required>
                 <div class="password-container">
-                    <input type="password" class="senha" placeholder="Senha" id="senha_login" required>
+                    <input type="password" class="senha" placeholder="Senha" id="senha_login" name="senha_login" required>
                     <i class="fa-solid fa-eye toggle-password"></i>
                 </div>
                 <div class="content">
