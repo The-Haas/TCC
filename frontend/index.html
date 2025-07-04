@@ -17,7 +17,7 @@
     <div>
         <img src="/frontend/img/logo_daico_fundo_branco.png" alt="Logo" class="logo-mobile">
     </div>
-    
+
 
     <div class="container" id="container">
         <div class="form-container register-container">
@@ -25,9 +25,11 @@
                 <h1>Crie sua Conta!</h1>
                 <input type="text" placeholder="Nome" id="nome_cadastro" name="nome_cadastro" required>
                 <input type="email" placeholder="Email" id="email_cadastro" name="email_cadastro" required>
-                <input type="text" placeholder="CPF/CNPJ" id="cpfcnpj_cadastro" name="cpfcnpj_cadastro" maxlength="18" required>
+                <input type="text" placeholder="CPF/CNPJ" id="cpfcnpj_cadastro" name="cpfcnpj_cadastro" maxlength="18"
+                    required>
                 <div class="password-container">
-                    <input type="password" class="senha" placeholder="Senha" id="senha_cadastro" name="senha_cadastro" required>
+                    <input type="password" class="senha" placeholder="Senha" id="senha_cadastro" name="senha_cadastro"
+                        required>
                     <i class="fa-solid fa-eye toggle-password"></i>
                     <div id="senha-tooltip" class="tooltip">
                         Mín. 8 Caract., 1 Letra, 1 Número e 1 Caract. Esp.
@@ -58,13 +60,16 @@
                 <h1>Login</h1>
                 <input type="email" placeholder="Email" id="email_login" name="email_login" required>
                 <div class="password-container">
-                    <input type="password" class="senha" placeholder="Senha" id="senha_login" name="senha_login" required>
+                    <input type="password" class="senha" placeholder="Senha" id="senha_login" name="senha_login"
+                        required>
                     <i class="fa-solid fa-eye toggle-password"></i>
                 </div>
                 <div class="content">
                     <div class="pass-link"> <a href="#">Esqueceu a Senha?</a></div>
                 </div>
-                <button>Entrar</button>
+                <button type="submit" id="btnLogin">Entrar</button>
+                <div id="mensagemLogin"></div>
+
                 <div class="mobile-register-link">
                     <span>Ainda não tem uma conta?<br><a href="#" id="toRegister">Crie uma conta aqui</a></span>
                 </div>

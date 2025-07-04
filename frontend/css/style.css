@@ -453,38 +453,6 @@ input {
     display: none;
     /* Oculta por padrão no desktop */
 }
-.mensagem-tooltip {
-  position: absolute;
-  background-color: #f44336;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  white-space: nowrap;
-  display: none;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 9999;
-}
-
-.mensagem-tooltip::before {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 6px;
-  border-style: solid;
-  border-color: #f44336 transparent transparent transparent;
-}
-
-.mensagem-tooltip.sucesso {
-  background-color: #4CAF50;
-}
-
-.mensagem-tooltip.sucesso::before {
-  border-color: #4CAF50 transparent transparent transparent;
-}
-
 
 /* Esconde a logo se a altura da tela for menor que 785px */
 @media (max-height: 784px) {

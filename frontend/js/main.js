@@ -181,3 +181,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const formLogin = document.getElementById('formLogin');
+  const btnLogin = document.getElementById('btnLogin');
+  const mensagemLogin = document.getElementById('mensagemLogin');
+
+  if (!formLogin) return;
+
+  formLogin.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+      email: document.getElementById('email_login').value.trim(),
+      senha: document.getElementById('senha_login').value,
+    };
+
+    try {
+      const response = await fetch('http://localhost:3000/loginCliente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // ← importante para enviar o cookie de sessão
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        mensagemLogin.style.color = 'green';
+        mensagemLogin.textContent = 'Login realizado com sucesso!';
+
+        // Redirecionar ou mostrar conteúdo privado
+        // window.location.href = '/painel'; ← exemplo de redirecionamento
+      } else {
+        const errorData = await response.json();
+        mensagemLogin.style.color = 'red';
+        mensagemLogin.textContent = errorData.erro || 'Falha ao realizar login.';
+      }
+    } catch (err) {
+      mensagemLogin.style.color = 'red';
+      mensagemLogin.textContent = 'Erro na comunicação com o servidor.';
+    }
+  });
+});
