@@ -1,11 +1,9 @@
 const decodeRoute = require('./decode');
-const loginRoute = require('./loginCliente');
+const loginRoute = require('./login');
 const cadastroClienteRoute = require('./cadastroCliente');
-const loginCliente = require('./loginCliente');
 
 module.exports = (app) => {
     decodeRoute(app);
     loginRoute(app);
     cadastroClienteRoute(app);
-    loginCliente(app);
 }
