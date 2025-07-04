@@ -111,6 +111,7 @@ function validarSenha(senha) {
   return temLetra && temNumero && temEspecial && tamanhoValido;
 }
 
+// script para bloquear o botão de registro se a senha for inválida
 senhaInput.addEventListener("input", () => {
   const senha = senhaInput.value;
   const senhaValida = validarSenha(senha);
