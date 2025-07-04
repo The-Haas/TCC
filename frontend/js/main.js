@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-
+// Script para o login do cliente
 document.addEventListener('DOMContentLoaded', () => {
   const formLogin = document.getElementById('formLogin');
   const btnLogin = document.getElementById('btnLogin');
@@ -210,6 +210,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await response.json();
         mensagemLogin.style.color = 'green';
         mensagemLogin.textContent = 'Login realizado com sucesso!';
+
+        // Redirecionamento conforme perfil
+        setTimeout(() => {
+          if (result.cliente.perfil === 'cliente') {
+            window.location.href = 'painelcliente.html';
+          } else if (result.cliente.perfil === 'operador') {
+            window.location.href = 'painelcontrole.html';
+          } else {
+            window.location.href = 'index.html'; // fallback
+          }
+        }, 750);
 
         // Redirecionar ou mostrar conteúdo privado
         // window.location.href = '/painel'; ← exemplo de redirecionamento

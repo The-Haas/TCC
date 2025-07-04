@@ -21,11 +21,11 @@ const autenticarCliente = async ({ email, senha }) => {
     if (!senhaValida) {
         throw new Error('Senha inválida!');
     }
-
     return {
         id: cliente.id,
         nome: cliente.nome,
         email: cliente.email,
+        perfil: cliente.perfil,
     };
 };
 

@@ -11,6 +11,7 @@ const loginCliente = async (req, res) => {
             id: cliente.id,
             nome: cliente.nome,
             email: cliente.email,
+            perfil: cliente.perfil,
         };
 
         return res.status(200).json({

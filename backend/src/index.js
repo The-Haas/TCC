@@ -12,11 +12,11 @@ const PORT = 3000;
 
 // Configura sessão
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'meusegredo',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: 60 * 60 * 1000 // 1 hora
+        maxAge: 30 * 60 * 1000 // meia hora
     }
 }));
 
