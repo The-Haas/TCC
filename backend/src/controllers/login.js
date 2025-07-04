@@ -20,12 +20,7 @@ const loginCliente = async (req, res) => {
         });
 
     } catch (error) {
-        // Tratamento específico dos erros do service
-        if (
-            error.message === 'Cliente não encontrado!' ||
-            error.message === 'Senha inválida!' ||
-            error.message === 'Email e senha são obrigatórios!'
-        ) {
+        if (error.message) {
             return res.status(401).json({ erro: 'Email ou senha inválidos' });
         }
 
