@@ -1,5 +1,8 @@
-
-// Script para alternar entre telas de login e cadastro
+/*
+* Index.js
+*
+* Script para alternar entre telas de login e cadastro
+*/
 document.addEventListener("DOMContentLoaded", () => {
   const registerButton = document.getElementById("register");
   const loginButton = document.getElementById("login");
@@ -54,7 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-//script para alternar a visibilidade da senha
+
+/*
+* Index.js
+*
+* script para alternar a visibilidade da senha
+*/
 document.querySelectorAll('.toggle-password').forEach((toggleIcon) => {
   toggleIcon.addEventListener('click', () => {
     const input = toggleIcon.previousElementSibling;
@@ -67,7 +75,11 @@ document.querySelectorAll('.toggle-password').forEach((toggleIcon) => {
 });
 
 
-//script para validar e formatar CPF/CNPJ
+/*
+* Index.js
+*
+* script para validar e formatar CPF/CNPJ
+*/
 const cpfCnpjInput = document.getElementById("cpfcnpj_cadastro");
 cpfCnpjInput.addEventListener("input", (e) => {
   let valor = e.target.value;
@@ -95,8 +107,11 @@ cpfCnpjInput.addEventListener("input", (e) => {
   e.target.value = valor;
 });
 
-
-// script de validação dos caracteres da senha
+/*
+* Index.js
+*
+* script de validação dos caracteres da senha
+*/
 const senhaInput = document.getElementById("senha_cadastro");
 const tooltip = document.getElementById("senha-tooltip");
 const btnRegistrar = document.getElementById("btnRegistrar");
@@ -110,7 +125,11 @@ function validarSenha(senha) {
   return temLetra && temNumero && temEspecial && tamanhoValido;
 }
 
-// script para bloquear o botão de registro se a senha for inválida
+/*
+* Index.js
+*
+* script para bloquear o botão de registro se a senha for inválida
+*/
 senhaInput.addEventListener("input", () => {
   const senha = senhaInput.value;
   const senhaValida = validarSenha(senha);
@@ -135,3 +154,28 @@ senhaInput.addEventListener("input", () => {
     btnRegistrar.setAttribute("data-invalida", "true");
   }
 });
+
+
+
+function exibirToast(mensagem, tipo = 'success') {
+  // Remove toast existente, se houver
+  const toastExistente = document.querySelector('.toast');
+  if (toastExistente) toastExistente.remove();
+
+  // Cria o toast novo
+  const toast = document.createElement('div');
+  toast.classList.add('toast', tipo); // adiciona "toast" e "success" ou "error"
+  toast.textContent = mensagem;
+
+  document.body.appendChild(toast);
+
+  // Força reflow para ativar animação CSS
+  void toast.offsetWidth;
+  toast.classList.add('show');
+
+  // Remove o toast após 2 segundos
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => toast.remove());
+  }, 2000);
+}

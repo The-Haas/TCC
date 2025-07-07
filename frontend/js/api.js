@@ -1,6 +1,10 @@
-// script para o cadastro de usuário
-// Verifica se o formulário de cadastro existe antes de adicionar o listener
-// Se não existir, não faz nada para evitar erros
+/*
+* Index.js
+*
+* script para o cadastro de usuário
+* Verifica se o formulário de cadastro existe antes de adicionar o listener
+* Se não existir, não faz nada para evitar erros
+*/
 document.addEventListener('DOMContentLoaded', () => {
   const formCadastro = document.getElementById('formCadastro');
   const btnRegistrar = document.getElementById('btnRegistrar');
@@ -27,23 +31,24 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        mensagemCadastro.style.color = 'green';
-        mensagemCadastro.textContent = 'Cadastro realizado com sucesso! Você já pode fazer login.';
+        exibirToast('Cadastro realizado com sucesso! Você já pode fazer login.', 'success');
         formCadastro.reset();
         btnRegistrar.disabled = true;
       } else {
         const errorData = await response.json();
-        mensagemCadastro.style.color = 'red';
-        mensagemCadastro.textContent = errorData.erro || 'Erro no cadastro.';
+        exibirToast('Erro no cadastro.', 'error');
       }
     } catch (err) {
-      mensagemCadastro.style.color = 'red';
-      mensagemCadastro.textContent = 'Erro na comunicação com o servidor.';
+      exibirToast('Erro na comunicação com o servidor.', 'error');
     }
   });
 });
 
-// Script para o login do cliente
+/*
+* Index.js
+*
+* Script para o login do cliente
+*/
 document.addEventListener('DOMContentLoaded', () => {
   const formLogin = document.getElementById('formLogin');
   const btnLogin = document.getElementById('btnLogin');
@@ -69,9 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const result = await response.json();
-        mensagemLogin.style.color = 'green';
-        mensagemLogin.textContent = 'Login realizado com sucesso!';
-
+        exibirToast('Login realizado com sucesso!', 'success');
         // Redirecionamento conforme perfil
         setTimeout(() => {
           if (result.cliente.perfil === 'cliente') {
@@ -87,12 +90,47 @@ document.addEventListener('DOMContentLoaded', () => {
         // window.location.href = '/painel'; ← exemplo de redirecionamento
       } else {
         const errorData = await response.json();
-        mensagemLogin.style.color = 'red';
-        mensagemLogin.textContent = errorData.erro || 'Falha ao realizar login.';
+        exibirToast('Falha ao realizar login.', 'error');
       }
     } catch (err) {
-      mensagemLogin.style.color = 'red';
-      mensagemLogin.textContent = 'Erro na comunicação com o servidor.';
+      exibirToast('Erro na comunicação com o servidor.', 'error');
+    }
+  });
+});
+
+/*
+* Index.js
+*
+* Script para o logout do cliente
+*/
+document.addEventListener('DOMContentLoaded', () => {
+  const btnLogout = document.getElementById('btnLogout');
+  if (!btnLogout) {
+    console.log('Botão logout não encontrado!');
+    return;
+  }
+
+  btnLogout.addEventListener('click', async () => {
+    try {
+      const response = await fetch('http://localhost:3000/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Usa a função exibirToast que está em main.js
+        exibirToast('Logout realizado com sucesso!', 'success');
+
+        // Redireciona após 1 segundo
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+
+      } else {
+        exibirToast('Erro ao realizar o Logout!', 'error');
+      }
+    } catch (err) {
+      exibirToast('Erro na comunicação com o Servidor!', 'error');
     }
   });
 });
