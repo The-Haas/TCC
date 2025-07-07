@@ -156,7 +156,13 @@ senhaInput.addEventListener("input", () => {
 });
 
 
-
+/*
+* Index.js
+* Painel Cliente
+* Painel Controle
+* 
+* script para exibir mensagens de toast
+*/
 function exibirToast(mensagem, tipo = 'success') {
   // Remove toast existente, se houver
   const toastExistente = document.querySelector('.toast');
