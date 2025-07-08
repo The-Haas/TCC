@@ -1,4 +1,4 @@
-const { validarToken } = require('../services/autenticarJWT.js');
+const { validarToken } = require('../services/validarJWT.js');
 
 const validarTokenController = (req, res) => {
   try {

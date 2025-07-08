@@ -1,11 +1,11 @@
 const decodeRoute = require('./decode');
 const loginRoute = require('./login');
 const cadastroClienteRoute = require('./cadastroCliente');
-const autenticarJWT = require('./autenticarJWT');
+const validarJWT = require('./validarJWT');
 
 module.exports = (app) => {
     decodeRoute(app);
     loginRoute(app);
     cadastroClienteRoute(app);
-    autenticarJWT(app);
+    validarJWT(app);
 }
