@@ -132,3 +132,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   });
 });
+
+
+/*
+*Redefinir Senha.js
+* Script para redefinir a senha do usuário
+*/
+document.addEventListener('DOMContentLoaded', () => {
+  const formRedefinir = document.getElementById('formRedefinir');
+  const btnRegistrar = document.getElementById('btnRegistrar');
+
+  if (!formRedefinir) return;
+
+  const validarCampos = () => {
+    const email = document.getElementById('email_redefinir').value.trim();
+    const cpfcnpj = document.getElementById('cpfcnpj_cadastro').value.trim();
+    const senha = document.getElementById('senha_cadastro').value.trim();
+    btnRegistrar.disabled = !(email && cpfcnpj && senha);
+  };
+
+  formRedefinir.addEventListener('input', validarCampos);
+
+  formRedefinir.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('email_redefinir').value.trim();
+    const cpfcnpj = document.getElementById('cpfcnpj_cadastro').value.replace(/\D/g, '');
+    const novaSenha = document.getElementById('senha_cadastro').value;
+
+    const data = { email, cpfcnpj, novaSenha };
+
+    try {
+      const response = await fetch('http://localhost:3000/redefinirSenha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const resultado = await response.json();
+
+      if (response.ok) {
+        exibirToast(resultado.mensagem || 'Senha redefinida com sucesso!', 'success');
+        formRedefinir.reset();
+        btnRegistrar.disabled = true;
+                // Redirecionar após 3 segundos
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2300);
+      } else {
+        exibirToast(resultado.erro || 'Falha ao redefinir a senha.', 'error');
+      }
+    } catch (error) {
+      exibirToast('Erro na comunicação com o servidor.', 'error');
+    }
+  });
+});

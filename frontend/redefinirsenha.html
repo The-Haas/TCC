@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daico Móveis Planejados</title>
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
+    <link rel="shortcut icon" href="/frontend/img/logo_daico.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/frontend/css/style_login.css">
+    <link rel="stylesheet" href="/frontend/css/common.css">
+</head>
+
+<body>
+
+    <div>
+        <img src="/frontend/img/logo_daico_fundo_branco.png" alt="Logo" class="logo-mobile">
+    </div>
+
+
+    <div class="container" id="container">
+        <div class="form-container login-container">
+            <form action="#" id="formRedefinir">
+                <h1>Redefinir Senha</h1>
+                <input type="email" placeholder="Email" id="email_redefinir" name="email_redefinir" required>
+                <input type="text" placeholder="CPF/CNPJ" id="cpfcnpj_cadastro" name="cpfcnpj_redefinir" maxlength="18"
+                    required>
+                <div class="password-container">
+                    <input type="password" class="senha" placeholder="Nova Senha" id="senha_cadastro"
+                        name="senha_redefinir" required>
+                    <i class="fa-solid fa-eye toggle-password"></i>
+                    <div id="senha-tooltip" class="tooltip">
+                        Mín. 8 Caract., 1 Letra, 1 Número e 1 Caract. Esp.
+                    </div>
+                </div>
+
+                <button id="btnRegistrar" disabled type="submit">Redefinir!</button>
+                <div class="mobile-register-link">
+                    <span>Já tem uma conta?<br><a href="./index.html">Faça Login Aqui!</a></span>
+                </div>
+                <span>Siga-nos em nossas redes sociais!</span>
+                <div class="social-container">
+                    <a href="https://www.facebook.com/moveisdaico" class="social" target="_blank"><i
+                            class="lni lni-facebook-fill"></i></a>
+                    <a href="https://www.instagram.com/daicomoveisplanejados/" class="social" target="_blank"><i
+                            class="lni lni-instagram"></i></a>
+                    <a href="https://www.linkedin.com/company/m%C3%B3veis-daico/" class="social" target="_blank"><i
+                            class="lni lni-linkedin-original"></i></a>
+                    <a href="https://www.youtube.com/@daicomoveisplanejados" class="social" target="_blank"><i
+                            class="lni lni-youtube"></i></a>
+                </div>
+            </form>
+        </div>
+
+        <div class="overlay-container">
+            <div class="overlay">
+                <div class="overlay-panel overlay-right">
+                    <h1 class="title">Daico</h1>
+                    <p>Há 35 Anos Criando Móveis Exclusivos!</p>
+                    <button class="ghost" onclick="window.location.href='index.html'">Fazer Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; <span id="current-year"></span> - Todos os direitos reservados. <a class="link_footer"
+                    href="https://daico.com.br/pt" target="_blank">Daico Móveis Planejados.</a></p>
+        </div>
+    </footer>
+
+    <script src="/frontend/js/main.js"></script>
+    <script src="/frontend/js/api.js"></script>
+    <script src="/frontend/js/toast.js"></script>
+
+    <!--Script pra sempre atualizar o ano do footer-->
+    <script>document.getElementById("current-year").textContent = new Date().getFullYear();</script>
+
+</body>
+
+</html>
