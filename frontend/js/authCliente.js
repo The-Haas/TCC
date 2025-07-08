@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    const response = await fetch("http://localhost:3000/validarToken", {
+    const response = await fetch("http://localhost:3000/validarToken/cliente", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -18,11 +18,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const data = await response.json();
 
-    // Exibe o nome do usuário no painel
     const nomeSpan = document.getElementById("usuarioNome");
     if (nomeSpan) nomeSpan.textContent = `Bem-vindo, ${data.usuario.nome}`;
 
-    // ✅ Agora exibe o conteúdo
     document.body.style.display = "block";
   } catch (err) {
     console.warn("Token inválido ou expirado:", err.message);
