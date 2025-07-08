@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Controle</title>
-    <link rel="shortcut icon" href="/frontend/img/logo_daico.png">
-    <link rel="stylesheet" href="/frontend/css/style_paineis.css">
-    <link rel="stylesheet" href="/frontend/css/common.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel de Controle</title>
+  <link rel="shortcut icon" href="/frontend/img/logo_daico.png" />
+  <link rel="stylesheet" href="/frontend/css/style_paineis.css" />
+  <link rel="stylesheet" href="/frontend/css/common.css" />
+
+  <!-- 🔒 Oculta o body até a validação -->
+  <style>
+    body { display: none; }
+  </style>
 </head>
-
 <body>
-    <button id="btnLogout">Sair</button>
-    <script src="/frontend/js/api.js"></script>
-    <script src="/frontend/js/toast.js"></script>
-</body>
+  <span id="usuarioNome"></span>
+  <button id="btnLogout">Sair</button>
 
+  <!-- ✅ Scripts -->
+  <script src="/frontend/js/auth.js"></script> <!-- primeiro: faz a validação -->
+  <script src="/frontend/js/api.js"></script>
+  <script src="/frontend/js/toast.js"></script>
+</body>
 </html>

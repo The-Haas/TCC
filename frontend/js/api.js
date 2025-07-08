@@ -75,9 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         exibirToast('Login realizado com sucesso!', 'success');
-          console.log('Token JWT completo:', result.token); // mostra o token completo
-
-
         // Salva o token no localStorage
         localStorage.setItem('token', result.token);
 

@@ -14,7 +14,7 @@ const loginCliente = async (req, res) => {
         perfil: cliente.perfil
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '30m' }
     );
 
     return res.status(200).json({
