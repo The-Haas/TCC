@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /*
 * Index.js
 *
-* Script para o login do cliente
+* Script para o login login com JWT do cliente 
 */
 document.addEventListener('DOMContentLoaded', () => {
   const formLogin = document.getElementById('formLogin');
@@ -68,29 +68,34 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('http://localhost:3000/loginCliente', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ← importante para enviar o cookie de sessão
         body: JSON.stringify(data),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        const result = await response.json();
         exibirToast('Login realizado com sucesso!', 'success');
-        // Redirecionamento conforme perfil
+          console.log('Token JWT completo:', result.token); // mostra o token completo
+
+
+        // Salva o token no localStorage
+        localStorage.setItem('token', result.token);
+
+        // Decodifica o payload do token (opcional)
+        const payload = JSON.parse(atob(result.token.split('.')[1]));
+
+        // Redireciona conforme perfil
         setTimeout(() => {
-          if (result.cliente.perfil === 'cliente') {
+          if (payload.perfil === 'cliente') {
             window.location.href = 'painelcliente.html';
-          } else if (result.cliente.perfil === 'operador') {
+          } else if (payload.perfil === 'operador') {
             window.location.href = 'painelcontrole.html';
           } else {
-            window.location.href = 'index.html'; // fallback
+            window.location.href = 'index.html';
           }
         }, 750);
-
-        // Redirecionar ou mostrar conteúdo privado
-        // window.location.href = '/painel'; ← exemplo de redirecionamento
       } else {
-        const errorData = await response.json();
-        exibirToast('Falha ao realizar login.', 'error');
+        exibirToast(result.erro || 'Falha ao realizar login.', 'error');
       }
     } catch (err) {
       exibirToast('Erro na comunicação com o servidor.', 'error');
@@ -98,39 +103,28 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
 /*
 * Index.js
 *
-* Script para o logout do cliente
+* Script de logout do cliente com JWT (apenas remove o token do localStorage)
 */
 document.addEventListener('DOMContentLoaded', () => {
   const btnLogout = document.getElementById('btnLogout');
-  if (!btnLogout) {
-    console.log('Botão logout não encontrado!');
-    return;
+
+   if (!btnLogout) {
+    //console.warn('Botão logout não encontrado!');
+    return; // para evitar o erro
   }
 
-  btnLogout.addEventListener('click', async () => {
-    try {
-      const response = await fetch('http://localhost:3000/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+  btnLogout.addEventListener('click', () => {
+    // Remove o token do armazenamento local
+    localStorage.removeItem('token');
 
-      if (response.ok) {
-        // Usa a função exibirToast que está em main.js
-        exibirToast('Logout realizado com sucesso!', 'success');
+    exibirToast('Logout realizado com sucesso!', 'success');
 
-        // Redireciona após 1 segundo
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 1000);
-
-      } else {
-        exibirToast('Erro ao realizar o Logout!', 'error');
-      }
-    } catch (err) {
-      exibirToast('Erro na comunicação com o Servidor!', 'error');
-    }
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 1000);
   });
 });

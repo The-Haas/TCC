@@ -1,2 +1,0 @@
-//aqui vai ficar o middleware de autenticação, caso o usuário não esteja autenticado, ele será redirecionado para a página de login
-//e se caso já encerrou a sessão por tempo inativo, ele também será redirecionado para a página de login

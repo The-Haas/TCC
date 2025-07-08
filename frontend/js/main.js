@@ -81,31 +81,33 @@ document.querySelectorAll('.toggle-password').forEach((toggleIcon) => {
 * script para validar e formatar CPF/CNPJ
 */
 const cpfCnpjInput = document.getElementById("cpfcnpj_cadastro");
-cpfCnpjInput.addEventListener("input", (e) => {
-  let valor = e.target.value;
+if (cpfCnpjInput) {
+  cpfCnpjInput.addEventListener("input", (e) => {
+    let valor = e.target.value;
 
-  // Remove tudo que não for número
-  valor = valor.replace(/\D/g, "");
+    // Remove tudo que não for número
+    valor = valor.replace(/\D/g, "");
 
-  // Limita a 14 dígitos
-  if (valor.length > 14) valor = valor.slice(0, 14);
+    // Limita a 14 dígitos
+    if (valor.length > 14) valor = valor.slice(0, 14);
 
-  // Formata CPF: 000.000.000-00
-  if (valor.length <= 11) {
-    valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
-    valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
-    valor = valor.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  }
-  // Formata CNPJ: 00.000.000/0000-00
-  else {
-    valor = valor.replace(/(\d{2})(\d)/, "$1.$2");
-    valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
-    valor = valor.replace(/(\d{3})(\d)/, "$1/$2");
-    valor = valor.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
-  }
+    // Formata CPF: 000.000.000-00
+    if (valor.length <= 11) {
+      valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    }
+    // Formata CNPJ: 00.000.000/0000-00
+    else {
+      valor = valor.replace(/(\d{2})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d)/, "$1.$2");
+      valor = valor.replace(/(\d{3})(\d)/, "$1/$2");
+      valor = valor.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+    }
 
-  e.target.value = valor;
-});
+    e.target.value = valor;
+  });
+};
 
 /*
 * Index.js
@@ -154,34 +156,3 @@ senhaInput.addEventListener("input", () => {
     btnRegistrar.setAttribute("data-invalida", "true");
   }
 });
-
-
-/*
-* Index.js
-* Painel Cliente
-* Painel Controle
-* 
-* script para exibir mensagens de toast
-*/
-function exibirToast(mensagem, tipo = 'success') {
-  // Remove toast existente, se houver
-  const toastExistente = document.querySelector('.toast');
-  if (toastExistente) toastExistente.remove();
-
-  // Cria o toast novo
-  const toast = document.createElement('div');
-  toast.classList.add('toast', tipo); // adiciona "toast" e "success" ou "error"
-  toast.textContent = mensagem;
-
-  document.body.appendChild(toast);
-
-  // Força reflow para ativar animação CSS
-  void toast.offsetWidth;
-  toast.classList.add('show');
-
-  // Remove o toast após 2 segundos
-  setTimeout(() => {
-    toast.classList.remove('show');
-    toast.addEventListener('transitionend', () => toast.remove());
-  }, 2000);
-}
