@@ -2,6 +2,8 @@ const { validarTokenController } = require('../controllers/validarJWT.js');
 const autenticarJWT = require('../middlewares/autenticarJWT.js');
 const { permitirCliente, permitirOperador } = require('../middlewares/autorizar.js');
 
+// Rota para validar token e liberar o painel baseado no tipo de usuário
+// o redirecionamento para o painel é feito no frontend, dependendo do tipo de usuário
 module.exports = (app) => {
   // Rota para validar token e liberar só para clientes
   app.get('/validarToken/cliente', autenticarJWT, permitirCliente, validarTokenController);
