@@ -35,9 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
         formCadastro.reset();
         btnRegistrar.disabled = true;
       } else {
-        const errorData = await response.json();
-        exibirToast('Erro no cadastro.', 'error');
+        let errorMessage = 'Erro no cadastro.';
+        try {
+          const errorData = await response.json();
+          if (errorData.erro) errorMessage = errorData.erro;
+        } catch (e) {
+          // erro ao tentar ler json, manter a mensagem padrão
+        }
+        exibirToast(errorMessage, 'error');
       }
+
     } catch (err) {
       exibirToast('Erro na comunicação com o servidor.', 'error');
     }
@@ -109,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
   const btnLogout = document.getElementById('btnLogout');
 
-   if (!btnLogout) {
+  if (!btnLogout) {
     //console.warn('Botão logout não encontrado!');
     return; // para evitar o erro
   }
