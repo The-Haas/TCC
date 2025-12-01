@@ -50,7 +50,7 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
   }
 }
 
-async function decodeXML(xmlPath) {
+async function importaxml(xmlPath) {
   try {
     const data = await fs.promises.readFile(xmlPath, 'utf8');
     const result = await parser.parseStringPromise(data);
@@ -261,7 +261,7 @@ async function excluirArquivoTemporario(caminhoTemp, nomeArquivoTemp) {
 
 
 module.exports = {
-    decodeXML,
+    importaxml,
     criarArquivoTemporario,
     excluirArquivoTemporario,
 };

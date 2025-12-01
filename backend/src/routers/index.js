@@ -1,5 +1,5 @@
-const decodeRoute = require('./decode');
+const importaxmlRoute = require('./importaxml');
 
 module.exports = (app) => {
-    decodeRoute(app);
+    importaxmlRoute(app);
 }

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { decodeXML, criarArquivoTemporario, excluirArquivoTemporario } = require('../services/decode.js');
+const { importaxml, criarArquivoTemporario, excluirArquivoTemporario } = require('../services/importaxml.js');
 
 async function importarXml(req, res) {
   
@@ -19,7 +19,7 @@ async function importarXml(req, res) {
     ({ caminhoTemp, nomeArquivoTemp } = await criarArquivoTemporario(req.file.buffer));
 
     // Processa o XML passando o caminho do arquivo temporário
-    const result = await decodeXML(caminhoTemp);
+    const result = await importaxml(caminhoTemp);
 
     // Mensagem de sucesso
     res.status(200).json({ success: true, message: "Arquivo XML processado com sucesso", data: result });
