@@ -6,7 +6,7 @@ async function importarXml(req, res) {
   
   // Verifica se o arquivo XML foi enviado no campo 'xml'
   if (!req.file || !req.file.buffer) {
-    return res.status(400).json({ success: false, message: "Arquivo XML não enviado no campo 'xml'" });
+    return res.status(400).json({ success: false, message: "Arquivo XML não enviado ou não enviado no campo 'xml'" });
   }
 
   // Declare fora do try para ser visível no finally

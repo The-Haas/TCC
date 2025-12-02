@@ -7,10 +7,12 @@ const multer = require('multer');
 // Armazenamento em memória (sem salvar temporariamente no disco)
 const upload = multer({ storage: multer.memoryStorage() });
 
+// importa o middleware de autenticação
+const autenticarToken = require('../middlewares/auth.js');
 
 // rotas para acessar pela url para realizar as funcoes
 module.exports = (app) => {
 
     // Quando é acessada 
-    app.post('/importaxml', upload.single('xml'), controller.importarXml);
+    app.post('/importaxml', autenticarToken, upload.single('xml'), controller.importarXml);
 };
