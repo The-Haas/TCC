@@ -23,7 +23,7 @@ async function criarUsuario(email, senha) {
 
         // Inserir novo usuário no banco de dados
         const result = await db.query(
-            'INSERT INTO usuarios (email, senha) VALUES ($1, $2) RETURNING id',
+            'INSERT INTO usuarios (email, senha, admin) VALUES ($1, $2, true) RETURNING id',
             [email, hashedPassword]
         );
 
