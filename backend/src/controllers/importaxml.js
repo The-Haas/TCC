@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { importaxml, criarArquivoTemporario, excluirArquivoTemporario } = require('../services/importaxml.js');
+const { postImportaxml, criarArquivoTemporario, excluirArquivoTemporario } = require('../services/importaxml.js');
 
-async function importarXml(req, res) {
+async function postImportarXml(req, res) {
   
   // Verifica se o arquivo XML foi enviado no campo 'xml'
   if (!req.file || !req.file.buffer) {
@@ -19,7 +19,7 @@ async function importarXml(req, res) {
     ({ caminhoTemp, nomeArquivoTemp } = await criarArquivoTemporario(req.file.buffer));
 
     // Processa o XML passando o caminho do arquivo temporário
-    const result = await importaxml(caminhoTemp, req.user.id_usuario);
+    const result = await postImportaxml(caminhoTemp, req.user.id_usuario);
 
 
     // Mensagem de sucesso
@@ -44,5 +44,5 @@ async function importarXml(req, res) {
 }
 
 module.exports = {
-  importarXml,
+  postImportarXml,
 };

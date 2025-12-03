@@ -14,5 +14,5 @@ const autenticarToken = require('../middlewares/auth.js');
 module.exports = (app) => {
 
     // Quando é acessada 
-    app.post('/importaxml', autenticarToken, upload.single('xml'), controller.importarXml);
+    app.post('/importaxml', autenticarToken, upload.single('xml'), controller.postImportarXml);
 };

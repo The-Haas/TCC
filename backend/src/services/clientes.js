@@ -1,7 +1,7 @@
 const db = require('../config');
 const bcrypt = require('bcrypt');
 
-async function criarCliente(dados) {
+async function postCliente(dados) {
     const {
         nome,
         email,
@@ -69,5 +69,5 @@ async function criarCliente(dados) {
 }
 
 module.exports = {
-    criarCliente
+    postCliente
 };

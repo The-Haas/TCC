@@ -23,9 +23,9 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
 
   try {
     await fs.promises.writeFile(caminhoCompleto, conteudoBuffer);
-    
+    //console.log(`Arquivo salvo em disco: ${caminhoCompleto}`);
   } catch (err) {
-    console.error("Erro ao salvar arquivo no disco:", err);
+    //console.error("Erro ao salvar arquivo no disco:", err);
     throw err;
   }
 
@@ -39,7 +39,7 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
 
   try {
     const result = await db.query(sql, [caminhoParaBD, idPedido]);
-    
+    //console.log(`Caminho inserido no banco: ${caminhoParaBD}`);
     return {
       caminho: caminhoParaBD,
       idArquivo: result.rows[0].id_arquivo,
@@ -50,7 +50,7 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
   }
 }
 
-async function importaxml(xmlPath, idUsuarioJWT) {
+async function postImportaxml(xmlPath, idUsuarioJWT) {
   try {
     // Lê XML
     const data = await fs.promises.readFile(xmlPath, 'utf8');
@@ -102,6 +102,9 @@ async function importaxml(xmlPath, idUsuarioJWT) {
       return { success: false, message: "Cliente vinculado ao usuário não encontrado." };
     }
 
+    //console.log("Usuário encontrado:", usuario);
+    //console.log("Cliente encontrado:", clienteBD);
+
     // ------------------------------
     // 3) Atualiza somente campos vazios do cliente
     // ------------------------------
@@ -123,6 +126,7 @@ async function importaxml(xmlPath, idUsuarioJWT) {
         `UPDATE clientes SET ${updates.join(", ")} WHERE id = $${index}`,
         updateValues
       );
+      //console.log("Cliente atualizado com campos do XML.");
     }
 
     // ------------------------------
@@ -139,7 +143,7 @@ async function importaxml(xmlPath, idUsuarioJWT) {
     );
 
     const idPedido = pedidoResult.rows[0].id;
-    
+    //console.log("Pedido criado com ID:", idPedido);
 
     // ------------------------------
     // 5) Itens do projeto
@@ -256,16 +260,16 @@ async function criarArquivoTemporario(buffer) {
 async function excluirArquivoTemporario(caminhoTemp, nomeArquivoTemp) {
   try {
     await fs.promises.unlink(caminhoTemp);
-    
+    //console.log(`Arquivo temporário ${nomeArquivoTemp} excluído com sucesso.`);
   } catch (err) {
-    
+    //console.log(`Não foi possível excluir o arquivo temporário: ${err.message}`);
   }
 }
 
 
 
 module.exports = {
-    importaxml,
+    postImportaxml,
     criarArquivoTemporario,
     excluirArquivoTemporario,
 };

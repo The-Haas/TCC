@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const db = require("../config/index.js");
 
 //login com autenticação de usuário
-async function login(req, res) {
+async function postLogin(req, res) {
   const { email, senha } = req.body;
 
   try {
@@ -60,5 +60,5 @@ async function login(req, res) {
 }
 
 module.exports = {
-  login,
+  postLogin,
 };

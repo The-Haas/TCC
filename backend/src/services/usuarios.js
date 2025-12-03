@@ -2,7 +2,7 @@ const db = require('../config');
 const bcrypt = require('bcrypt');
 
 
-async function criarUsuario(email, senha) {
+async function postUsuario(email, senha) {
     try {
 
         // Verificar se o email já está em uso
@@ -37,5 +37,5 @@ async function criarUsuario(email, senha) {
 }
 
 module.exports = {
-    criarUsuario
+    postUsuario
 };

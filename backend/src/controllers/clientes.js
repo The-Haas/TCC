@@ -1,7 +1,7 @@
 const clienteService = require('../services/clientes');
 
-async function criarCliente(req, res) {
-    const resultado = await clienteService.criarCliente(req.body);
+async function postCliente(req, res) {
+    const resultado = await clienteService.postCliente(req.body);
 
     if (resultado.success) {
         res.status(201).json(resultado);
@@ -11,5 +11,5 @@ async function criarCliente(req, res) {
 }
 
 module.exports = {
-    criarCliente
+    postCliente
 };
