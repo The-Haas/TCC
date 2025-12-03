@@ -19,7 +19,8 @@ async function importarXml(req, res) {
     ({ caminhoTemp, nomeArquivoTemp } = await criarArquivoTemporario(req.file.buffer));
 
     // Processa o XML passando o caminho do arquivo temporário
-    const result = await importaxml(caminhoTemp);
+    const result = await importaxml(caminhoTemp, req.user.id_usuario);
+
 
     // Mensagem de sucesso
     res.status(200).json({ success: true, message: "Arquivo XML processado com sucesso", data: result });

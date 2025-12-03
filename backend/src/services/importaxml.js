@@ -23,7 +23,7 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
 
   try {
     await fs.promises.writeFile(caminhoCompleto, conteudoBuffer);
-    console.log(`Arquivo salvo em disco: ${caminhoCompleto}`);
+    
   } catch (err) {
     console.error("Erro ao salvar arquivo no disco:", err);
     throw err;
@@ -39,7 +39,7 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
 
   try {
     const result = await db.query(sql, [caminhoParaBD, idPedido]);
-    console.log(`Caminho inserido no banco: ${caminhoParaBD}`);
+    
     return {
       caminho: caminhoParaBD,
       idArquivo: result.rows[0].id_arquivo,
@@ -50,8 +50,9 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
   }
 }
 
-async function importaxml(xmlPath) {
+async function importaxml(xmlPath, idUsuarioJWT) {
   try {
+    // Lê XML
     const data = await fs.promises.readFile(xmlPath, 'utf8');
     const result = await parser.parseStringPromise(data);
 
@@ -59,10 +60,13 @@ async function importaxml(xmlPath) {
     const dados = listing.CUSTOMERSDATA.DATA;
     const getDataById = (id) => dados.find(d => d.$.ID === id)?.$.VALUE || "";
 
-    const cliente = {
+    // ------------------------------
+    // 0) Extrair dados do XML
+    // ------------------------------
+    const clienteXML = {
       nome: escape(getDataById("nomecliente")),
-      razaoSocial: escape(getDataById("corporateName")),
-      cpfCnpj: escape(getDataById("cpfcnpj")),
+      razao_social: escape(getDataById("corporateName")),
+      cpf_cnpj: escape(getDataById("cpfcnpj")),
       email: escape(getDataById("email")),
       telefone: escape(getDataById("celular")),
       endereco: escape(getDataById("endereco")),
@@ -71,16 +75,75 @@ async function importaxml(xmlPath) {
       cidade: escape(getDataById("cidade")),
       uf: escape(getDataById("uf")),
       cep: escape(getDataById("cep")),
-      enderecoEntrega: escape(getDataById("endentrega")),
-      tipoCliente: (() => {
-        const raw = getDataById("cpfcnpj");
-        return raw.length === 14 ? "PJ" : raw.length === 11 ? "PF" : "";
-      })(),
+      endereco_entrega: escape(getDataById("endentrega")),
     };
 
+    // ------------------------------
+    // 1) Carrega usuário pelo JWT
+    // ------------------------------
+    const usuario = (await db.query(
+      "SELECT * FROM usuarios WHERE id = $1",
+      [idUsuarioJWT]
+    )).rows[0];
+
+    if (!usuario) {
+      return { success: false, message: "Usuário do JWT não encontrado." };
+    }
+
+    // ------------------------------
+    // 2) Carrega cliente pelo id_cliente do usuário
+    // ------------------------------
+    const clienteBD = (await db.query(
+      "SELECT * FROM clientes WHERE id = $1",
+      [usuario.id_cliente]
+    )).rows[0];
+
+    if (!clienteBD) {
+      return { success: false, message: "Cliente vinculado ao usuário não encontrado." };
+    }
+
+    // ------------------------------
+    // 3) Atualiza somente campos vazios do cliente
+    // ------------------------------
+    let updates = [];
+    let updateValues = [];
+    let index = 1;
+
+    for (const campo in clienteXML) {
+      if (!clienteBD[campo] || clienteBD[campo] === "") {
+        updates.push(`${campo} = $${index}`);
+        updateValues.push(clienteXML[campo]);
+        index++;
+      }
+    }
+
+    if (updates.length > 0) {
+      updateValues.push(clienteBD.id);
+      await db.query(
+        `UPDATE clientes SET ${updates.join(", ")} WHERE id = $${index}`,
+        updateValues
+      );
+    }
+
+    // ------------------------------
+    // 4) Criar Pedido vinculado ao cliente
+    // ------------------------------
     const nomeProjeto = escape(getDataById("Environment") || "Projeto");
     const valorTotal = listing.TOTALPRICES?.$.TABLE || "0";
 
+    const pedidoResult = await db.query(
+      `INSERT INTO pedidos (nome_projeto, valor, data_pedido, id_cliente)
+       VALUES ($1, $2, CURRENT_DATE, $3)
+       RETURNING id`,
+      [nomeProjeto, valorTotal, clienteBD.id]
+    );
+
+    const idPedido = pedidoResult.rows[0].id;
+    
+
+    // ------------------------------
+    // 5) Itens do projeto
+    // ------------------------------
     const ambientes = listing.AMBIENTS?.AMBIENT;
     const listaAmbientes = Array.isArray(ambientes) ? ambientes : [ambientes];
 
@@ -97,112 +160,53 @@ async function importaxml(xmlPath) {
         const itens = Array.isArray(itensWrapper.ITEM) ? itensWrapper.ITEM : [itensWrapper.ITEM];
 
         itens.forEach((item) => {
-          const itemPrincipal = {
+          itensProjeto.push({
             descricao: escape(item.$.DESCRIPTION || "Sem descrição"),
             quantidade: parseInt(item.$.QUANTITY || "1"),
-            componentes: [],
-          };
-
-          if (item.ITEMS && item.ITEMS.ITEM) {
-            const subitens = Array.isArray(item.ITEMS.ITEM) ? item.ITEMS.ITEM : [item.ITEMS.ITEM];
-            subitens.forEach((sub) => {
-              if (sub.$?.DESCRIPTION) {
-                itemPrincipal.componentes.push(escape(sub.$.DESCRIPTION));
-              }
-            });
-          }
-          itensProjeto.push(itemPrincipal);
+            componentes: item.ITEMS?.ITEM
+              ? (Array.isArray(item.ITEMS.ITEM)
+                ? item.ITEMS.ITEM.map(s => escape(s.$.DESCRIPTION))
+                : [escape(item.ITEMS.ITEM.$.DESCRIPTION)])
+              : []
+          });
         });
       });
     });
 
-    // Gera o SQL com CTEs
-    let sql = "";
-    sql += "-- Inserir cliente, pedido e itens com CTEs\n";
-    sql += "WITH novo_cliente AS (\n";
-    sql += "  INSERT INTO Clientes (nome, razao_social, cpf_cnpj, email, telefone, endereco, numero, bairro, cidade, uf, cep, endereco_entrega, tipo_cliente)\n";
-    sql += "  VALUES (\n";
-    sql += `    '${cliente.nome}', '${cliente.razaoSocial}', '${cliente.cpfCnpj}', '${cliente.email}', '${cliente.telefone}',\n`;
-    sql += `    '${cliente.endereco}', '${cliente.numero}', '${cliente.bairro}', '${cliente.cidade}', '${cliente.uf}', '${cliente.cep}',\n`;
-    sql += `    '${cliente.enderecoEntrega}', '${cliente.tipoCliente}'\n`;
-    sql += "  ) RETURNING id\n";
-    sql += "),\n";
+    // Inserir itens e componentes
+    for (let item of itensProjeto) {
+      const itemRes = await db.query(
+        `INSERT INTO itens_pedido (descricao_item, quantidade_item, id_pedido)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        [item.descricao, item.quantidade, idPedido]
+      );
 
-    sql += "novo_pedido AS (\n";
-    sql += "  INSERT INTO Pedidos (nome_projeto, valor, data_pedido, id_cliente)\n";
-    sql += "  VALUES (\n";
-    sql += `    '${nomeProjeto}', ${valorTotal}, CURRENT_DATE, (SELECT id FROM novo_cliente)\n`;
-    sql += "  ) RETURNING id\n";
-    sql += ")";
+      const idItem = itemRes.rows[0].id;
 
-    if (itensProjeto.length > 0) {
-      sql += ",\n";
-    } else {
-      sql += "\n";
-    }
-
-    itensProjeto.forEach((item, i) => {
-      const alias = `item_${i + 1}`;
-      sql += `${alias} AS (\n`;
-      sql += "  INSERT INTO Itens_Pedido (descricao_item, quantidade_item, id_pedido)\n";
-      sql += "  VALUES (\n";
-      sql += `    '${item.descricao}', ${item.quantidade}, (SELECT id FROM novo_pedido)\n`;
-      sql += "  ) RETURNING id\n";
-      sql += (i === itensProjeto.length - 1) ? ")\n" : "),\n";
-    });
-
-    const componentesValores = [];
-
-    itensProjeto.forEach((item, i) => {
-      const alias = `item_${i + 1}`;
-      item.componentes.forEach((comp) => {
-        componentesValores.push(`('${comp}', (SELECT id FROM ${alias}))`);
-      });
-    });
-
-    if (componentesValores.length > 0) {
-      sql += ",\n";
-      sql += "inserir_componentes AS (\n";
-      sql += "  INSERT INTO Componentes_Itens (nome_componente, id_item) VALUES\n";
-      sql += componentesValores.join(",\n");
-      sql += "\n  RETURNING id\n";
-      sql += ")\n";
-    }
-
-    sql += "\nSELECT (SELECT id FROM novo_pedido) AS id_pedido;\n";
-
-    // Executa o SQL
-    const resultInsert = await insertSQL(sql);
-
-    if (resultInsert.success) {
-      const idPedido = resultInsert.rows[0]?.id_pedido;
-
-      if (idPedido) {
-        try {
-          const xmlBuffer = await fs.promises.readFile(xmlPath);
-          const { caminho, idArquivo } = await salvaArquivo(
-            xmlBuffer,
-            path.basename(xmlPath),
-            idPedido
-          );
-          console.log(`Arquivo salvo em ${caminho} com id ${idArquivo}`);
-        } catch (erroArquivo) {
-          console.error("Erro ao salvar o arquivo:", erroArquivo);
-        }
-      } else {
-        console.error("id_pedido não retornado do banco.");
+      for (let comp of item.componentes) {
+        await db.query(
+          `INSERT INTO componentes_itens (nome_componente, id_item)
+           VALUES ($1, $2)`,
+          [comp, idItem]
+        );
       }
-    } else {
-      console.error("Erro ao inserir dados:", resultInsert.message);
     }
 
-    return resultInsert;
+    // ------------------------------
+    // 6) Salvar XML no banco
+    // ------------------------------
+    const xmlBuffer = await fs.promises.readFile(xmlPath);
+    await salvaArquivo(xmlBuffer, path.basename(xmlPath), idPedido);
+
+    return { success: true, idPedido };
 
   } catch (error) {
-    console.error("Erro geral no decodeXML:", error);
-    return { success: false, message: 'Erro ao decodificar XML', error: error.message };
+    console.error("Erro no importaxml:", error);
+    return { success: false, error: error.message };
   }
 }
+
 
 
 
@@ -252,9 +256,9 @@ async function criarArquivoTemporario(buffer) {
 async function excluirArquivoTemporario(caminhoTemp, nomeArquivoTemp) {
   try {
     await fs.promises.unlink(caminhoTemp);
-    console.log(`Arquivo temporário ${nomeArquivoTemp} excluído com sucesso.`);
+    
   } catch (err) {
-    console.log(`Não foi possível excluir o arquivo temporário: ${err.message}`);
+    
   }
 }
 
