@@ -68,6 +68,47 @@ async function postCliente(dados) {
     }
 }
 
+
+
+async function getClientes() {
+    try {
+        const result = await db.query(`
+            SELECT
+                c.id AS cliente_id,
+                c.nome,
+                c.razao_social,
+                c.cpf_cnpj,
+                c.email,
+                c.telefone,
+                c.endereco,
+                c.numero,
+                c.bairro,
+                c.cidade,
+                c.uf,
+                c.cep,
+                c.endereco_entrega,
+                c.tipo_cliente,
+                c.created_at,
+                c.updated_at,
+
+                u.id AS usuario_id,
+                u.email AS usuario_email,
+                u.admin AS usuario_admin
+            FROM clientes c
+            LEFT JOIN usuarios u ON u.id_cliente = c.id
+            ORDER BY c.id ASC;
+        `);
+
+        return { success: true, clientes: result.rows };
+
+    } catch (error) {
+        console.error("Erro ao buscar clientes:", error);
+        return { success: false, message: "Erro ao buscar clientes.", error: error.message };
+    }
+}
+
+
 module.exports = {
-    postCliente
+    postCliente,
+    getClientes
 };

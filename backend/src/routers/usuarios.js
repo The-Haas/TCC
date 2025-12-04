@@ -4,4 +4,6 @@ const usuarioController = require('../controllers/usuarios');
 module.exports = (app) => {
 
     app.post('/usuarios', usuarioController.postUsuario);
+    app.get('/usuarios', usuarioController.getUsuarios);
+
 };

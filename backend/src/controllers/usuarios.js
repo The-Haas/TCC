@@ -13,6 +13,19 @@ async function postUsuario(req, res) {
     }
 }
 
+
+async function getUsuarios(req, res) {
+    const resultado = await usuarioService.getUsuarios();
+
+    if (resultado.success) {
+        res.status(200).json(resultado.usuarios);
+    } else {
+        res.status(400).json({ message: resultado.message, error: resultado.error });
+    }
+}
+
+
 module.exports = {
-    postUsuario
+    postUsuario,
+    getUsuarios
 };

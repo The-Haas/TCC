@@ -36,6 +36,48 @@ async function postUsuario(email, senha) {
     }
 }
 
+
+
+async function getUsuarios() {
+    try {
+        const result = await db.query(
+            `
+            SELECT 
+                u.id AS usuario_id,
+                u.email,
+                u.admin,
+                u.id_cliente,
+
+                c.nome AS cliente_nome,
+                c.razao_social,
+                c.cpf_cnpj,
+                c.email AS cliente_email,
+                c.telefone AS cliente_telefone,
+                c.endereco,
+                c.numero,
+                c.bairro,
+                c.cidade,
+                c.uf,
+                c.cep,
+                c.endereco_entrega,
+                c.tipo_cliente
+            FROM usuarios u
+            LEFT JOIN clientes c ON c.id = u.id_cliente
+            ORDER BY u.id ASC;
+            `
+        );
+
+        return { success: true, usuarios: result.rows };
+
+    } catch (error) {
+        console.error('Erro ao buscar usuários:', error);
+        return { success: false, message: 'Erro ao buscar usuários.', error: error.message };
+    }
+}
+
+
+
 module.exports = {
-    postUsuario
+    postUsuario,
+    getUsuarios
 };

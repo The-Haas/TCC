@@ -10,6 +10,19 @@ async function postCliente(req, res) {
     }
 }
 
+
+async function getClientes(req, res) {
+    const resultado = await clienteService.getClientes();
+
+    if (resultado.success) {
+        res.status(200).json(resultado.clientes);
+    } else {
+        res.status(400).json(resultado);
+    }
+}
+
+
 module.exports = {
-    postCliente
+    postCliente,
+    getClientes
 };
