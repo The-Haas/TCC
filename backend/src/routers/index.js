@@ -1,4 +1,4 @@
-const importaxmlRoute = require('./importaxml');
+const importaxmlRoute = require('./pedidos');
 const usuarioRoute = require('./usuarios');
 const loginRoute = require('./login');
 const clientesRoute = require('./clientes');

@@ -245,7 +245,7 @@ async function insertSQL(sql) {
 }
 
 
-//// Função para criar um arquivo temporário com o conteúdo do buffer
+// Função para criar um arquivo temporário com o conteúdo do buffer
 async function criarArquivoTemporario(buffer) {
   const nomeArquivoTemp = `xml_${Date.now()}.xml`;
   const caminhoTemp = path.resolve(__dirname, '..', 'temp', nomeArquivoTemp);

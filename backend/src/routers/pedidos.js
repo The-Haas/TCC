@@ -1,5 +1,5 @@
 // importa o controller para usar as funcoes
-const controller = require('../controllers/importaxml.js');
+const controller = require('../controllers/pedidos.js');
 
 // importa o multer para trabalhar com upload de arquivos
 const multer = require('multer');

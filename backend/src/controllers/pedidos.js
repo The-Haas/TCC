@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { postImportaxml, criarArquivoTemporario, excluirArquivoTemporario } = require('../services/importaxml.js');
+const { postImportaxml, criarArquivoTemporario, excluirArquivoTemporario } = require('../services/pedidos.js');
 
 async function postImportarXml(req, res) {
   
