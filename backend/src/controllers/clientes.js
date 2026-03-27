@@ -10,7 +10,6 @@ async function postCliente(req, res) {
     }
 }
 
-
 async function getClientes(req, res) {
     const resultado = await clienteService.getClientes();
 
@@ -21,8 +20,55 @@ async function getClientes(req, res) {
     }
 }
 
+async function getClienteById(req, res) {
+    const { id } = req.params;
+    const resultado = await clienteService.getClienteById(id);
+
+    if (resultado.success) {
+        res.status(200).json(resultado.cliente);
+    } else {
+        res.status(404).json(resultado);
+    }
+}
+
+async function putCliente(req, res) {
+    const { id } = req.params;
+    const resultado = await clienteService.putCliente(id, req.body);
+
+    if (resultado.success) {
+        res.status(200).json(resultado.cliente);
+    } else {
+        res.status(404).json(resultado);
+    }
+}
+
+async function patchCliente(req, res) {
+    const { id } = req.params;
+    const resultado = await clienteService.patchCliente(id, req.body);
+
+    if (resultado.success) {
+        res.status(200).json(resultado.cliente);
+    } else {
+        res.status(404).json(resultado);
+    }
+}
+
+async function deleteCliente(req, res) {
+    const { id } = req.params;
+    const resultado = await clienteService.deleteCliente(id);
+
+    if (resultado.success) {
+        res.status(200).json({ message: resultado.message });
+    } else {
+        res.status(404).json(resultado);
+    }
+}
 
 module.exports = {
     postCliente,
-    getClientes
+    getClientes,
+    getClienteById,
+    putCliente,
+    patchCliente,
+    deleteCliente
 };
