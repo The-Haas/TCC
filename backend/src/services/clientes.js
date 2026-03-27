@@ -14,8 +14,7 @@ async function postCliente(dados) {
         cidade,
         uf,
         cep,
-        endereco_entrega,
-        tipo_cliente
+        endereco_entrega
     } = dados;
 
     try {
@@ -40,12 +39,12 @@ async function postCliente(dados) {
         // Cria cliente já com senha
         const clienteResult = await db.query(
             `INSERT INTO clientes 
-            (nome, cpf_cnpj, email, telefone, endereco, numero, bairro, cidade, uf, cep, endereco_entrega, tipo_cliente, senha)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+            (nome, cpf_cnpj, email, telefone, endereco, numero, bairro, cidade, uf, cep, endereco_entrega, senha)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
             RETURNING id`,
             [
                 nome, cpf_cnpj, email, telefone, endereco, numero,
-                bairro, cidade, uf, cep, endereco_entrega, tipo_cliente,
+                bairro, cidade, uf, cep, endereco_entrega,
                 hashedPassword
             ]
         );
@@ -85,7 +84,6 @@ async function getClientes() {
                 c.uf,
                 c.cep,
                 c.endereco_entrega,
-                c.tipo_cliente,
                 c.created_at,
                 c.updated_at
 
