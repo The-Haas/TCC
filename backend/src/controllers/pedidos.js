@@ -19,7 +19,7 @@ async function postImportarXml(req, res) {
     ({ caminhoTemp, nomeArquivoTemp } = await criarArquivoTemporario(req.file.buffer));
 
     // Processa o XML passando o caminho do arquivo temporário
-    const result = await postImportaxml(caminhoTemp, req.user.id_usuario);
+    const result = await postImportaxml(caminhoTemp, req.user.id_cliente);
 
 
     // Mensagem de sucesso

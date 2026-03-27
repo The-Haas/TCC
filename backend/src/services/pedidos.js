@@ -50,7 +50,7 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
   }
 }
 
-async function postImportaxml(xmlPath, idUsuarioJWT) {
+async function postImportaxml(xmlPath, idClienteJWT) {
   try {
     // Lê XML
     const data = await fs.promises.readFile(xmlPath, 'utf8');
@@ -78,29 +78,17 @@ async function postImportaxml(xmlPath, idUsuarioJWT) {
       endereco_entrega: escape(getDataById("endentrega")),
     };
 
-    // ------------------------------
-    // 1) Carrega usuário pelo JWT
-    // ------------------------------
-    const usuario = (await db.query(
-      "SELECT * FROM usuarios WHERE id = $1",
-      [idUsuarioJWT]
-    )).rows[0];
+// ------------------------------
+// 1) Carrega cliente direto pelo JWT
+// ------------------------------
+const clienteBD = (await db.query(
+  "SELECT * FROM clientes WHERE id = $1",
+  [idClienteJWT]
+)).rows[0];
 
-    if (!usuario) {
-      return { success: false, message: "Usuário do JWT não encontrado." };
-    }
-
-    // ------------------------------
-    // 2) Carrega cliente pelo id_cliente do usuário
-    // ------------------------------
-    const clienteBD = (await db.query(
-      "SELECT * FROM clientes WHERE id = $1",
-      [usuario.id_cliente]
-    )).rows[0];
-
-    if (!clienteBD) {
-      return { success: false, message: "Cliente vinculado ao usuário não encontrado." };
-    }
+if (!clienteBD) {
+  return { success: false, message: "Cliente não encontrado." };
+}
 
     //console.log("Usuário encontrado:", usuario);
     //console.log("Cliente encontrado:", clienteBD);
@@ -214,35 +202,7 @@ async function postImportaxml(xmlPath, idUsuarioJWT) {
 
 
 
-//função que faz o insert no banco de dados
-// Ela recebe o SQL como parâmetro e executa dentro de uma transação
-// Se ocorrer algum erro, ela faz o rollback e retorna uma mensagem de erro
-// Se tudo ocorrer bem, ela faz o commit e retorna uma mensagem de sucesso
 
-//Função não exportada, usada internamente na decodeXML para executar o SQL
-async function insertSQL(sql) {
-    const client = await db.pool.connect();
-
-    try {
-        await client.query('BEGIN');
-
-        const result = await client.query(sql); // <- CAPTURA AQUI
-
-        await client.query('COMMIT');
-        return {
-            success: true,
-            message: 'Inserção feita com sucesso.',
-            rows: result.rows // <- RETORNA O RESULTADO
-        };
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Erro na transação:', error.message);
-        return { success: false, message: 'Não foi possível fazer o insert.', error: error.message };
-    } finally {
-        client.release();
-    }
-}
 
 
 // Função para criar um arquivo temporário com o conteúdo do buffer
