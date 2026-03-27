@@ -1,13 +1,12 @@
 const db = require('../config');
 const fs = require('fs');
 const xml2js = require('xml2js');
-const path = require('path');
 
 const parser = new xml2js.Parser({ explicitArray: false });
 
 // Função não exportada, usada internamente na decodeXML para escapar strings antes de inserir no banco de dados
 function escape(str) {
-    return String(str || "").replace(/'/g, "''");
+  return String(str || "").replace(/'/g, "''");
 }
 
 //Função não exportada, usada internamente na decodeXML para salvar o arquivo no disco e inserir o caminho no banco de dados
@@ -50,15 +49,25 @@ async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
   }
 }
 
-async function postImportaxml(xmlPath, idClienteJWT) {
+async function postImportaxml(xmlString, idClienteJWT) {
   try {
     // Lê XML
-    const data = await fs.promises.readFile(xmlPath, 'utf8');
+    const data = xmlString;
     const result = await parser.parseStringPromise(data);
+
+    // Validação básica da estrutura do XML
+    if (!result?.LISTING?.CUSTOMERSDATA?.DATA) {
+      throw new Error("XML inválido: estrutura obrigatória não encontrada");
+    }
 
     const listing = result.LISTING;
     const dados = listing.CUSTOMERSDATA.DATA;
     const getDataById = (id) => dados.find(d => d.$.ID === id)?.$.VALUE || "";
+
+    // Validação de campos obrigatórios
+    if (!getDataById("nomecliente") || !getDataById("cpfcnpj")) {
+      throw new Error("XML inválido: campos obrigatórios ausentes");
+    }
 
     // ------------------------------
     // 0) Extrair dados do XML
@@ -78,17 +87,17 @@ async function postImportaxml(xmlPath, idClienteJWT) {
       endereco_entrega: escape(getDataById("endentrega")),
     };
 
-// ------------------------------
-// 1) Carrega cliente direto pelo JWT
-// ------------------------------
-const clienteBD = (await db.query(
-  "SELECT * FROM clientes WHERE id = $1",
-  [idClienteJWT]
-)).rows[0];
+    // ------------------------------
+    // 1) Carrega cliente direto pelo JWT
+    // ------------------------------
+    const clienteBD = (await db.query(
+      "SELECT * FROM clientes WHERE id = $1",
+      [idClienteJWT]
+    )).rows[0];
 
-if (!clienteBD) {
-  return { success: false, message: "Cliente não encontrado." };
-}
+    if (!clienteBD) {
+      throw new Error("Cliente não encontrado");
+    }
 
     //console.log("Usuário encontrado:", usuario);
     //console.log("Cliente encontrado:", clienteBD);
@@ -124,10 +133,10 @@ if (!clienteBD) {
     const valorTotal = listing.TOTALPRICES?.$.TABLE || "0";
 
     const pedidoResult = await db.query(
-      `INSERT INTO pedidos (nome_projeto, valor, data_pedido, id_cliente)
-       VALUES ($1, $2, CURRENT_DATE, $3)
-       RETURNING id`,
-      [nomeProjeto, valorTotal, clienteBD.id]
+      `INSERT INTO pedidos (nome_projeto, valor, data_pedido, id_cliente, xml)
+   VALUES ($1, $2, CURRENT_DATE, $3, $4)
+   RETURNING id`,
+      [nomeProjeto, valorTotal, clienteBD.id, data]
     );
 
     const idPedido = pedidoResult.rows[0].id;
@@ -185,17 +194,11 @@ if (!clienteBD) {
       }
     }
 
-    // ------------------------------
-    // 6) Salvar XML no banco
-    // ------------------------------
-    const xmlBuffer = await fs.promises.readFile(xmlPath);
-    await salvaArquivo(xmlBuffer, path.basename(xmlPath), idPedido);
-
     return { success: true, idPedido };
 
   } catch (error) {
     console.error("Erro no importaxml:", error);
-    return { success: false, error: error.message };
+    throw error;
   }
 }
 
@@ -229,7 +232,7 @@ async function excluirArquivoTemporario(caminhoTemp, nomeArquivoTemp) {
 
 
 module.exports = {
-    postImportaxml,
-    criarArquivoTemporario,
-    excluirArquivoTemporario,
+  postImportaxml,
+  criarArquivoTemporario,
+  excluirArquivoTemporario,
 };
