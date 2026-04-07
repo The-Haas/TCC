@@ -4,19 +4,44 @@ function autenticarToken(req, res, next) {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
-    return res.status(401).json({ error: "Token não fornecido" });
+    return res.status(401).json({
+      success: false,
+      message: "Token não fornecido"
+    });
   }
 
-  const token = authHeader.split(" ")[1]; // Bearer TOKEN
+  const parts = authHeader.split(" ");
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: "Token inválido" });
-    }
+  if (parts.length !== 2) {
+    return res.status(401).json({
+      success: false,
+      message: "Token mal formatado"
+    });
+  }
 
-    req.user = user;
-    next();
-  });
+  const [scheme, token] = parts;
+
+  if (!/^Bearer$/i.test(scheme)) {
+    return res.status(401).json({
+      success: false,
+      message: "Token mal formatado"
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Aqui já vem: { id, tipo }
+    req.user = decoded;
+
+    return next();
+
+  } catch (err) {
+    return res.status(403).json({
+      success: false,
+      message: "Token inválido ou expirado"
+    });
+  }
 }
 
 module.exports = autenticarToken;

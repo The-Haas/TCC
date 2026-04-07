@@ -1,77 +1,37 @@
 const db = require('../config');
-const fs = require('fs');
 const xml2js = require('xml2js');
 
 const parser = new xml2js.Parser({ explicitArray: false });
 
-// Função não exportada, usada internamente na decodeXML para escapar strings antes de inserir no banco de dados
+// Função interna
 function escape(str) {
   return String(str || "").replace(/'/g, "''");
 }
 
-//Função não exportada, usada internamente na decodeXML para salvar o arquivo no disco e inserir o caminho no banco de dados
-async function salvaArquivo(conteudoBuffer, nomeOriginal, idPedido) {
-
-  const pastaUploads = path.resolve(__dirname, '..', '..', 'uploads');
-  await fs.promises.mkdir(pastaUploads, { recursive: true });
-
-  const timestamp = Date.now();
-  const ext = path.extname(nomeOriginal) || '.xml';
-  const nomeArquivo = `${timestamp}${ext}`;
-  const caminhoCompleto = path.join(pastaUploads, nomeArquivo);
-
+async function postImportaxml(xmlString, user, idLojistaBody) {
   try {
-    await fs.promises.writeFile(caminhoCompleto, conteudoBuffer);
-    //console.log(`Arquivo salvo em disco: ${caminhoCompleto}`);
-  } catch (err) {
-    //console.error("Erro ao salvar arquivo no disco:", err);
-    throw err;
-  }
+    // ==============================
+    // 1) LER XML
+    // ==============================
+    const result = await parser.parseStringPromise(xmlString);
 
-  const caminhoParaBD = path.join('uploads', nomeArquivo);
-
-  const sql = `
-    INSERT INTO Arquivos (caminho, id_pedido)
-    VALUES ($1, $2)
-    RETURNING id_arquivo;
-  `;
-
-  try {
-    const result = await db.query(sql, [caminhoParaBD, idPedido]);
-    //console.log(`Caminho inserido no banco: ${caminhoParaBD}`);
-    return {
-      caminho: caminhoParaBD,
-      idArquivo: result.rows[0].id_arquivo,
-    };
-  } catch (err) {
-    console.error("Erro ao fazer insert na tabela Arquivos:", err);
-    throw err;
-  }
-}
-
-async function postImportaxml(xmlString, idClienteJWT) {
-  try {
-    // Lê XML
-    const data = xmlString;
-    const result = await parser.parseStringPromise(data);
-
-    // Validação básica da estrutura do XML
     if (!result?.LISTING?.CUSTOMERSDATA?.DATA) {
       throw new Error("XML inválido: estrutura obrigatória não encontrada");
     }
 
     const listing = result.LISTING;
     const dados = listing.CUSTOMERSDATA.DATA;
-    const getDataById = (id) => dados.find(d => d.$.ID === id)?.$.VALUE || "";
 
-    // Validação de campos obrigatórios
+    const getDataById = (id) =>
+      dados.find(d => d.$.ID === id)?.$.VALUE || "";
+
     if (!getDataById("nomecliente") || !getDataById("cpfcnpj")) {
       throw new Error("XML inválido: campos obrigatórios ausentes");
     }
 
-    // ------------------------------
-    // 0) Extrair dados do XML
-    // ------------------------------
+    // ==============================
+    // 2) DADOS DO CLIENTE
+    // ==============================
     const clienteXML = {
       nome: escape(getDataById("nomecliente")),
       razao_social: escape(getDataById("corporateName")),
@@ -87,64 +47,153 @@ async function postImportaxml(xmlString, idClienteJWT) {
       endereco_entrega: escape(getDataById("endentrega")),
     };
 
-    // ------------------------------
-    // 1) Carrega cliente direto pelo JWT
-    // ------------------------------
-    const clienteBD = (await db.query(
-      "SELECT * FROM clientes WHERE id = $1",
-      [idClienteJWT]
+    // ==============================
+    // 3) BUSCAR OU CRIAR CLIENTE
+    // ==============================
+    let clienteBD = (await db.query(
+      `SELECT * FROM clientes 
+       WHERE cpf_cnpj = $1 OR email = $2
+       LIMIT 1`,
+      [clienteXML.cpf_cnpj, clienteXML.email]
     )).rows[0];
 
     if (!clienteBD) {
-      throw new Error("Cliente não encontrado");
-    }
+      const insertCliente = await db.query(
+        `INSERT INTO clientes (
+          nome, razao_social, cpf_cnpj, email, telefone,
+          endereco, numero, bairro, cidade, uf, cep, endereco_entrega
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        RETURNING *`,
+        [
+          clienteXML.nome,
+          clienteXML.razao_social,
+          clienteXML.cpf_cnpj,
+          clienteXML.email,
+          clienteXML.telefone,
+          clienteXML.endereco,
+          clienteXML.numero,
+          clienteXML.bairro,
+          clienteXML.cidade,
+          clienteXML.uf,
+          clienteXML.cep,
+          clienteXML.endereco_entrega
+        ]
+      );
 
-    //console.log("Usuário encontrado:", usuario);
-    //console.log("Cliente encontrado:", clienteBD);
+      clienteBD = insertCliente.rows[0];
+    } else {
+      // Atualiza campos vazios
+      let updates = [];
+      let values = [];
+      let i = 1;
 
-    // ------------------------------
-    // 3) Atualiza somente campos vazios do cliente
-    // ------------------------------
-    let updates = [];
-    let updateValues = [];
-    let index = 1;
+      for (const campo in clienteXML) {
+        if (!clienteBD[campo] || clienteBD[campo] === "") {
+          updates.push(`${campo} = $${i}`);
+          values.push(clienteXML[campo]);
+          i++;
+        }
+      }
 
-    for (const campo in clienteXML) {
-      if (!clienteBD[campo] || clienteBD[campo] === "") {
-        updates.push(`${campo} = $${index}`);
-        updateValues.push(clienteXML[campo]);
-        index++;
+      if (updates.length > 0) {
+        values.push(clienteBD.id);
+        await db.query(
+          `UPDATE clientes SET ${updates.join(", ")} WHERE id = $${i}`,
+          values
+        );
       }
     }
 
-    if (updates.length > 0) {
-      updateValues.push(clienteBD.id);
-      await db.query(
-        `UPDATE clientes SET ${updates.join(", ")} WHERE id = $${index}`,
-        updateValues
-      );
-      //console.log("Cliente atualizado com campos do XML.");
+    // ==============================
+    // 4) VALIDAR LOJISTA
+    // ==============================
+    let idLojistaFinal;
+
+    // 🔹 LOJISTA
+    if (user.tipo === "lojista") {
+
+      const lojista = (await db.query(
+        `SELECT * FROM lojistas WHERE id = $1`,
+        [user.id]
+      )).rows[0];
+
+      if (!lojista) {
+        throw new Error("Lojista inválido");
+      }
+
+      idLojistaFinal = lojista.id;
     }
 
-    // ------------------------------
-    // 4) Criar Pedido vinculado ao cliente
-    // ------------------------------
+    // 🔹 REPRESENTANTE
+    else if (user.tipo === "representante") {
+
+      if (!idLojistaBody) {
+        throw new Error("É necessário informar o lojista");
+      }
+
+      const lojista = (await db.query(
+        `SELECT * FROM lojistas 
+         WHERE id = $1 AND id_representante = $2`,
+        [idLojistaBody, user.id]
+      )).rows[0];
+
+      if (!lojista) {
+        throw new Error("Lojista não pertence a este representante ou não existe");
+      }
+
+      idLojistaFinal = lojista.id;
+    }
+
+    // 🔹 ADMIN
+    else if (user.tipo === "admin") {
+
+      if (!idLojistaBody) {
+        throw new Error("É necessário informar o lojista");
+      }
+
+      const lojista = (await db.query(
+        `SELECT * FROM lojistas WHERE id = $1`,
+        [idLojistaBody]
+      )).rows[0];
+
+      if (!lojista) {
+        throw new Error("Lojista não encontrado");
+      }
+
+      idLojistaFinal = lojista.id;
+    }
+
+    else {
+      throw new Error("Tipo de usuário não permitido");
+    }
+
+    // ==============================
+    // 5) CRIAR PEDIDO
+    // ==============================
     const nomeProjeto = escape(getDataById("Environment") || "Projeto");
     const valorTotal = listing.TOTALPRICES?.$.TABLE || "0";
 
     const pedidoResult = await db.query(
-      `INSERT INTO pedidos (nome_projeto, valor, data_pedido, id_cliente, xml)
-   VALUES ($1, $2, CURRENT_DATE, $3, $4)
-   RETURNING id`,
-      [nomeProjeto, valorTotal, clienteBD.id, data]
+      `INSERT INTO pedidos 
+      (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por)
+      VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6)
+      RETURNING id`,
+      [
+        nomeProjeto,
+        valorTotal,
+        clienteBD.id,
+        xmlString,
+        idLojistaFinal,
+        user.tipo
+      ]
     );
 
     const idPedido = pedidoResult.rows[0].id;
-    //console.log("Pedido criado com ID:", idPedido);
 
-    // ------------------------------
-    // 5) Itens do projeto
-    // ------------------------------
+    // ==============================
+    // 6) ITENS + COMPONENTES
+    // ==============================
     const ambientes = listing.AMBIENTS?.AMBIENT;
     const listaAmbientes = Array.isArray(ambientes) ? ambientes : [ambientes];
 
@@ -158,7 +207,9 @@ async function postImportaxml(xmlString, idClienteJWT) {
         const itensWrapper = cat?.ITEMS;
         if (!itensWrapper || !itensWrapper.ITEM) return;
 
-        const itens = Array.isArray(itensWrapper.ITEM) ? itensWrapper.ITEM : [itensWrapper.ITEM];
+        const itens = Array.isArray(itensWrapper.ITEM)
+          ? itensWrapper.ITEM
+          : [itensWrapper.ITEM];
 
         itens.forEach((item) => {
           itensProjeto.push({
@@ -174,7 +225,6 @@ async function postImportaxml(xmlString, idClienteJWT) {
       });
     });
 
-    // Inserir itens e componentes
     for (let item of itensProjeto) {
       const itemRes = await db.query(
         `INSERT INTO itens_pedido (descricao_item, quantidade_item, id_pedido)
@@ -202,37 +252,6 @@ async function postImportaxml(xmlString, idClienteJWT) {
   }
 }
 
-
-
-
-
-
-
-// Função para criar um arquivo temporário com o conteúdo do buffer
-async function criarArquivoTemporario(buffer) {
-  const nomeArquivoTemp = `xml_${Date.now()}.xml`;
-  const caminhoTemp = path.resolve(__dirname, '..', 'temp', nomeArquivoTemp);
-
-  fs.mkdirSync(path.dirname(caminhoTemp), { recursive: true });
-  await fs.promises.writeFile(caminhoTemp, buffer);
-
-  return { caminhoTemp, nomeArquivoTemp };
-}
-
-// Função para excluir o arquivo temporário após o processamento
-async function excluirArquivoTemporario(caminhoTemp, nomeArquivoTemp) {
-  try {
-    await fs.promises.unlink(caminhoTemp);
-    //console.log(`Arquivo temporário ${nomeArquivoTemp} excluído com sucesso.`);
-  } catch (err) {
-    //console.log(`Não foi possível excluir o arquivo temporário: ${err.message}`);
-  }
-}
-
-
-
 module.exports = {
-  postImportaxml,
-  criarArquivoTemporario,
-  excluirArquivoTemporario,
+  postImportaxml
 };

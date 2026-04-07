@@ -3,44 +3,98 @@ const bcrypt = require("bcrypt");
 const db = require("../config/index.js");
 
 async function login(email, senha) {
-  const result = await db.query(
-    `SELECT 
-        id,
-        nome,
-        email,
-        senha
+
+  let user = null;
+  let tipo = null;
+
+  // ==============================
+  // 1) CLIENTE
+  // ==============================
+  let result = await db.query(
+    `SELECT id, nome, email, senha
      FROM clientes
      WHERE email = $1`,
     [email]
   );
 
-  if (result.rows.length === 0) {
+  if (result.rows.length > 0) {
+    user = result.rows[0];
+    tipo = "cliente";
+  }
+
+  // ==============================
+  // 2) LOJISTA
+  // ==============================
+  if (!user) {
+    result = await db.query(
+      `SELECT id, nome, email, senha
+       FROM lojistas
+       WHERE email = $1`,
+      [email]
+    );
+
+    if (result.rows.length > 0) {
+      user = result.rows[0];
+      tipo = "lojista";
+    }
+  }
+
+  // ==============================
+  // 3) REPRESENTANTE
+  // ==============================
+  if (!user) {
+    result = await db.query(
+      `SELECT id, nome, email, senha
+       FROM representantes
+       WHERE email = $1`,
+      [email]
+    );
+
+    if (result.rows.length > 0) {
+      user = result.rows[0];
+      tipo = "representante";
+    }
+  }
+
+  // ==============================
+  // NÃO ENCONTROU
+  // ==============================
+  if (!user) {
     throw new Error("Email ou Senha Inválido!");
   }
 
-  const cliente = result.rows[0];
-
-  const senhaValida = await bcrypt.compare(senha, cliente.senha);
+  // ==============================
+  // VALIDAR SENHA
+  // ==============================
+  const senhaValida = await bcrypt.compare(senha, user.senha);
 
   if (!senhaValida) {
     throw new Error("Email ou Senha Inválido!");
   }
 
+  // ==============================
+  // GERAR TOKEN
+  // ==============================
   const token = jwt.sign(
     {
-      id_cliente: cliente.id,
+      id: user.id,
+      tipo: tipo
     },
     process.env.JWT_SECRET,
     { expiresIn: "1h" }
   );
 
+  // ==============================
+  // RETORNO
+  // ==============================
   return {
     msg: "Logado com sucesso!",
     token,
     user: {
-      id: cliente.id,
-      email: cliente.email,
-      nome: cliente.nome
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      tipo: tipo
     }
   };
 }
