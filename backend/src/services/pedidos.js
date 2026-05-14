@@ -25,8 +25,9 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const getDataById = (id) =>
       dados.find(d => d.$.ID === id)?.$.VALUE || "";
 
-    if (!getDataById("nomecliente") || !getDataById("cpfcnpj")) {
-      throw new Error("XML inválido: campos obrigatórios ausentes");
+    // Nome e telefone são obrigatórios
+    if (!getDataById("nomecliente") || !getDataById("celular")) {
+      throw new Error("XML inválido: campos 'nomecliente' e 'celular' são obrigatórios");
     }
 
     // ==============================
@@ -35,7 +36,7 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const clienteXML = {
       nome: escape(getDataById("nomecliente")),
       razao_social: escape(getDataById("corporateName")),
-      cpf_cnpj: escape(getDataById("cpfcnpj")),
+      cpf_cnpj: escape(getDataById("cpfcnpj")),       // pode vir vazio
       email: escape(getDataById("email")),
       telefone: escape(getDataById("celular")),
       endereco: escape(getDataById("endereco")),
@@ -50,12 +51,28 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     // ==============================
     // 3) BUSCAR OU CRIAR CLIENTE
     // ==============================
-    let clienteBD = (await db.query(
-      `SELECT * FROM clientes 
-       WHERE cpf_cnpj = $1 OR email = $2
-       LIMIT 1`,
-      [clienteXML.cpf_cnpj, clienteXML.email]
-    )).rows[0];
+
+    // Monta a busca de forma dinâmica para evitar match indevido em campos vazios
+    let clienteBD = null;
+
+    if (clienteXML.cpf_cnpj && clienteXML.email) {
+      clienteBD = (await db.query(
+        `SELECT * FROM clientes WHERE cpf_cnpj = $1 OR email = $2 LIMIT 1`,
+        [clienteXML.cpf_cnpj, clienteXML.email]
+      )).rows[0];
+
+    } else if (clienteXML.cpf_cnpj) {
+      clienteBD = (await db.query(
+        `SELECT * FROM clientes WHERE cpf_cnpj = $1 LIMIT 1`,
+        [clienteXML.cpf_cnpj]
+      )).rows[0];
+
+    } else if (clienteXML.email) {
+      clienteBD = (await db.query(
+        `SELECT * FROM clientes WHERE email = $1 LIMIT 1`,
+        [clienteXML.email]
+      )).rows[0];
+    }
 
     if (!clienteBD) {
       const insertCliente = await db.query(
@@ -68,30 +85,32 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
         [
           clienteXML.nome,
           clienteXML.razao_social,
-          clienteXML.cpf_cnpj,
-          clienteXML.email,
+          clienteXML.cpf_cnpj || null,
+          clienteXML.email || null,
           clienteXML.telefone,
-          clienteXML.endereco,
-          clienteXML.numero,
-          clienteXML.bairro,
-          clienteXML.cidade,
-          clienteXML.uf,
-          clienteXML.cep,
-          clienteXML.endereco_entrega
+          clienteXML.endereco || null,
+          clienteXML.numero || null,
+          clienteXML.bairro || null,
+          clienteXML.cidade || null,
+          clienteXML.uf || null,
+          clienteXML.cep || null,
+          clienteXML.endereco_entrega || null,
         ]
       );
 
       clienteBD = insertCliente.rows[0];
+
     } else {
-      // Atualiza campos vazios
+      // Atualiza apenas os campos que estão vazios no banco
       let updates = [];
       let values = [];
       let i = 1;
 
       for (const campo in clienteXML) {
-        if (!clienteBD[campo] || clienteBD[campo] === "") {
+        const valorXML = clienteXML[campo];
+        if (valorXML && (!clienteBD[campo] || clienteBD[campo] === "")) {
           updates.push(`${campo} = $${i}`);
-          values.push(clienteXML[campo]);
+          values.push(valorXML);
           i++;
         }
       }
@@ -118,53 +137,39 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
         [user.id]
       )).rows[0];
 
-      if (!lojista) {
-        throw new Error("Lojista inválido");
-      }
+      if (!lojista) throw new Error("Lojista inválido");
 
       idLojistaFinal = lojista.id;
-    }
 
-    // 🔹 REPRESENTANTE
-    else if (user.tipo === "representante") {
+      // 🔹 REPRESENTANTE
+    } else if (user.tipo === "representante") {
 
-      if (!idLojistaBody) {
-        throw new Error("É necessário informar o lojista");
-      }
+      if (!idLojistaBody) throw new Error("É necessário informar o lojista");
 
       const lojista = (await db.query(
-        `SELECT * FROM lojistas 
-         WHERE id = $1 AND id_representante = $2`,
+        `SELECT * FROM lojistas WHERE id = $1 AND id_representante = $2`,
         [idLojistaBody, user.id]
       )).rows[0];
 
-      if (!lojista) {
-        throw new Error("Lojista não pertence a este representante ou não existe");
-      }
+      if (!lojista) throw new Error("Lojista não pertence a este representante ou não existe");
 
       idLojistaFinal = lojista.id;
-    }
 
-    // 🔹 ADMIN
-    else if (user.tipo === "admin") {
+      // 🔹 ADMIN
+    } else if (user.tipo === "admin") {
 
-      if (!idLojistaBody) {
-        throw new Error("É necessário informar o lojista");
-      }
+      if (!idLojistaBody) throw new Error("É necessário informar o lojista");
 
       const lojista = (await db.query(
         `SELECT * FROM lojistas WHERE id = $1`,
         [idLojistaBody]
       )).rows[0];
 
-      if (!lojista) {
-        throw new Error("Lojista não encontrado");
-      }
+      if (!lojista) throw new Error("Lojista não encontrado");
 
       idLojistaFinal = lojista.id;
-    }
 
-    else {
+    } else {
       throw new Error("Tipo de usuário não permitido");
     }
 
@@ -175,18 +180,11 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const valorTotal = listing.TOTALPRICES?.$.TABLE || "0";
 
     const pedidoResult = await db.query(
-      `INSERT INTO pedidos 
-      (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por)
-      VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6)
-      RETURNING id`,
-      [
-        nomeProjeto,
-        valorTotal,
-        clienteBD.id,
-        xmlString,
-        idLojistaFinal,
-        user.tipo
-      ]
+      `INSERT INTO pedidos
+        (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por)
+       VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6)
+       RETURNING id`,
+      [nomeProjeto, valorTotal, clienteBD.id, xmlString, idLojistaFinal, user.tipo]
     );
 
     const idPedido = pedidoResult.rows[0].id;
@@ -225,7 +223,7 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
       });
     });
 
-    for (let item of itensProjeto) {
+    for (const item of itensProjeto) {
       const itemRes = await db.query(
         `INSERT INTO itens_pedido (descricao_item, quantidade_item, id_pedido)
          VALUES ($1, $2, $3)
@@ -235,7 +233,7 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
 
       const idItem = itemRes.rows[0].id;
 
-      for (let comp of item.componentes) {
+      for (const comp of item.componentes) {
         await db.query(
           `INSERT INTO componentes_itens (nome_componente, id_item)
            VALUES ($1, $2)`,
