@@ -179,12 +179,15 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const nomeProjeto = escape(getDataById("Environment") || "Projeto");
     const valorTotal = listing.TOTALPRICES?.$.TABLE || "0";
 
+    const idRepresentanteEnviou = user.tipo === "representante" ? user.id : null;
+    const idAdminEnviou = user.tipo === "admin" ? user.id : null;
+
     const pedidoResult = await db.query(
       `INSERT INTO pedidos
-        (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por)
-       VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6)
-       RETURNING id`,
-      [nomeProjeto, valorTotal, clienteBD.id, xmlString, idLojistaFinal, user.tipo]
+        (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por, id_representante_enviou, id_admin_enviou)
+     VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7, $8)
+     RETURNING id`,
+      [nomeProjeto, valorTotal, clienteBD.id, xmlString, idLojistaFinal, user.tipo, idRepresentanteEnviou, idAdminEnviou]
     );
 
     const idPedido = pedidoResult.rows[0].id;
