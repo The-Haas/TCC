@@ -182,12 +182,21 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const idRepresentanteEnviou = user.tipo === "representante" ? user.id : null;
     const idAdminEnviou = user.tipo === "admin" ? user.id : null;
 
+    // Busca o status padrão automaticamente
+    const statusPadrao = (await db.query(
+      `SELECT id FROM status_pedido WHERE padrao = true LIMIT 1`
+    )).rows[0];
+
+    if (!statusPadrao) {
+      throw new Error("Nenhum status padrão definido. Cadastre um status padrão antes de importar pedidos.");
+    }
+
     const pedidoResult = await db.query(
       `INSERT INTO pedidos
-        (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por, id_representante_enviou, id_admin_enviou)
-     VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7, $8)
+        (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por, id_representante_enviou, id_admin_enviou, id_status)
+     VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
-      [nomeProjeto, valorTotal, clienteBD.id, xmlString, idLojistaFinal, user.tipo, idRepresentanteEnviou, idAdminEnviou]
+      [nomeProjeto, valorTotal, clienteBD.id, xmlString, idLojistaFinal, user.tipo, idRepresentanteEnviou, idAdminEnviou, statusPadrao.id]
     );
 
     const idPedido = pedidoResult.rows[0].id;

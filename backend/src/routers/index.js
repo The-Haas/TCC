@@ -4,6 +4,7 @@ const clientesRoute = require('./clientes');
 const representantesRoute = require('./representantes');
 const lojistasRoute = require('./lojistas');
 const adminsRoute = require('./admins');
+const statusPedidoRoute = require('./statusPedido');
 
 module.exports = (app) => {
     importaxmlRoute(app);
@@ -12,4 +13,5 @@ module.exports = (app) => {
     representantesRoute(app);
     lojistasRoute(app);
     adminsRoute(app);
+    statusPedidoRoute(app);
 }
