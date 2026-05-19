@@ -32,6 +32,18 @@ async function postCliente(dados) {
             return { success: false, message: 'Email já está em uso.' };
         }
 
+        // Verifica se o CPF/CNPJ já existe
+        if (cpf_cnpj) {
+            const cpfCnpjCheck = await db.query(
+                `SELECT 'x' FROM clientes WHERE cpf_cnpj = $1`,
+                [cpf_cnpj]
+            );
+
+            if (cpfCnpjCheck.rows.length > 0) {
+                return { success: false, message: 'CPF/CNPJ já está em uso.' };
+            }
+        }
+
         // Valida senha
         if (!senha || senha.length < 8) {
             return { success: false, message: 'A senha deve ter pelo menos 8 caracteres.' };
@@ -48,7 +60,7 @@ async function postCliente(dados) {
     RETURNING id`,
             [
                 nome,
-                dados.razao_social || null, // adicionando razao_social
+                dados.razao_social || null,
                 cpf_cnpj,
                 email,
                 telefone,
@@ -78,8 +90,6 @@ async function postCliente(dados) {
         };
     }
 }
-
-
 
 async function getClientes() {
     try {
@@ -191,10 +201,19 @@ async function putCliente(id, dados) {
             return { success: false, message: 'Email já está em uso.' };
         }
 
-        // 4. Hash da senha
+        // 4. Verifica se o CPF/CNPJ já existe em outro cliente
+        const cpfCnpjCheck = await db.query(
+            `SELECT 'x' FROM clientes WHERE cpf_cnpj = $1 AND id <> $2`,
+            [cpf_cnpj, id]
+        );
+        if (cpfCnpjCheck.rows.length > 0) {
+            return { success: false, message: 'CPF/CNPJ já está em uso.' };
+        }
+
+        // 5. Hash da senha
         const hashedPassword = await bcrypt.hash(senha, 10);
 
-        // 5. Atualiza cliente
+        // 6. Atualiza cliente
         const result = await db.query(
             `UPDATE clientes
      SET nome = $1,
@@ -256,7 +275,18 @@ async function patchCliente(id, dados) {
             }
         }
 
-        // 4. Monta query dinamicamente
+        // 4. Se CPF/CNPJ for fornecido, valida duplicidade
+        if (dados.cpf_cnpj) {
+            const cpfCnpjCheck = await db.query(
+                `SELECT 'x' FROM clientes WHERE cpf_cnpj = $1 AND id <> $2`,
+                [dados.cpf_cnpj, id]
+            );
+            if (cpfCnpjCheck.rows.length > 0) {
+                return { success: false, message: 'CPF/CNPJ já está em uso.' };
+            }
+        }
+
+        // 5. Monta query dinamicamente
         for (const [key, value] of Object.entries(dados)) {
             fields.push(`${key} = $${idx}`);
             values.push(value);
