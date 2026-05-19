@@ -57,6 +57,23 @@ async function login(email, senha) {
   }
 
   // ==============================
+  // 4) ADMIN
+  // ==============================
+  if (!user) {
+    result = await db.query(
+      `SELECT id, nome, email, senha
+       FROM admins
+       WHERE email = $1`,
+      [email]
+    );
+
+    if (result.rows.length > 0) {
+      user = result.rows[0];
+      tipo = "admin";
+    }
+  }
+
+  // ==============================
   // NÃO ENCONTROU
   // ==============================
   if (!user) {
