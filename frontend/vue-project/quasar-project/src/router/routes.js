@@ -1,12 +1,26 @@
 const routes = [
+  // ── Rota pública: Login ────────────────────────────────────────────
+  {
+    path: '/login',
+    component: () => import('pages/LoginPage.vue'),
+    meta: { guest: true }, // só acessível sem login
+  },
+
+  // ── Rotas protegidas: Sistema ──────────────────────────────────────
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/IndexPage.vue') }],
+    meta: { requiresAuth: true },
+    children: [
+      { path: '', redirect: '/dashboard' },
+      {
+        path: 'dashboard',
+        component: () => import('pages/IndexPage.vue'), // será o Dashboard futuramente
+      },
+    ],
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
+  // ── 404 ───────────────────────────────────────────────────────────
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

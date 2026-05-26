@@ -1,1 +1,16 @@
-// app global css in SCSS form
+// app global css — Horus
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
+
+// Fonte global
+* { box-sizing: border-box; }
+body { font-family: 'DM Sans', sans-serif !important; }
+
+// Scrollbar fina
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(128,128,128,.25); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,123,0,.5); }
+
+// Bordas arredondadas globais nos inputs e botões
+.q-field--outlined .q-field__control { border-radius: 8px !important; }
+.q-btn:not(.q-btn--round) { border-radius: 8px !important; }
