@@ -13,51 +13,72 @@
       bordered
       no-swipe-close
     >
-      <div class="sidebar-inner" :class="{ 'sidebar-collapsed': isCollapsed }">
+      <div class="sidebar-inner">
 
-        <!-- ── Brand ── -->
+        <!-- ── Brand + Hambúrguer (TOPO) ── -->
         <div class="sidebar-brand" :class="{ 'sidebar-brand--collapsed': isCollapsed }">
-          <div class="brand-icon">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" :width="isCollapsed ? 22 : 26" :height="isCollapsed ? 22 : 26">
-              <path d="M24 6 L6 38 H14 L18 30 H30 L34 38 H42 Z" fill="none" stroke="#ff7b00" stroke-width="3" stroke-linejoin="round"/>
-              <path d="M20 24 H28" stroke="#ff7b00" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="24" cy="6" r="2" fill="#ff7b00"/>
-            </svg>
-          </div>
-          <transition name="fade-text">
-            <div v-if="!isCollapsed" class="brand-text">
+
+          <template v-if="!isCollapsed">
+            <div class="brand-icon">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                <path d="M24 6 L6 38 H14 L18 30 H30 L34 38 H42 Z" fill="none" stroke="#ff7b00" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M20 24 H28" stroke="#ff7b00" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="24" cy="6" r="2" fill="#ff7b00"/>
+              </svg>
+            </div>
+            <div class="brand-text">
               <span class="brand-name">ARTEZZA</span>
               <span class="brand-sub">Móveis Planejados</span>
             </div>
-          </transition>
+            <button class="hamburger-btn" @click="toggleCollapse" title="Recolher menu">
+              <span class="hb-line" />
+              <span class="hb-line" />
+              <span class="hb-line" />
+            </button>
+          </template>
+
+          <template v-else>
+            <button class="hamburger-btn hamburger-btn--solo" @click="toggleCollapse" title="Expandir menu">
+              <span class="hb-line" />
+              <span class="hb-line hb-line--mid" />
+              <span class="hb-line" />
+            </button>
+            <q-tooltip anchor="center right" self="center left" :offset="[12,0]">Expandir menu</q-tooltip>
+          </template>
+
         </div>
 
-        <!-- ── Divider ── -->
+        <!-- ── Separador ── -->
         <div class="sidebar-sep" />
 
         <!-- ── Perfil resumido ── -->
         <div class="sidebar-profile" :class="{ 'sidebar-profile--collapsed': isCollapsed }">
-          <q-avatar
-            size="34px"
+          <!-- Avatar com iniciais — div customizada para centralização perfeita -->
+          <div
             class="profile-av"
-            :style="{ background: roleColor + '22', border: `1.5px solid ${roleColor}44` }"
+            :style="{
+              background: roleColor + '22',
+              border: `1.5px solid ${roleColor}44`,
+            }"
           >
-            <span style="font-size:13px;font-weight:700;" :style="{ color: roleColor }">
-              {{ initials }}
-            </span>
-          </q-avatar>
+            <span :style="{ color: roleColor }">{{ initials }}</span>
+          </div>
+
           <transition name="fade-text">
             <div v-if="!isCollapsed" class="profile-info">
-              <span class="profile-name">{{ authStore.userName }}</span>
+              <span class="profile-name" :class="isDark ? 'text-grey-2' : 'text-grey-9'">
+                {{ authStore.userName }}
+              </span>
               <span class="profile-role" :style="{ color: roleColor }">{{ roleLabel }}</span>
             </div>
           </transition>
-          <q-tooltip v-if="isCollapsed" anchor="center right" self="center left" :offset="[12, 0]">
+
+          <q-tooltip v-if="isCollapsed" anchor="center right" self="center left" :offset="[12,0]">
             {{ authStore.userName }} — {{ roleLabel }}
           </q-tooltip>
         </div>
 
-        <!-- ── Divider ── -->
+        <!-- ── Separador ── -->
         <div class="sidebar-sep" />
 
         <!-- ── Navegação ── -->
@@ -66,7 +87,6 @@
 
             <template v-for="section in visibleMenu" :key="section.key">
 
-              <!-- Rótulo da seção -->
               <transition name="fade-text">
                 <div
                   v-if="!isCollapsed && section.label"
@@ -77,7 +97,6 @@
                 </div>
               </transition>
 
-              <!-- Items da seção -->
               <router-link
                 v-for="item in section.items"
                 :key="item.to"
@@ -89,7 +108,7 @@
                   class="nav-item"
                   :class="[
                     isActive ? 'nav-item--active' : (isDark ? 'nav-item--dark' : 'nav-item--light'),
-                    { 'nav-item--collapsed': isCollapsed }
+                    { 'nav-item--collapsed': isCollapsed },
                   ]"
                   @click="navigate"
                 >
@@ -99,17 +118,7 @@
                   <transition name="fade-text">
                     <span v-if="!isCollapsed" class="nav-item__label">{{ item.label }}</span>
                   </transition>
-                  <transition name="fade-text">
-                    <q-badge
-                      v-if="!isCollapsed && item.badge"
-                      :color="item.badgeColor || 'orange'"
-                      :label="item.badge"
-                      class="q-ml-auto"
-                      dense
-                    />
-                  </transition>
-                  <!-- Tooltip quando colapsado -->
-                  <q-tooltip v-if="isCollapsed" anchor="center right" self="center left" :offset="[12, 0]">
+                  <q-tooltip v-if="isCollapsed" anchor="center right" self="center left" :offset="[12,0]">
                     {{ item.label }}
                   </q-tooltip>
                 </div>
@@ -118,28 +127,6 @@
             </template>
           </div>
         </q-scroll-area>
-
-        <!-- ── Footer do sidebar ── -->
-        <div class="sidebar-footer">
-          <div class="sidebar-sep q-mb-sm" />
-
-          <!-- Botão colapsar/expandir -->
-          <div
-            class="nav-item nav-item--collapse"
-            :class="[isDark ? 'nav-item--dark' : 'nav-item--light', { 'nav-item--collapsed': isCollapsed }]"
-            @click="toggleCollapse"
-          >
-            <div class="nav-item__icon">
-              <q-icon :name="isCollapsed ? 'keyboard_double_arrow_right' : 'keyboard_double_arrow_left'" size="19px" />
-            </div>
-            <transition name="fade-text">
-              <span v-if="!isCollapsed" class="nav-item__label">Recolher menu</span>
-            </transition>
-            <q-tooltip v-if="isCollapsed" anchor="center right" self="center left" :offset="[12, 0]">
-              Expandir menu
-            </q-tooltip>
-          </div>
-        </div>
 
       </div>
     </q-drawer>
@@ -150,108 +137,109 @@
     <q-header :class="isDark ? 'topbar-dark' : 'topbar-light'" bordered>
       <q-toolbar class="topbar-toolbar">
 
-        <!-- Botão menu mobile -->
-        <q-btn flat round dense icon="menu" :color="isDark ? 'grey-4' : 'grey-7'" @click="drawerOpen = !drawerOpen" class="lt-sm" />
+        <!-- Menu mobile -->
+        <q-btn flat round dense icon="menu" :color="isDark ? 'grey-4' : 'grey-7'" @click="toggleMobileDrawer" class="lt-sm q-mr-xs" />
 
         <!-- Título da página -->
         <div class="topbar-title">
-          <q-icon :name="currentPage.icon" size="18px" color="orange" class="q-mr-xs" />
+          <q-icon :name="currentPage.icon" size="17px" color="orange" class="q-mr-xs" />
           <span :class="isDark ? 'text-grey-3' : 'text-grey-8'">{{ currentPage.label }}</span>
         </div>
 
         <q-space />
 
-        <!-- ─── Área direita da topbar ─── -->
         <div class="topbar-right">
 
-          <!-- Timer de sessão -->
-          <div class="session-timer" :class="isDark ? 'session-timer--dark' : 'session-timer--light'">
-            <q-icon name="schedule" size="14px" :color="sessionWarning ? 'negative' : 'grey-5'" />
-            <span :class="sessionWarning ? 'text-negative' : (isDark ? 'text-grey-4' : 'text-grey-6')">
-              {{ sessionTime }}
+          <!-- Timer de sessão (regressivo) -->
+          <div
+            class="session-timer"
+            :class="[
+              isDark ? 'session-timer--dark' : 'session-timer--light',
+              sessionUrgent ? 'session-timer--urgent' : '',
+            ]"
+          >
+            <q-icon
+              :name="sessionUrgent ? 'timer_off' : 'timer'"
+              size="14px"
+              :color="sessionUrgent ? 'negative' : (sessionWarning ? 'warning' : 'grey-5')"
+            />
+            <span
+              :class="sessionUrgent ? 'text-negative' : (sessionWarning ? 'text-warning' : (isDark ? 'text-grey-4' : 'text-grey-7'))"
+            >
+              {{ sessionTimeLeft }}
             </span>
-            <q-tooltip>Tempo de sessão ativa</q-tooltip>
+            <q-tooltip>
+              {{ sessionUrgent ? 'Sessão expirando!' : sessionWarning ? 'Sessão expirando em breve' : 'Tempo restante de sessão' }}
+            </q-tooltip>
           </div>
 
-          <!-- Notificações -->
-          <q-btn flat round dense :color="isDark ? 'grey-4' : 'grey-7'" class="topbar-btn">
-            <q-icon name="notifications_none" size="20px" />
-            <q-badge color="negative" floating label="2" />
-            <q-tooltip>Notificações</q-tooltip>
-
-            <q-menu anchor="bottom right" self="top right" :offset="[0,8]" :dark="isDark" style="min-width:280px; border-radius:12px">
-              <q-list :dark="isDark" class="q-py-sm">
-                <div class="q-px-md q-pt-xs q-pb-sm">
-                  <span class="text-caption text-weight-bold" :class="isDark ? 'text-grey-4' : 'text-grey-7'">NOTIFICAÇÕES</span>
-                </div>
-                <q-item clickable v-close-popup v-for="n in notifications" :key="n.id" class="notif-item">
-                  <q-item-section avatar>
-                    <q-avatar :color="n.color" text-color="white" size="32px" :icon="n.icon" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label :class="isDark ? 'text-grey-3' : 'text-grey-8'" lines="1">{{ n.title }}</q-item-label>
-                    <q-item-label caption>{{ n.time }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-                <div class="q-px-md q-pt-sm">
-                  <q-btn flat no-caps full-width label="Ver todas" color="orange" size="sm" />
-                </div>
-              </q-list>
-            </q-menu>
-          </q-btn>
-
           <!-- Toggle tema -->
-          <q-btn flat round dense class="topbar-btn" :color="isDark ? 'grey-4' : 'grey-7'" @click="toggleTheme">
+          <q-btn flat round dense class="topbar-btn" :color="isDark ? 'grey-4' : 'grey-6'" @click="toggleTheme">
             <q-icon :name="isDark ? 'light_mode' : 'dark_mode'" size="20px" />
             <q-tooltip>{{ isDark ? 'Modo claro' : 'Modo escuro' }}</q-tooltip>
           </q-btn>
 
-          <!-- Avatar + menu do usuário -->
+          <!-- Avatar + menu -->
           <q-btn flat round dense class="topbar-btn q-ml-xs">
-            <q-avatar size="32px" :style="{ background: roleColor + '22', border: `1.5px solid ${roleColor}55` }">
-              <span style="font-size:12px;font-weight:800;" :style="{ color: roleColor }">{{ initials }}</span>
-            </q-avatar>
+            <!-- Avatar com iniciais centralizadas -->
+            <div
+              class="topbar-av"
+              :style="{
+                background: roleColor + '22',
+                border: `1.5px solid ${roleColor}55`,
+              }"
+            >
+              <span :style="{ color: roleColor }">{{ initials }}</span>
+            </div>
             <q-tooltip>Minha conta</q-tooltip>
 
-            <q-menu anchor="bottom right" self="top right" :offset="[0,8]" :dark="isDark" style="min-width:220px; border-radius:12px">
+            <q-menu anchor="bottom right" self="top right" :offset="[0,8]" :dark="isDark" style="min-width:224px;border-radius:12px;overflow:hidden">
               <q-list :dark="isDark" class="q-py-sm">
 
-                <!-- Info do usuário -->
-                <div class="q-px-md q-py-sm user-menu-header">
-                  <div class="flex items-center gap-sm q-gutter-sm">
-                    <q-avatar size="38px" :style="{ background: roleColor + '22', border: `1.5px solid ${roleColor}55` }">
-                      <span style="font-weight:800;" :style="{ color: roleColor }">{{ initials }}</span>
-                    </q-avatar>
-                    <div>
-                      <div class="text-body2 text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'">
+                <!-- Cabeçalho do menu -->
+                <div class="user-menu-head q-px-md q-pb-sm q-pt-md">
+                  <div class="user-menu-av-wrap">
+                    <div
+                      class="user-menu-av"
+                      :style="{ background: roleColor + '22', border: `1.5px solid ${roleColor}55` }"
+                    >
+                      <span :style="{ color: roleColor }">{{ initials }}</span>
+                    </div>
+                    <div class="user-menu-info">
+                      <div class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'" style="font-size:13.5px;line-height:1.2">
                         {{ authStore.userName }}
                       </div>
-                      <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                      <div class="text-caption q-mb-xs" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
                         {{ authStore.userEmail }}
                       </div>
-                      <q-badge :style="{ background: roleColor }" :label="roleLabel" dense class="q-mt-xs" />
+                      <span
+                        class="role-badge"
+                        :style="{ background: roleColor + '22', color: roleColor, border: `1px solid ${roleColor}44` }"
+                      >
+                        {{ roleLabel }}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <q-separator :dark="isDark" class="q-my-xs" />
 
-                <q-item clickable v-close-popup to="/perfil" class="menu-action-item">
-                  <q-item-section avatar>
+                <q-item clickable v-close-popup to="/perfil" class="menu-item">
+                  <q-item-section avatar style="min-width:32px">
                     <q-icon name="manage_accounts" color="orange" size="18px" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label :class="isDark ? 'text-grey-3' : 'text-grey-8'">Meu Perfil</q-item-label>
+                    <q-item-label :class="isDark ? 'text-grey-2' : 'text-grey-8'" style="font-size:13.5px">Meu Perfil</q-item-label>
                     <q-item-label caption>Editar dados pessoais</q-item-label>
                   </q-item-section>
                 </q-item>
 
-                <q-item clickable v-close-popup class="menu-action-item" @click="toggleTheme">
-                  <q-item-section avatar>
-                    <q-icon :name="isDark ? 'light_mode' : 'dark_mode'" :color="isDark ? 'yellow-5' : 'grey-7'" size="18px" />
+                <q-item clickable v-close-popup class="menu-item" @click="toggleTheme">
+                  <q-item-section avatar style="min-width:32px">
+                    <q-icon :name="isDark ? 'light_mode' : 'dark_mode'" :color="isDark ? 'yellow-5' : 'blue-grey-5'" size="18px" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                    <q-item-label :class="isDark ? 'text-grey-2' : 'text-grey-8'" style="font-size:13.5px">
                       {{ isDark ? 'Modo claro' : 'Modo escuro' }}
                     </q-item-label>
                     <q-item-label caption>Alterar aparência</q-item-label>
@@ -260,12 +248,12 @@
 
                 <q-separator :dark="isDark" class="q-my-xs" />
 
-                <q-item clickable v-close-popup class="menu-action-item" @click="handleLogout">
-                  <q-item-section avatar>
+                <q-item clickable v-close-popup class="menu-item" @click="handleLogout">
+                  <q-item-section avatar style="min-width:32px">
                     <q-icon name="logout" color="negative" size="18px" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label class="text-negative">Sair</q-item-label>
+                    <q-item-label class="text-negative" style="font-size:13.5px">Sair</q-item-label>
                     <q-item-label caption>Encerrar sessão</q-item-label>
                   </q-item-section>
                 </q-item>
@@ -307,13 +295,18 @@ const authStore = useAuthStore()
 const drawerOpen  = ref(true)
 const isCollapsed = ref(false)
 
-const FULL_WIDTH  = 248
-const MINI_WIDTH  = 64
+const FULL_WIDTH   = 252
+const MINI_WIDTH   = 64
 const sidebarWidth = computed(() => isCollapsed.value ? MINI_WIDTH : FULL_WIDTH)
 
 function toggleCollapse() {
-  isCollapsed.value = !isCollapsed.value
-  localStorage.setItem('horus_sidebar', isCollapsed.value ? '1' : '0')
+  if ($q.screen.lt.sm) {
+    // No mobile, o botão fecha o drawer direto
+    drawerOpen.value = false
+  } else {
+    isCollapsed.value = !isCollapsed.value
+    localStorage.setItem('horus_sidebar', isCollapsed.value ? '1' : '0')
+  }
 }
 
 // ── Tema ───────────────────────────────────────────────────────────
@@ -324,7 +317,7 @@ function toggleTheme() {
   localStorage.setItem('horus_dark', $q.dark.isActive ? '1' : '0')
 }
 
-// ── Perfil do usuário ──────────────────────────────────────────────
+// ── Perfil ─────────────────────────────────────────────────────────
 const roleConfig = {
   admin:         { label: 'Administrador', color: '#ff7b00' },
   lojista:       { label: 'Lojista',       color: '#1976d2' },
@@ -337,32 +330,33 @@ const roleColor = computed(() => roleConfig[authStore.userTipo]?.color || '#888'
 
 const initials = computed(() =>
   (authStore.userName || '')
-    .split(' ').slice(0, 2)
-    .map(n => n[0]).join('').toUpperCase()
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(n => n[0]?.toUpperCase() || '')
+    .join('')
 )
 
-// ── Menus por perfil ───────────────────────────────────────────────
+// ── Menu por perfil ────────────────────────────────────────────────
 const allMenu = [
   {
     key: 'principal',
     label: 'Principal',
-    roles: ['admin', 'lojista', 'representante', 'cliente'],
     items: [
-      { label: 'Dashboard',   icon: 'dashboard',     to: '/dashboard', roles: ['admin','lojista','representante','cliente'] },
-      { label: 'Pedidos',     icon: 'receipt_long',  to: '/pedidos',   roles: ['admin','lojista','representante'] },
-      { label: 'Meus Pedidos',icon: 'receipt_long',  to: '/pedidos',   roles: ['cliente'] },
-      { label: 'Clientes',    icon: 'people_alt',    to: '/clientes',  roles: ['admin','lojista','representante'] },
+      { label: 'Dashboard',    icon: 'dashboard',    to: '/dashboard', roles: ['admin','lojista','representante','cliente'] },
+      { label: 'Pedidos',      icon: 'receipt_long', to: '/pedidos',   roles: ['admin','lojista','representante'] },
+      { label: 'Meus Pedidos', icon: 'receipt_long', to: '/pedidos',   roles: ['cliente'] },
+      { label: 'Clientes',     icon: 'people_alt',   to: '/clientes',  roles: ['admin','lojista','representante'] },
     ],
   },
   {
     key: 'admin',
     label: 'Administração',
-    roles: ['admin'],
     items: [
-      { label: 'Lojistas',        icon: 'storefront',          to: '/lojistas',      roles: ['admin'] },
-      { label: 'Representantes',  icon: 'badge',               to: '/representantes',roles: ['admin'] },
-      { label: 'Administradores', icon: 'admin_panel_settings',to: '/admins',        roles: ['admin'] },
-      { label: 'Status de Pedido',icon: 'label',               to: '/status-pedido', roles: ['admin'] },
+      { label: 'Lojistas',         icon: 'storefront',           to: '/lojistas',       roles: ['admin'] },
+      { label: 'Representantes',   icon: 'badge',                to: '/representantes', roles: ['admin'] },
+      { label: 'Administradores',  icon: 'admin_panel_settings', to: '/admins',         roles: ['admin'] },
+      { label: 'Status de Pedido', icon: 'label',                to: '/status-pedido',  roles: ['admin'] },
     ],
   },
 ]
@@ -370,10 +364,7 @@ const allMenu = [
 const visibleMenu = computed(() => {
   const tipo = authStore.userTipo
   return allMenu
-    .map(section => ({
-      ...section,
-      items: section.items.filter(i => i.roles.includes(tipo)),
-    }))
+    .map(s => ({ ...s, items: s.items.filter(i => i.roles.includes(tipo)) }))
     .filter(s => s.items.length > 0)
 })
 
@@ -382,49 +373,59 @@ const allItems = allMenu.flatMap(s => s.items)
 
 const currentPage = computed(() => {
   const match = allItems.find(i => route.path.startsWith(i.to) && i.to !== '/')
-  if (match) return match
+  if (match)               return match
   if (route.path === '/perfil') return { label: 'Meu Perfil', icon: 'manage_accounts' }
-  return { label: 'Horus', icon: 'home' }
+  return { label: 'Artezza', icon: 'home' }
 })
 
-// ── Notificações (mock) ────────────────────────────────────────────
-const notifications = [
-  { id: 1, title: 'Novo pedido recebido',    time: 'há 5 min',  icon: 'receipt_long',  color: 'orange' },
-  { id: 2, title: 'Cliente cadastrado',       time: 'há 22 min', icon: 'person_add',    color: 'teal'   },
-]
+// ── Timer de sessão REGRESSIVO ─────────────────────────────────────
+const SESSION_DURATION = 1 * 60 * 60 // 1 hora em segundos
 
-// ── Timer de sessão ────────────────────────────────────────────────
-const sessionTime    = ref('00:00:00')
-const sessionWarning = ref(false)
-let timerInterval    = null
+const sessionTimeLeft = ref('08:00:00')
+const sessionWarning  = ref(false) // < 30 min
+const sessionUrgent   = ref(false) // < 5 min
+let   timerInterval   = null
 
-function startSessionTimer() {
+function tickSession() {
   const loginTs = parseInt(localStorage.getItem('horus_login_ts') || '0')
-  if (!loginTs) {
-    localStorage.setItem('horus_login_ts', Date.now().toString())
+  if (!loginTs) return
+
+  const elapsed   = Math.floor((Date.now() - loginTs) / 1000)
+  const remaining = SESSION_DURATION - elapsed
+
+  if (remaining <= 0) {
+    // Sessão expirou — desloga automaticamente
+    clearInterval(timerInterval)
+    $q.notify({ type: 'negative', message: 'Sua sessão expirou. Faça login novamente.' })
+    authStore.logout()
+    router.push('/login')
+    return
   }
 
-  timerInterval = setInterval(() => {
-    const start   = parseInt(localStorage.getItem('horus_login_ts') || Date.now().toString())
-    const elapsed = Math.floor((Date.now() - start) / 1000)
+  const h = String(Math.floor(remaining / 3600)).padStart(2, '0')
+  const m = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0')
+  const s = String(remaining % 60).padStart(2, '0')
 
-    const h = String(Math.floor(elapsed / 3600)).padStart(2, '0')
-    const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0')
-    const s = String(elapsed % 60).padStart(2, '0')
+  sessionTimeLeft.value = `${h}:${m}:${s}`
+  sessionWarning.value  = remaining < 30 * 60  // últimos 30 min → amarelo
+  sessionUrgent.value   = remaining < 5  * 60  // últimos 5 min  → vermelho
+}
 
-    sessionTime.value    = `${h}:${m}:${s}`
-    sessionWarning.value = elapsed > 3600 * 8 // aviso após 8h
-  }, 1000)
+function toggleMobileDrawer() {
+  if (!drawerOpen.value) {
+    isCollapsed.value = false // sempre abre expandido no mobile
+  }
+  drawerOpen.value = !drawerOpen.value
 }
 
 // ── Logout ─────────────────────────────────────────────────────────
 function handleLogout() {
   $q.dialog({
-    title: 'Encerrar sessão',
+    title:   'Encerrar sessão',
     message: 'Deseja realmente sair do sistema?',
-    dark: isDark.value,
-    cancel: { label: 'Cancelar', flat: true },
-    ok:     { label: 'Sair',     color: 'negative', unelevated: true },
+    dark:    isDark.value,
+    cancel:  { label: 'Cancelar', flat: true },
+    ok:      { label: 'Sair', color: 'negative', unelevated: true },
   }).onOk(() => {
     clearInterval(timerInterval)
     localStorage.removeItem('horus_login_ts')
@@ -433,19 +434,23 @@ function handleLogout() {
   })
 }
 
-// ── Lifecycle ──────────────────────────────────────────────────────
 onMounted(() => {
-  // Restaurar estado do sidebar
-  const saved = localStorage.getItem('horus_sidebar')
-  if (saved === '1') isCollapsed.value = true
+  const savedSidebar = localStorage.getItem('horus_sidebar')
+  if (savedSidebar === '1') isCollapsed.value = true
 
-  // Iniciar timer
-  startSessionTimer()
+  // Dark mode como padrão
+  const savedTheme = localStorage.getItem('horus_dark')
+  if (savedTheme === null) {
+    $q.dark.set(true)
+  } else {
+    $q.dark.set(savedTheme === '1')
+  }
+
+  tickSession()
+  timerInterval = setInterval(tickSession, 1000)
 })
 
-onUnmounted(() => {
-  clearInterval(timerInterval)
-})
+onUnmounted(() => clearInterval(timerInterval))
 </script>
 
 <style scoped>
@@ -453,50 +458,116 @@ onUnmounted(() => {
    LAYOUT BASE
    ══════════════════════════════════════════════ */
 .layout-dark  { background: #0d1117 !important; }
-.layout-light { background: #f0f2f5 !important; }
+.layout-light { background: #dde1e8 !important; }
 
 .page-dark  { background: #0d1117; }
-.page-light { background: #f0f2f5; }
+.page-light { background: #dde1e8; }
 
 /* ══════════════════════════════════════════════
    SIDEBAR
    ══════════════════════════════════════════════ */
-.sidebar-dark  { background: #161b22 !important; border-right: 1px solid rgba(255,255,255,.06) !important; }
-.sidebar-light { background: #ffffff !important; border-right: 1px solid #e5e7eb !important; }
+.sidebar-dark  {
+  background: #161b22 !important;
+  border-right: 1px solid rgba(255,255,255,.06) !important;
+}
+.sidebar-light {
+  background: #c8cdd6 !important;
+  border-right: 1px solid rgba(0,0,0,.1) !important;
+}
 
 .sidebar-inner {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  transition: all .22s ease;
 }
 
-/* ── Brand ── */
+/* ── Brand + Hambúrguer ── */
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 20px 16px 18px;
+  gap: 10px;
+  padding: 16px 14px;
   flex-shrink: 0;
-  transition: all .22s ease;
 }
 .sidebar-brand--collapsed {
   justify-content: center;
-  padding: 20px 0 18px;
+  padding: 16px 0;
 }
 
 .brand-icon {
-  width: 40px; height: 40px;
-  border-radius: 11px;
+  width: 38px; height: 38px;
+  border-radius: 10px;
   background: rgba(255,123,0,.15);
   border: 1px solid rgba(255,123,0,.3);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.brand-text { display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
-.brand-name { font-size: 16px; font-weight: 900; letter-spacing: 4px; color: #ff7b00; line-height: 1; white-space: nowrap; }
-.brand-sub  { font-size: 9.5px; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,.35); white-space: nowrap; }
+.brand-text {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 1px;
+  overflow: hidden;
+  min-width: 0;
+}
+.brand-name { font-size: 15px; font-weight: 900; letter-spacing: 4px; color: #ff7b00; line-height: 1; white-space: nowrap; }
+.brand-sub  {
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  white-space: nowrap;
+}
+
+/* Tema claro */
+.sidebar-light .brand-sub {
+  color: rgba(0,0,0,.55);
+}
+
+/* ── Hambúrguer ── */
+.hamburger-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.hamburger-btn:hover {
+  background: rgba(255,255,255,.08);
+}
+.hamburger-btn--solo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.hb-line {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: rgba(255,255,255,.55);
+  border-radius: 2px;
+  transition: all .2s ease;
+  flex-shrink: 0;
+}
+.hb-line--mid {
+  width: 13px; /* linha do meio mais curta → remete a "recolhido" */
+}
+.hamburger-btn:hover .hb-line {
+  background: rgba(255,255,255,.9);
+}
+
+/* Light mode: linhas escuras */
+.sidebar-light .hb-line { background: rgba(0,0,0,.45); }
+.sidebar-light .hamburger-btn:hover .hb-line { background: rgba(0,0,0,.8); }
 
 /* ── Separador ── */
 .sidebar-sep {
@@ -505,33 +576,44 @@ onUnmounted(() => {
   margin: 0 12px;
   flex-shrink: 0;
 }
-.sidebar-light .sidebar-sep { background: #e5e7eb; }
+.sidebar-light .sidebar-sep { background: rgba(0,0,0,.1); }
 
 /* ── Perfil ── */
 .sidebar-profile {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   flex-shrink: 0;
-  transition: all .22s ease;
 }
 .sidebar-profile--collapsed {
   justify-content: center;
-  padding: 14px 0;
+  padding: 12px 0;
 }
-.profile-av { flex-shrink: 0; }
-.profile-info { overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
-.profile-name { font-size: 13px; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Avatar perfil — div customizada para centralização perfeita */
+.profile-av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.profile-av span {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .5px;
+}
+
+.profile-info { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+.profile-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .profile-role { font-size: 11px; font-weight: 600; white-space: nowrap; }
 
-/* ── Scroll area ── */
-.sidebar-scroll {
-  flex: 1;
-  min-height: 0;
-}
-
 /* ── Navegação ── */
+.sidebar-scroll { flex: 1; min-height: 0; }
 .nav-list { padding: 8px; display: flex; flex-direction: column; gap: 1px; }
 
 .nav-section-label {
@@ -556,17 +638,13 @@ onUnmounted(() => {
   overflow: hidden;
   position: relative;
 }
-.nav-item--collapsed {
-  justify-content: center;
-  padding: 10px 0;
-}
+.nav-item--collapsed { justify-content: center; padding: 10px 0; }
 
-/* ── States ── */
-.nav-item--dark  { color: rgba(255,255,255,.55); }
-.nav-item--light { color: #555; }
+.nav-item--dark  { color: rgba(255,255,255,.5); }
+.nav-item--light { color: #2c333d; }
 
-.nav-item--dark:hover  { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
-.nav-item--light:hover { background: rgba(0,0,0,.05); color: #111; }
+.nav-item--dark:hover  { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
+.nav-item--light:hover { background: rgba(0,0,0,.08); color: #111; }
 
 .nav-item--active {
   background: rgba(255,123,0,.15) !important;
@@ -583,89 +661,111 @@ onUnmounted(() => {
 }
 .nav-item--collapsed.nav-item--active::before { display: none; }
 
-/* ── Ícone e label ── */
 .nav-item__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; flex-shrink: 0;
 }
 .nav-item__label {
-  font-size: 13.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
+  font-size: 13.5px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; flex: 1;
 }
-
-/* ── Footer sidebar ── */
-.sidebar-footer { flex-shrink: 0; padding: 0 8px 12px; }
-.nav-item--collapse { color: rgba(255,255,255,.3) !important; }
-.nav-item--collapse:hover { color: rgba(255,255,255,.7) !important; background: rgba(255,255,255,.04) !important; }
 
 /* ══════════════════════════════════════════════
    TOPBAR
    ══════════════════════════════════════════════ */
-.topbar-dark  {
+.topbar-dark {
   background: #161b22 !important;
   border-bottom: 1px solid rgba(255,255,255,.06) !important;
   box-shadow: none !important;
 }
 .topbar-light {
-  background: #ffffff !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+  background: #eef1f5 !important;
+  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,.05) !important;
 }
 
 .topbar-toolbar { padding: 0 16px; min-height: 54px; }
 
 .topbar-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: .2px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 15px; font-weight: 700; letter-spacing: .2px;
   margin-left: 4px;
 }
 
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.topbar-btn { transition: background .15s; }
+.topbar-right { display: flex; align-items: center; gap: 2px; }
+.topbar-btn   { transition: background .15s; }
 
-/* ── Session timer ── */
+/* ── Timer de sessão ── */
 .session-timer {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: 8px;
-  margin-right: 4px;
+  margin-right: 6px;
+  transition: background .3s;
 }
-.session-timer--dark  { background: rgba(255,255,255,.05); }
-.session-timer--light { background: rgba(0,0,0,.05); }
-.session-timer span   { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+.session-timer--dark    { background: rgba(255,255,255,.06); }
+.session-timer--light   { background: rgba(0,0,0,.1); }
+.session-timer--urgent  { animation: pulse-urgent 1s infinite; }
 
-/* ── Notificações ── */
-.notif-item { transition: background .15s; }
-.user-menu-header { padding-top: 12px; padding-bottom: 10px; }
-.menu-action-item { transition: background .15s; min-height: 46px; }
+@keyframes pulse-urgent {
+  0%, 100% { background: rgba(229,57,53,.15); }
+  50%       { background: rgba(229,57,53,.3); }
+}
+
+.session-timer span {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .5px;
+}
+
+/* ── Avatar topbar ── */
+.topbar-av {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.topbar-av span {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .5px;
+}
+
+/* ── Menu do usuário ── */
+.user-menu-head { border-bottom: none; }
+.user-menu-av-wrap {
+  display: flex; align-items: center; gap: 10px;
+}
+.user-menu-av {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.user-menu-av span {
+  font-size: 15px; font-weight: 800; line-height: 1; letter-spacing: .5px;
+}
+.user-menu-info { display: flex; flex-direction: column; }
+.role-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .5px; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 4px;
+}
+
+.menu-item { transition: background .12s; min-height: 44px; }
 
 /* ══════════════════════════════════════════════
-   TRANSIÇÃO DE PÁGINA
+   TRANSIÇÕES
    ══════════════════════════════════════════════ */
 .page-fade-enter-active,
 .page-fade-leave-active { transition: opacity .16s ease, transform .16s ease; }
 .page-fade-enter-from   { opacity: 0; transform: translateY(5px); }
 .page-fade-leave-to     { opacity: 0; transform: translateY(-5px); }
 
-/* ══════════════════════════════════════════════
-   TRANSIÇÃO DE TEXTO DO SIDEBAR
-   ══════════════════════════════════════════════ */
 .fade-text-enter-active,
 .fade-text-leave-active { transition: opacity .15s ease; }
 .fade-text-enter-from,
