@@ -48,37 +48,26 @@
             em <span class="headline__accent">realidade.</span>
           </h1>
           <p class="headline__sub">
-            Gerencie pedidos, clientes e parceiros<br />em um único lugar.
+            Seu sonho merece planejamento, <br>dedicação e excelência em cada detalhe.
           </p>
         </div>
 
         <!-- ── Card flutuante: stats fictícias ── -->
         <div class="stat-card">
           <div class="stat-card__item">
-            <span class="stat-card__num">1.284</span>
-            <span class="stat-card__lbl">Pedidos este mês</span>
+            <span class="stat-card__num">+ 30</span>
+            <span class="stat-card__lbl">Anos <br>no Mercado </span>
           </div>
           <div class="stat-card__divider" />
           <div class="stat-card__item">
-            <span class="stat-card__num">97%</span>
-            <span class="stat-card__lbl">Entregas no prazo</span>
+            <span class="stat-card__num">5</span>
+            <span class="stat-card__lbl">Países <br>Atendidos</span>
           </div>
           <div class="stat-card__divider" />
           <div class="stat-card__item">
-            <span class="stat-card__num">348</span>
-            <span class="stat-card__lbl">Clientes ativos</span>
+            <span class="stat-card__num">+ 10k</span>
+            <span class="stat-card__lbl">Pedidos Entregues</span>
           </div>
-        </div>
-
-        <!-- ── Avatares de "usuários online" ── -->
-        <div class="online-row">
-          <div class="avatars">
-            <div class="av" style="background:#e91e63">M</div>
-            <div class="av" style="background:#1976d2">R</div>
-            <div class="av" style="background:#388e3c">C</div>
-            <div class="av" style="background:#7b1fa2">T</div>
-          </div>
-          <span class="online-txt">+12 usuários online agora</span>
         </div>
 
       </div>
