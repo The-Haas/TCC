@@ -754,6 +754,7 @@ onUnmounted(() => clearInterval(timerInterval))
   font-size: 10px; font-weight: 700;
   letter-spacing: .5px; text-transform: uppercase;
   padding: 2px 7px; border-radius: 4px;
+  text-align: center;
 }
 
 .menu-item { transition: background .12s; min-height: 44px; }
