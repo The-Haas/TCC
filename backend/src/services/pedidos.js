@@ -262,6 +262,199 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
   }
 }
 
+// ==============================
+// GET — listar todos os pedidos
+// ==============================
+async function getPedidos() {
+  const { rows } = await db.query(
+    `SELECT
+       p.id,
+       p.nome_projeto,
+       p.valor,
+       p.data_pedido,
+       p.enviado_por,
+       c.nome    AS cliente,
+       l.nome    AS lojista,
+       r.nome    AS representante,
+       sp.descricao AS status
+     FROM pedidos p
+     LEFT JOIN clientes      c  ON c.id  = p.id_cliente
+     LEFT JOIN lojistas      l  ON l.id  = p.id_lojista
+     LEFT JOIN representantes r  ON r.id  = l.id_representante
+     LEFT JOIN status_pedido sp ON sp.id = p.id_status
+     ORDER BY p.data_pedido DESC`
+  );
+  return rows;
+}
+
+// ==============================
+// GET — pedido por ID (com itens e componentes)
+// ==============================
+async function getPedidoById(id) {
+  const pedido = (await db.query(
+    `SELECT
+       p.*,
+       c.nome    AS cliente,
+       l.nome    AS lojista,
+       r.nome    AS representante,
+       sp.descricao AS status
+     FROM pedidos p
+     LEFT JOIN clientes      c  ON c.id  = p.id_cliente
+     LEFT JOIN lojistas      l  ON l.id  = p.id_lojista
+     LEFT JOIN representantes r  ON r.id  = l.id_representante
+     LEFT JOIN status_pedido sp ON sp.id = p.id_status
+     WHERE p.id = $1`,
+    [id]
+  )).rows[0];
+
+  if (!pedido) return null;
+
+  const itens = (await db.query(
+    `SELECT
+       i.id,
+       i.descricao_item,
+       i.quantidade_item,
+       COALESCE(
+         json_agg(ci.nome_componente) FILTER (WHERE ci.id IS NOT NULL),
+         '[]'
+       ) AS componentes
+     FROM itens_pedido i
+     LEFT JOIN componentes_itens ci ON ci.id_item = i.id
+     WHERE i.id_pedido = $1
+     GROUP BY i.id`,
+    [id]
+  )).rows;
+
+  return { ...pedido, itens };
+}
+
+// ==============================
+// PUT — atualizar pedido completo
+// ==============================
+async function putPedido(id, dados) {
+  const { nome_projeto, valor, id_cliente, id_lojista, id_status, data_previsao_pedido } = dados;
+
+  // ==============================
+  // VALIDAÇÕES
+  // ==============================
+  const lojista = (await db.query(
+    `SELECT id FROM lojistas WHERE id = $1`, [id_lojista]
+  )).rows[0];
+  if (!lojista) throw new Error("Lojista não encontrado");
+
+  const cliente = (await db.query(
+    `SELECT id FROM clientes WHERE id = $1`, [id_cliente]
+  )).rows[0];
+  if (!cliente) throw new Error("Cliente não encontrado");
+
+  const status = (await db.query(
+    `SELECT id FROM status_pedido WHERE id = $1`, [id_status]
+  )).rows[0];
+  if (!status) throw new Error("Status não encontrado");
+
+  // ==============================
+  // ATUALIZAÇÃO
+  // ==============================
+  const { rows } = await db.query(
+    `UPDATE pedidos
+     SET nome_projeto          = $1,
+         valor                 = $2,
+         id_cliente            = $3,
+         id_lojista            = $4,
+         id_status             = $5,
+         data_previsao_pedido  = $6
+     WHERE id = $7
+     RETURNING *`,
+    [nome_projeto, valor, id_cliente, id_lojista, id_status, data_previsao_pedido || null, id]
+  );
+
+  return rows[0] || null;
+}
+
+// ==============================
+// PATCH — atualizar pedido parcial
+// ==============================
+async function patchPedido(id, dados) {
+  const camposPermitidos = ["nome_projeto", "valor", "id_cliente", "id_lojista", "id_status", "data_previsao_pedido"];
+
+  // ==============================
+  // VALIDAÇÕES — só valida se o campo vier no body
+  // ==============================
+  if (dados.id_lojista !== undefined) {
+    const lojista = (await db.query(
+      `SELECT id FROM lojistas WHERE id = $1`, [dados.id_lojista]
+    )).rows[0];
+    if (!lojista) throw new Error("Lojista não encontrado");
+  }
+
+  if (dados.id_cliente !== undefined) {
+    const cliente = (await db.query(
+      `SELECT id FROM clientes WHERE id = $1`, [dados.id_cliente]
+    )).rows[0];
+    if (!cliente) throw new Error("Cliente não encontrado");
+  }
+
+  if (dados.id_status !== undefined) {
+    const status = (await db.query(
+      `SELECT id FROM status_pedido WHERE id = $1`, [dados.id_status]
+    )).rows[0];
+    if (!status) throw new Error("Status não encontrado");
+  }
+
+  // ==============================
+  // ATUALIZAÇÃO
+  // ==============================
+  const updates = [];
+  const values = [];
+  let i = 1;
+
+  for (const campo of camposPermitidos) {
+    if (dados[campo] !== undefined) {
+      updates.push(`${campo} = $${i}`);
+      values.push(dados[campo]);
+      i++;
+    }
+  }
+
+  if (updates.length === 0) throw new Error("Nenhum campo válido para atualizar");
+
+  values.push(id);
+
+  const { rows } = await db.query(
+    `UPDATE pedidos SET ${updates.join(", ")} WHERE id = $${i} RETURNING *`,
+    values
+  );
+
+  return rows[0] || null;
+}
+
+// ==============================
+// DELETE — remover pedido
+// ==============================
+async function deletePedido(id) {
+  // Remove componentes → itens → pedido (caso não tenha CASCADE no banco)
+  const itens = (await db.query(
+    `SELECT id FROM itens_pedido WHERE id_pedido = $1`, [id]
+  )).rows;
+
+  for (const item of itens) {
+    await db.query(`DELETE FROM componentes_itens WHERE id_item = $1`, [item.id]);
+  }
+
+  await db.query(`DELETE FROM itens_pedido WHERE id_pedido = $1`, [id]);
+
+  const { rows } = await db.query(
+    `DELETE FROM pedidos WHERE id = $1 RETURNING id`, [id]
+  );
+
+  return rows[0] || null;
+}
+
 module.exports = {
-  postImportaxml
+  postImportaxml,
+  getPedidos,
+  getPedidoById,
+  putPedido,
+  patchPedido,
+  deletePedido,
 };

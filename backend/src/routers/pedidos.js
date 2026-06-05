@@ -15,4 +15,9 @@ module.exports = (app) => {
 
     // Quando é acessada 
     app.post('/importaxml', autenticarToken, upload.array('xml'), controller.postImportarXml);
+    app.get('/pedidos', controller.getListaPedidos);
+    app.get('/pedidos/:id', controller.getPedidoPorId);
+    app.put('/pedidos/:id', controller.putPedidoController);
+    app.patch('/pedidos/:id', controller.patchPedidoController);
+    app.delete('/pedidos/:id', controller.deletePedidoController);
 };
