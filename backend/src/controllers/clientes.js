@@ -11,7 +11,10 @@ async function postCliente(req, res) {
 }
 
 async function getClientes(req, res) {
-    const resultado = await clienteService.getClientes();
+    // req.filtroLojista vem do middleware:
+    // null  → admin, busca todos
+    // number → lojista, busca só os seus (via pedidos)
+    const resultado = await clienteService.getClientes(req.filtroLojista);
 
     if (resultado.success) {
         res.status(200).json(resultado.clientes);

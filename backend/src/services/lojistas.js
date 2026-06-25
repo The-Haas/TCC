@@ -56,16 +56,30 @@ async function postLojista(dados) {
     }
 }
 
-async function getLojistas() {
+async function getLojistas(filtroRepresentante = null) {
     try {
-        const result = await db.query(`
+        let query = `
             SELECT l.id, l.nome, l.email, l.telefone, l.id_representante, r.nome AS nome_representante,
                    l.created_at, l.updated_at
             FROM lojistas l
             JOIN representantes r ON l.id_representante = r.id
             ORDER BY l.id ASC
-        `);
+        `;
+        const params = [];
 
+        if (filtroRepresentante) {
+            query = `
+                SELECT l.id, l.nome, l.email, l.telefone, l.id_representante, r.nome AS nome_representante,
+                       l.created_at, l.updated_at
+                FROM lojistas l
+                JOIN representantes r ON l.id_representante = r.id
+                WHERE l.id_representante = $1
+                ORDER BY l.id ASC
+            `;
+            params.push(filtroRepresentante);
+        }
+
+        const result = await db.query(query, params);
         return { success: true, lojistas: result.rows };
 
     } catch (error) {

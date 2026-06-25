@@ -9,7 +9,6 @@ async function postImportarXml(req, res) {
         });
     }
 
-    // Valida todos os arquivos antes de processar qualquer um
     for (const file of req.files) {
         if (file.mimetype !== 'text/xml' && file.mimetype !== 'application/xml') {
             return res.status(400).json({
@@ -26,7 +25,6 @@ async function postImportarXml(req, res) {
         }
     }
 
-    // Processa cada arquivo individualmente
     const resultados = [];
 
     for (const file of req.files) {
@@ -65,91 +63,81 @@ async function postImportarXml(req, res) {
     });
 }
 
-// ==============================
-// GET — listar todos
-// ==============================
 async function getListaPedidos(req, res) {
-  try {
-    const pedidos = await service.getPedidos();
-    return res.status(200).json({ success: true, data: pedidos });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
+    try {
+        // req.filtroPedidos vem do middleware:
+        //   null                          → admin, sem restrição
+        //   { tipo: 'lojista', id }       → pedidos do lojista
+        //   { tipo: 'representante', id } → pedidos dos lojistas do representante
+        //   { tipo: 'cliente', id }       → pedidos do cliente
+        const pedidos = await service.getPedidos(req.filtroPedidos);
+        return res.status(200).json({ success: true, data: pedidos });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
 }
 
-// ==============================
-// GET — por ID
-// ==============================
 async function getPedidoPorId(req, res) {
-  try {
-    const pedido = await service.getPedidoById(req.params.id);
+    try {
+        const pedido = await service.getPedidoById(req.params.id);
 
-    if (!pedido) {
-      return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        if (!pedido) {
+            return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        }
+
+        return res.status(200).json({ success: true, data: pedido });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
-
-    return res.status(200).json({ success: true, data: pedido });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
 }
 
-// ==============================
-// PUT — atualizar completo
-// ==============================
 async function putPedidoController(req, res) {
-  try {
-    const pedido = await service.putPedido(req.params.id, req.body);
+    try {
+        const pedido = await service.putPedido(req.params.id, req.body);
 
-    if (!pedido) {
-      return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        if (!pedido) {
+            return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        }
+
+        return res.status(200).json({ success: true, data: pedido });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
-
-    return res.status(200).json({ success: true, data: pedido });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
 }
 
-// ==============================
-// PATCH — atualizar parcial
-// ==============================
 async function patchPedidoController(req, res) {
-  try {
-    const pedido = await service.patchPedido(req.params.id, req.body);
+    try {
+        const pedido = await service.patchPedido(req.params.id, req.body);
 
-    if (!pedido) {
-      return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        if (!pedido) {
+            return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        }
+
+        return res.status(200).json({ success: true, data: pedido });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
     }
-
-    return res.status(200).json({ success: true, data: pedido });
-  } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
 }
 
-// ==============================
-// DELETE
-// ==============================
 async function deletePedidoController(req, res) {
-  try {
-    const pedido = await service.deletePedido(req.params.id);
+    try {
+        const pedido = await service.deletePedido(req.params.id);
 
-    if (!pedido) {
-      return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        if (!pedido) {
+            return res.status(404).json({ success: false, message: "Pedido não encontrado" });
+        }
+
+        return res.status(200).json({ success: true, message: "Pedido removido com sucesso" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
-
-    return res.status(200).json({ success: true, message: "Pedido removido com sucesso" });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
 }
 
 module.exports = {
-  postImportarXml,
-  getListaPedidos,
-  getPedidoPorId,
-  putPedidoController,
-  patchPedidoController,
-  deletePedidoController,
+    postImportarXml,
+    getListaPedidos,
+    getPedidoPorId,
+    putPedidoController,
+    patchPedidoController,
+    deletePedidoController,
 };

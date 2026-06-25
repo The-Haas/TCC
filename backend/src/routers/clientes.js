@@ -1,10 +1,12 @@
 const clienteController = require('../controllers/clientes');
+const autenticarToken = require('../middlewares/auth');
+const { apenasAdmin, apenasAdminOuLojista, filtrarListagemClientes, verificarAcessoClientePorId } = require('../middlewares/clientes');
 
 module.exports = (app) => {
-    app.post('/clientes', clienteController.postCliente);
-    app.get('/clientes', clienteController.getClientes);
-    app.get('/clientes/:id', clienteController.getClienteById);
-    app.put('/clientes/:id', clienteController.putCliente);
-    app.patch('/clientes/:id', clienteController.patchCliente);
-    app.delete('/clientes/:id', clienteController.deleteCliente);
+    app.post('/clientes',      autenticarToken, apenasAdmin,            clienteController.postCliente);
+    app.get('/clientes',       autenticarToken, filtrarListagemClientes, clienteController.getClientes);
+    app.get('/clientes/:id',   autenticarToken, verificarAcessoClientePorId,                             clienteController.getClienteById);
+    app.put('/clientes/:id',   autenticarToken, apenasAdminOuLojista,   verificarAcessoClientePorId,     clienteController.putCliente);
+    app.patch('/clientes/:id', autenticarToken, apenasAdminOuLojista,   verificarAcessoClientePorId,     clienteController.patchCliente);
+    app.delete('/clientes/:id',autenticarToken, apenasAdminOuLojista,   verificarAcessoClientePorId,     clienteController.deleteCliente);
 };

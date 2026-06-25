@@ -11,7 +11,8 @@ async function postLojista(req, res) {
 }
 
 async function getLojistas(req, res) {
-    const resultado = await lojistasService.getLojistas();
+    // ← passa o filtro injetado pelo middleware (null = admin, id = representante)
+    const resultado = await lojistasService.getLojistas(req.filtroRepresentante);
 
     if (resultado.success) {
         res.status(200).json(resultado.lojistas);
@@ -33,6 +34,12 @@ async function getLojistaById(req, res) {
 
 async function putLojista(req, res) {
     const { id } = req.params;
+
+    // ← Lojista não pode trocar o próprio id_representante
+    if (req.user.tipo === 'lojista') {
+        delete req.body.id_representante;
+    }
+
     const resultado = await lojistasService.putLojista(id, req.body);
 
     if (resultado.success) {
@@ -44,6 +51,12 @@ async function putLojista(req, res) {
 
 async function patchLojista(req, res) {
     const { id } = req.params;
+
+    // ← Lojista não pode trocar o próprio id_representante
+    if (req.user.tipo === 'lojista') {
+        delete req.body.id_representante;
+    }
+
     const resultado = await lojistasService.patchLojista(id, req.body);
 
     if (resultado.success) {

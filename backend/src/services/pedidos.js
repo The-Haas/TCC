@@ -3,16 +3,16 @@ const xml2js = require('xml2js');
 
 const parser = new xml2js.Parser({ explicitArray: false });
 
-// Função interna
 function escape(str) {
   return String(str || "").replace(/'/g, "''");
 }
 
+// ==============================
+// POST — importar XML
+// (sem alterações — a validação de perfil já está no service)
+// ==============================
 async function postImportaxml(xmlString, user, idLojistaBody) {
   try {
-    // ==============================
-    // 1) LER XML
-    // ==============================
     const result = await parser.parseStringPromise(xmlString);
 
     if (!result?.LISTING?.CUSTOMERSDATA?.DATA) {
@@ -25,18 +25,14 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const getDataById = (id) =>
       dados.find(d => d.$.ID === id)?.$.VALUE || "";
 
-    // Nome e telefone são obrigatórios
     if (!getDataById("nomecliente") || !getDataById("celular")) {
       throw new Error("XML inválido: campos 'nomecliente' e 'celular' são obrigatórios");
     }
 
-    // ==============================
-    // 2) DADOS DO CLIENTE
-    // ==============================
     const clienteXML = {
       nome: escape(getDataById("nomecliente")),
       razao_social: escape(getDataById("corporateName")),
-      cpf_cnpj: escape(getDataById("cpfcnpj")),       // pode vir vazio
+      cpf_cnpj: escape(getDataById("cpfcnpj")),
       email: escape(getDataById("email")),
       telefone: escape(getDataById("celular")),
       endereco: escape(getDataById("endereco")),
@@ -48,11 +44,6 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
       endereco_entrega: escape(getDataById("endentrega")),
     };
 
-    // ==============================
-    // 3) BUSCAR OU CRIAR CLIENTE
-    // ==============================
-
-    // Monta a busca de forma dinâmica para evitar match indevido em campos vazios
     let clienteBD = null;
 
     if (clienteXML.cpf_cnpj && clienteXML.email) {
@@ -60,13 +51,11 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
         `SELECT * FROM clientes WHERE cpf_cnpj = $1 OR email = $2 LIMIT 1`,
         [clienteXML.cpf_cnpj, clienteXML.email]
       )).rows[0];
-
     } else if (clienteXML.cpf_cnpj) {
       clienteBD = (await db.query(
         `SELECT * FROM clientes WHERE cpf_cnpj = $1 LIMIT 1`,
         [clienteXML.cpf_cnpj]
       )).rows[0];
-
     } else if (clienteXML.email) {
       clienteBD = (await db.query(
         `SELECT * FROM clientes WHERE email = $1 LIMIT 1`,
@@ -83,25 +72,16 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
         RETURNING *`,
         [
-          clienteXML.nome,
-          clienteXML.razao_social,
-          clienteXML.cpf_cnpj || null,
-          clienteXML.email || null,
-          clienteXML.telefone,
-          clienteXML.endereco || null,
-          clienteXML.numero || null,
-          clienteXML.bairro || null,
-          clienteXML.cidade || null,
-          clienteXML.uf || null,
-          clienteXML.cep || null,
-          clienteXML.endereco_entrega || null,
+          clienteXML.nome, clienteXML.razao_social,
+          clienteXML.cpf_cnpj || null, clienteXML.email || null,
+          clienteXML.telefone, clienteXML.endereco || null,
+          clienteXML.numero || null, clienteXML.bairro || null,
+          clienteXML.cidade || null, clienteXML.uf || null,
+          clienteXML.cep || null, clienteXML.endereco_entrega || null,
         ]
       );
-
       clienteBD = insertCliente.rows[0];
-
     } else {
-      // Atualiza apenas os campos que estão vazios no banco
       let updates = [];
       let values = [];
       let i = 1;
@@ -124,65 +104,42 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
       }
     }
 
-    // ==============================
-    // 4) VALIDAR LOJISTA
-    // ==============================
     let idLojistaFinal;
 
-    // 🔹 LOJISTA
     if (user.tipo === "lojista") {
-
       const lojista = (await db.query(
-        `SELECT * FROM lojistas WHERE id = $1`,
-        [user.id]
+        `SELECT * FROM lojistas WHERE id = $1`, [user.id]
       )).rows[0];
-
       if (!lojista) throw new Error("Lojista inválido");
-
       idLojistaFinal = lojista.id;
 
-      // 🔹 REPRESENTANTE
     } else if (user.tipo === "representante") {
-
       if (!idLojistaBody) throw new Error("É necessário informar o lojista");
-
       const lojista = (await db.query(
         `SELECT * FROM lojistas WHERE id = $1 AND id_representante = $2`,
         [idLojistaBody, user.id]
       )).rows[0];
-
       if (!lojista) throw new Error("Lojista não pertence a este representante ou não existe");
-
       idLojistaFinal = lojista.id;
 
-      // 🔹 ADMIN
     } else if (user.tipo === "admin") {
-
       if (!idLojistaBody) throw new Error("É necessário informar o lojista");
-
       const lojista = (await db.query(
-        `SELECT * FROM lojistas WHERE id = $1`,
-        [idLojistaBody]
+        `SELECT * FROM lojistas WHERE id = $1`, [idLojistaBody]
       )).rows[0];
-
       if (!lojista) throw new Error("Lojista não encontrado");
-
       idLojistaFinal = lojista.id;
 
     } else {
       throw new Error("Tipo de usuário não permitido");
     }
 
-    // ==============================
-    // 5) CRIAR PEDIDO
-    // ==============================
     const nomeProjeto = escape(getDataById("Environment") || "Projeto");
     const valorTotal = listing.TOTALPRICES?.$.TABLE || "0";
 
     const idRepresentanteEnviou = user.tipo === "representante" ? user.id : null;
     const idAdminEnviou = user.tipo === "admin" ? user.id : null;
 
-    // Busca o status padrão automaticamente
     const statusPadrao = (await db.query(
       `SELECT id FROM status_pedido WHERE padrao = true LIMIT 1`
     )).rows[0];
@@ -194,19 +151,15 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const pedidoResult = await db.query(
       `INSERT INTO pedidos
         (nome_projeto, valor, data_pedido, id_cliente, xml, id_lojista, enviado_por, id_representante_enviou, id_admin_enviou, id_status)
-     VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING id`,
+       VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
       [nomeProjeto, valorTotal, clienteBD.id, xmlString, idLojistaFinal, user.tipo, idRepresentanteEnviou, idAdminEnviou, statusPadrao.id]
     );
 
     const idPedido = pedidoResult.rows[0].id;
 
-    // ==============================
-    // 6) ITENS + COMPONENTES
-    // ==============================
     const ambientes = listing.AMBIENTS?.AMBIENT;
     const listaAmbientes = Array.isArray(ambientes) ? ambientes : [ambientes];
-
     const itensProjeto = [];
 
     listaAmbientes.forEach((amb) => {
@@ -247,8 +200,7 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
 
       for (const comp of item.componentes) {
         await db.query(
-          `INSERT INTO componentes_itens (nome_componente, id_item)
-           VALUES ($1, $2)`,
+          `INSERT INTO componentes_itens (nome_componente, id_item) VALUES ($1, $2)`,
           [comp, idItem]
         );
       }
@@ -263,9 +215,32 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
 }
 
 // ==============================
-// GET — listar todos os pedidos
+// GET — listar pedidos com filtro por perfil
+//
+// filtroPedidos = null                          → admin, sem restrição
+// filtroPedidos = { tipo: 'lojista', id }       → WHERE p.id_lojista = id
+// filtroPedidos = { tipo: 'representante', id } → WHERE l.id_representante = id
+// filtroPedidos = { tipo: 'cliente', id }       → WHERE p.id_cliente = id
 // ==============================
-async function getPedidos() {
+async function getPedidos(filtroPedidos = null) {
+  let whereClause = "";
+  const params = [];
+
+  if (filtroPedidos) {
+    const { tipo, id } = filtroPedidos;
+
+    if (tipo === "lojista") {
+      whereClause = "WHERE p.id_lojista = $1";
+      params.push(id);
+    } else if (tipo === "representante") {
+      whereClause = "WHERE l.id_representante = $1";
+      params.push(id);
+    } else if (tipo === "cliente") {
+      whereClause = "WHERE p.id_cliente = $1";
+      params.push(id);
+    }
+  }
+
   const { rows } = await db.query(
     `SELECT
        p.id,
@@ -278,17 +253,21 @@ async function getPedidos() {
        r.nome    AS representante,
        sp.descricao AS status
      FROM pedidos p
-     LEFT JOIN clientes      c  ON c.id  = p.id_cliente
-     LEFT JOIN lojistas      l  ON l.id  = p.id_lojista
+     LEFT JOIN clientes       c  ON c.id  = p.id_cliente
+     LEFT JOIN lojistas       l  ON l.id  = p.id_lojista
      LEFT JOIN representantes r  ON r.id  = l.id_representante
-     LEFT JOIN status_pedido sp ON sp.id = p.id_status
-     ORDER BY p.data_pedido DESC`
+     LEFT JOIN status_pedido  sp ON sp.id = p.id_status
+     ${whereClause}
+     ORDER BY p.data_pedido DESC`,
+    params
   );
+
   return rows;
 }
 
 // ==============================
 // GET — pedido por ID (com itens e componentes)
+// (sem alterações — o middleware já validou o acesso)
 // ==============================
 async function getPedidoById(id) {
   const pedido = (await db.query(
@@ -299,10 +278,10 @@ async function getPedidoById(id) {
        r.nome    AS representante,
        sp.descricao AS status
      FROM pedidos p
-     LEFT JOIN clientes      c  ON c.id  = p.id_cliente
-     LEFT JOIN lojistas      l  ON l.id  = p.id_lojista
+     LEFT JOIN clientes       c  ON c.id  = p.id_cliente
+     LEFT JOIN lojistas       l  ON l.id  = p.id_lojista
      LEFT JOIN representantes r  ON r.id  = l.id_representante
-     LEFT JOIN status_pedido sp ON sp.id = p.id_status
+     LEFT JOIN status_pedido  sp ON sp.id = p.id_status
      WHERE p.id = $1`,
     [id]
   )).rows[0];
@@ -329,40 +308,28 @@ async function getPedidoById(id) {
 }
 
 // ==============================
-// PUT — atualizar pedido completo
+// PUT — atualizar pedido completo (admin only)
 // ==============================
 async function putPedido(id, dados) {
   const { nome_projeto, valor, id_cliente, id_lojista, id_status, data_previsao_pedido } = dados;
 
-  // ==============================
-  // VALIDAÇÕES
-  // ==============================
-  const lojista = (await db.query(
-    `SELECT id FROM lojistas WHERE id = $1`, [id_lojista]
-  )).rows[0];
+  const lojista = (await db.query(`SELECT id FROM lojistas WHERE id = $1`, [id_lojista])).rows[0];
   if (!lojista) throw new Error("Lojista não encontrado");
 
-  const cliente = (await db.query(
-    `SELECT id FROM clientes WHERE id = $1`, [id_cliente]
-  )).rows[0];
+  const cliente = (await db.query(`SELECT id FROM clientes WHERE id = $1`, [id_cliente])).rows[0];
   if (!cliente) throw new Error("Cliente não encontrado");
 
-  const status = (await db.query(
-    `SELECT id FROM status_pedido WHERE id = $1`, [id_status]
-  )).rows[0];
+  const status = (await db.query(`SELECT id FROM status_pedido WHERE id = $1`, [id_status])).rows[0];
   if (!status) throw new Error("Status não encontrado");
 
-  // ==============================
-  // ATUALIZAÇÃO
-  // ==============================
   const { rows } = await db.query(
     `UPDATE pedidos
-     SET nome_projeto          = $1,
-         valor                 = $2,
-         id_cliente            = $3,
-         id_lojista            = $4,
-         id_status             = $5,
-         data_previsao_pedido  = $6
+     SET nome_projeto         = $1,
+         valor                = $2,
+         id_cliente           = $3,
+         id_lojista           = $4,
+         id_status            = $5,
+         data_previsao_pedido = $6
      WHERE id = $7
      RETURNING *`,
     [nome_projeto, valor, id_cliente, id_lojista, id_status, data_previsao_pedido || null, id]
@@ -372,38 +339,26 @@ async function putPedido(id, dados) {
 }
 
 // ==============================
-// PATCH — atualizar pedido parcial
+// PATCH — atualizar pedido parcial (admin only)
 // ==============================
 async function patchPedido(id, dados) {
   const camposPermitidos = ["nome_projeto", "valor", "id_cliente", "id_lojista", "id_status", "data_previsao_pedido"];
 
-  // ==============================
-  // VALIDAÇÕES — só valida se o campo vier no body
-  // ==============================
   if (dados.id_lojista !== undefined) {
-    const lojista = (await db.query(
-      `SELECT id FROM lojistas WHERE id = $1`, [dados.id_lojista]
-    )).rows[0];
+    const lojista = (await db.query(`SELECT id FROM lojistas WHERE id = $1`, [dados.id_lojista])).rows[0];
     if (!lojista) throw new Error("Lojista não encontrado");
   }
 
   if (dados.id_cliente !== undefined) {
-    const cliente = (await db.query(
-      `SELECT id FROM clientes WHERE id = $1`, [dados.id_cliente]
-    )).rows[0];
+    const cliente = (await db.query(`SELECT id FROM clientes WHERE id = $1`, [dados.id_cliente])).rows[0];
     if (!cliente) throw new Error("Cliente não encontrado");
   }
 
   if (dados.id_status !== undefined) {
-    const status = (await db.query(
-      `SELECT id FROM status_pedido WHERE id = $1`, [dados.id_status]
-    )).rows[0];
+    const status = (await db.query(`SELECT id FROM status_pedido WHERE id = $1`, [dados.id_status])).rows[0];
     if (!status) throw new Error("Status não encontrado");
   }
 
-  // ==============================
-  // ATUALIZAÇÃO
-  // ==============================
   const updates = [];
   const values = [];
   let i = 1;
@@ -429,13 +384,10 @@ async function patchPedido(id, dados) {
 }
 
 // ==============================
-// DELETE — remover pedido
+// DELETE — remover pedido (admin only)
 // ==============================
 async function deletePedido(id) {
-  // Remove componentes → itens → pedido (caso não tenha CASCADE no banco)
-  const itens = (await db.query(
-    `SELECT id FROM itens_pedido WHERE id_pedido = $1`, [id]
-  )).rows;
+  const itens = (await db.query(`SELECT id FROM itens_pedido WHERE id_pedido = $1`, [id])).rows;
 
   for (const item of itens) {
     await db.query(`DELETE FROM componentes_itens WHERE id_item = $1`, [item.id]);
