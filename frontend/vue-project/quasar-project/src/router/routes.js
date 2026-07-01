@@ -15,7 +15,7 @@ const routes = [
       { path: '', redirect: '/dashboard' },
       {
         path: 'dashboard',
-        component: () => import('pages/IndexPage.vue'), // será o Dashboard futuramente
+        component: () => import('pages/DashboardPage.vue'), // será o Dashboard futuramente
       },
     ],
   },

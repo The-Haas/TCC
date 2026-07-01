@@ -11,6 +11,15 @@ function autorizarPerfis(...perfisPermitidos) {
   };
 }
 
+// Suas regras antigas continuam aqui:
 const apenasAdmin = autorizarPerfis("admin");
+const apenasCliente = autorizarPerfis("cliente");
 
-module.exports = { apenasAdmin };
+// NOVA REGRA: Permite admin, cliente, lojista e representante
+const liberarLeituraStatus = autorizarPerfis("admin", "cliente", "lojista", "representante");
+
+module.exports = { 
+  apenasAdmin, 
+  apenasCliente, 
+  liberarLeituraStatus // Não esqueça de exportar a nova regra!
+};

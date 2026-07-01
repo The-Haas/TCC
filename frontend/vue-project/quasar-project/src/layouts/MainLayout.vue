@@ -679,7 +679,7 @@ onUnmounted(() => clearInterval(timerInterval))
   box-shadow: none !important;
 }
 .topbar-light {
-  background: #eef1f5 !important;
+  background: #fcfdfe !important;
   border-bottom: 1px solid rgba(0,0,0,.06) !important;
   box-shadow: 0 1px 6px rgba(0,0,0,.05) !important;
 }

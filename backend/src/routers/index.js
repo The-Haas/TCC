@@ -5,6 +5,7 @@ const representantesRoute = require('./representantes');
 const lojistasRoute = require('./lojistas');
 const adminsRoute = require('./admins');
 const statusPedidoRoute = require('./statusPedido');
+const dashboardRoute = require('./dashboard');
 
 module.exports = (app) => {
     importaxmlRoute(app);
@@ -14,4 +15,5 @@ module.exports = (app) => {
     lojistasRoute(app);
     adminsRoute(app);
     statusPedidoRoute(app);
+    dashboardRoute(app);
 }

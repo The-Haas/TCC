@@ -1,7 +1,8 @@
 const db = require('../config');
 
 async function postStatus(dados) {
-    const { descricao, cor, padrao } = dados;
+    // Adicionado 'ordem' na desestruturação
+    const { descricao, cor, padrao, ordem } = dados;
 
     try {
         if (!descricao) {
@@ -19,11 +20,12 @@ async function postStatus(dados) {
             );
         }
 
+        // Incluído o campo 'ordem' no INSERT
         const result = await db.query(
-            `INSERT INTO status_pedido (descricao, cor, padrao)
-             VALUES ($1, $2, $3)
+            `INSERT INTO status_pedido (descricao, cor, padrao, ordem)
+             VALUES ($1, $2, $3, $4)
              RETURNING *`,
-            [descricao, cor || '#000000', padrao || false]
+            [descricao, cor || '#000000', padrao || false, ordem !== undefined ? ordem : null]
         );
 
         return { success: true, message: 'Status criado com sucesso.', status: result.rows[0] };
@@ -36,8 +38,9 @@ async function postStatus(dados) {
 
 async function getStatus() {
     try {
+        // Alterado para ordenar por ordem (etapas da linha do tempo) e depois por ID
         const result = await db.query(
-            `SELECT * FROM status_pedido ORDER BY id ASC`
+            `SELECT * FROM status_pedido ORDER BY ordem ASC, id ASC`
         );
 
         return { success: true, status: result.rows };
@@ -68,7 +71,8 @@ async function getStatusById(id) {
 }
 
 async function putStatus(id, dados) {
-    const { descricao, cor, padrao } = dados;
+    // Adicionado 'ordem' na desestruturação
+    const { descricao, cor, padrao, ordem } = dados;
 
     try {
         const statusCheck = await db.query('SELECT * FROM status_pedido WHERE id = $1', [id]);
@@ -92,15 +96,17 @@ async function putStatus(id, dados) {
             );
         }
 
+        // Incluído o campo 'ordem' no UPDATE completo
         const result = await db.query(
             `UPDATE status_pedido
              SET descricao = $1,
                  cor = $2,
                  padrao = $3,
+                 ordem = $4,
                  updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4
+             WHERE id = $5
              RETURNING *`,
-            [descricao, cor || '#000000', padrao || false, id]
+            [descricao, cor || '#000000', padrao || false, ordem !== undefined ? ordem : null, id]
         );
 
         return { success: true, status: result.rows[0] };
@@ -134,6 +140,7 @@ async function patchStatus(id, dados) {
         const values = [];
         let idx = 1;
 
+        // Como esse loop mapeia as chaves dinamicamente, se a 'ordem' for enviada, ela já se auto-inclui aqui perfeitamente!
         for (const [key, value] of Object.entries(dados)) {
             fields.push(`${key} = $${idx}`);
             values.push(value);
