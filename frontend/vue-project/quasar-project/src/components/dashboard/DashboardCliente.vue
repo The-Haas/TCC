@@ -4,7 +4,7 @@
     <div class="greeting-wrap">
       <div>
         <h1 class="greeting" :class="isDark ? 'text-white' : 'text-grey-9'">
-          {{ greeting }}, <span class="greeting-name">{{ firstName }}</span> 👋
+          {{ greeting }}, <span class="greeting-name">{{ firstName }}</span>.
         </h1>
         <p class="greeting-sub" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
           {{ dateStr }} — Acompanhe o andamento dos seus projetos.
@@ -115,8 +115,13 @@
               </div>
 
               <q-linear-progress :value="order.ordem_status === 0 ? 0 : (order.ordem_status / totalEtapas)"
-                :color="order.ordem_status === 0 ? 'negative' : 'primary'" :dark="isDark" track-color="grey-3"
-                style="height: 6px; border-radius: 4px;" />
+                :color="order.ordem_status === 0 ? 'negative' : 'primary'" :dark="isDark"
+                :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                  height: '8px',
+                  borderRadius: '4px',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
+                  boxShadow: isDark ? 'none' : 'inset 0 1px 3px rgba(0,0,0,0.2)'
+                }" />
 
               <template v-if="order.ordem_status !== 0">
                 <div class="row justify-end q-mt-xs">
@@ -800,13 +805,12 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 }
 
 .status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 4px; /* Deixa os cantos levemente arredondados, formato quadradinho */
+  font-size: 12px;
+  font-weight: bold;
   white-space: nowrap;
+  /* Removido o text-transform: uppercase para o texto ficar natural igual à foto (ex: Em Produção) */
 }
 
 .order-value {
@@ -825,14 +829,14 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 
 /* Modo Claro: Um cinza bem suave, quase branco, para dar profundidade */
 .timeline-hz-container--light {
-  background: #f8f9fa; 
+  background: #f8f9fa;
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 /* Modo Escuro: Sai o preto puro (#000000) e entra um grafite ligeiramente */
 /* mais escuro que o card (#161b22), criando um efeito elegante de "baixo relevo" */
 .timeline-hz-container--dark {
-  background: #0f1319; 
+  background: #0f1319;
   border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
@@ -1034,5 +1038,41 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
   font-size: 12px;
   line-height: 1.5;
   margin: 0;
+}
+
+/* Nova Barra de Progresso Customizada */
+.custom-progress-container {
+  width: 100%;
+}
+
+.custom-progress-track {
+  width: 100%;
+  height: 8px;
+  /* Mais gordinha para melhor visualização */
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Fundo da barra no tema claro (baixo relevo sutil) */
+.track-light {
+  background: #e2e8f0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Fundo da barra no tema escuro (fundo bem demarcado) */
+.track-dark {
+  background: #15181e;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Cor que preenche a barra */
+.custom-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+  /* Adiciona um gradiente de brilho na cor principal */
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.2) 100%);
 }
 </style>

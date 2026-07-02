@@ -185,7 +185,7 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
               : []
           });
         });
-      });
+      }); 
     });
 
     for (const item of itensProjeto) {
@@ -247,6 +247,7 @@ async function getPedidos(filtroPedidos = null) {
        p.nome_projeto,
        p.valor,
        p.data_pedido,
+       p.data_previsao_pedido,
        p.enviado_por,
        c.nome    AS cliente,
        l.nome    AS lojista,
