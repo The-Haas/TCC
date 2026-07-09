@@ -1,13 +1,13 @@
 <template>
-  <q-page class="page q-pa-md">
+  <q-page class="page q-pa-md column">
     <div class="page-header q-mb-lg row justify-between items-center">
       <div>
         <h1 class="text-h5 text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'">
           <q-icon name="receipt_long" color="primary" class="q-mr-sm" size="28px" />
-          Meus Projetos e Pedidos
+          Meus Projetos
         </h1>
         <p class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-          Gerencie, rastreie as etapas e visualize o detalhamento técnico de todos os seus projetos.
+          Gerencie e rastreie as etapas de todos os seus projetos.
         </p>
       </div>
     </div>
@@ -59,12 +59,12 @@
     </div>
 
     <div v-else class="pedidos-list">
-      <q-expansion-item v-for="order in pedidosFiltrados" :key="order.id" group="meus-pedidos-group"
+      <q-expansion-item v-for="order in pedidosPaginados" :key="order.id" group="meus-pedidos-group"
         class="order-expansion q-mb-md" :class="[
           isDark ? 'order-expansion--dark' : 'order-expansion--light',
           { 'order-expansion--expanded': pedidoExpandidoId === order.id }
         ]" header-class="q-pa-md items-center" @show="carregarDetalhesPedido(order.id)" @hide="fecharPedido(order.id)">
-<template v-slot:header>
+        <template v-slot:header>
           <div class="row full-width items-center q-col-gutter-sm">
             <div class="col-12 col-sm-3 flex column justify-center">
               <div class="row items-center q-gutter-x-sm">
@@ -81,18 +81,14 @@
                   {{ Math.round((getOrdemStatus(order) / totalEtapas) * 100) || 0 }}%
                 </span>
               </div>
-              <q-linear-progress 
-                :value="getOrdemStatus(order) / totalEtapas || 0" 
-                :color="getOrdemStatus(order) === 0 || order.status.toLowerCase().includes('recusado') ? 'negative' : 'primary'" 
-                :dark="isDark"
-                :track-color="isDark ? 'grey-8' : 'grey-4'" 
-                :style="{
-                  height: '8px', 
+              <q-linear-progress :value="getOrdemStatus(order) / totalEtapas || 0"
+                :color="getOrdemStatus(order) === 0 || order.status.toLowerCase().includes('recusado') ? 'negative' : 'primary'"
+                :dark="isDark" :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                  height: '8px',
                   borderRadius: '4px',
                   border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
                   boxShadow: isDark ? 'none' : 'inset 0 1px 3px rgba(0,0,0,0.2)'
-                }"
-              />
+                }" />
             </div>
 
             <div class="col-6 col-sm-2 text-caption flex column">
@@ -107,7 +103,8 @@
               <span class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'">{{ order.lojista }}</span>
             </div>
 
-            <div class="col-6 col-sm-2 text-right flex column items-end">
+            <!-- Coluna 5 AJUSTADA PARA RESPONSIVIDADE -->
+            <div class="col-12 col-sm-2 flex column col-status-valor">
               <span class="status-badge q-mb-xs" :style="getBadgeStyle(order)">
                 {{ order.status }}
               </span>
@@ -120,8 +117,6 @@
 
         <q-separator :dark="isDark" />
 
-<q-separator :dark="isDark" />
-        
         <q-card-section class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
           <div v-if="detalhesLoading && pedidoExpandidoId === order.id" class="text-center q-pa-md">
             <q-spinner color="primary" size="30px" />
@@ -133,29 +128,28 @@
               <div class="text-subtitle2 text-weight-bold q-mb-sm text-grey-7 flex items-center">
                 <q-icon name="route" class="q-mr-xs" size="16px" /> Etapas atuais de fabricação
               </div>
-              
-              <div class="timeline-hz-container q-pa-md" :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
+
+              <div class="timeline-hz-container q-pa-md"
+                :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
                 <div class="timeline-hz-row">
                   <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id" class="timeline-hz-item">
-                    
-                    <div v-if="index < listaEtapasDoBanco.length - 1" 
-                         class="step-connect-line"
-                         :class="{ 'line-pulsing': step.ordem === detalhes[order.id].id_status }"
-                         :style="getTrackStyle(step.ordem, detalhes[order.id].id_status)">
+
+                    <div v-if="index < listaEtapasDoBanco.length - 1" class="step-connect-line"
+                      :class="{ 'line-pulsing': step.ordem === detalhes[order.id].id_status }"
+                      :style="getTrackStyle(step.ordem, detalhes[order.id].id_status)">
                     </div>
 
-                    <div class="step-circle"
-                      :style="{
-                        background: getCircleBg(step.ordem, detalhes[order.id].id_status),
-                        color: step.ordem <= detalhes[order.id].id_status ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
-                        boxShadow: step.ordem === detalhes[order.id].id_status ? `0 0 0 4px var(--q-primary)30` : 'none'
-                      }">
+                    <div class="step-circle" :style="{
+                      background: getCircleBg(step.ordem, detalhes[order.id].id_status),
+                      color: step.ordem <= detalhes[order.id].id_status ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
+                      boxShadow: step.ordem === detalhes[order.id].id_status ? `0 0 0 4px var(--q-primary)30` : 'none'
+                    }">
                       <q-icon :name="getTimelineIcon(step.ordem, detalhes[order.id].id_status)" size="12px" />
                     </div>
 
                     <span class="step-title q-mt-xs"
-                          :style="{ color: step.ordem === detalhes[order.id].id_status ? 'var(--q-primary)' : '' }"
-                          :class="{ 'text-weight-bold': step.ordem === detalhes[order.id].id_status }">
+                      :style="{ color: step.ordem === detalhes[order.id].id_status ? 'var(--q-primary)' : '' }"
+                      :class="{ 'text-weight-bold': step.ordem === detalhes[order.id].id_status }">
                       {{ step.label || step.descricao }}
                     </span>
                   </div>
@@ -164,24 +158,57 @@
             </div>
 
             <div v-if="detalhes[order.id].xml" class="row justify-end q-mt-md">
-              <q-btn
-                color="secondary"
-                icon="download"
-                no-caps
-                outline
-                label="Baixar Arquivo de Projeto (XML)"
-                @click="downloadXML(detalhes[order.id])"
-              />
+              <q-btn color="secondary" icon="download" no-caps outline label="Baixar Arquivo de Projeto (XML)"
+                @click="downloadXML(detalhes[order.id])" />
             </div>
           </template>
         </q-card-section>
       </q-expansion-item>
     </div>
+    <!-- ======================================= -->
+    <!-- RODAPÉ DE PAGINAÇÃO MINIMALISTA         -->
+    <!-- ======================================= -->
+    <!-- Repare no q-mt-auto adicionado na linha abaixo -->
+    <div v-if="pedidosFiltrados.length > 0" class="row justify-between items-center q-mt-auto q-pt-md" style="border-top: 1px dashed rgba(128,128,128,0.2);">
+      
+      <!-- Seletor de itens por página -->
+      <div class="row items-center q-gutter-x-sm">
+        <span class="text-caption text-weight-medium gt-xs" :class="isDark ? 'text-grey-5' : 'text-grey-6'">Mostrar</span>
+        <q-select
+          v-model="itensPorPagina"
+          :options="opcoesItensPorPagina"
+          dense
+          outlined
+          :dark="isDark"
+          style="min-width: 65px"
+          @update:model-value="aoMudarItensPorPagina"
+        />
+        <span class="text-caption text-weight-medium" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+          <span class="gt-xs">por página</span>
+          <span class="lt-sm">itens</span>
+        </span>
+      </div>
+
+      <!-- Componente de Paginação do Quasar -->
+      <q-pagination
+        v-model="paginaAtual"
+        :max="totalPaginas"
+        :max-pages="5"
+        direction-links
+        boundary-numbers
+        round
+        flat
+        :color="isDark ? 'grey-4' : 'grey-8'"
+        active-color="primary"
+        active-text-color="white"
+        size="14px"
+      />
+    </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth'
 import { api } from 'boot/axios'
@@ -381,6 +408,35 @@ function getTimelineIcon(stepOrdem, currentStatusId) {
   return 'radio_button_unchecked'
 }
 
+// --- CONTROLE DE PAGINAÇÃO ---
+const paginaAtual = ref(1)
+const itensPorPagina = ref(10)
+const opcoesItensPorPagina = [ 5, 10, 20, 50]
+
+// Calcula o total de páginas com base no array já filtrado
+const totalPaginas = computed(() => {
+  if (!pedidosFiltrados.value || pedidosFiltrados.value.length === 0) return 1
+  return Math.ceil(pedidosFiltrados.value.length / itensPorPagina.value)
+})
+
+// Cria a lista recortada que realmente vai aparecer na tela
+const pedidosPaginados = computed(() => {
+  const inicio = (paginaAtual.value - 1) * itensPorPagina.value
+  const fim = inicio + itensPorPagina.value
+  // Fazemos o slice (recorte) em cima do array que já passou pelos filtros de busca/data
+  return pedidosFiltrados.value.slice(inicio, fim)
+})
+
+// Volta para a página 1 sempre que o usuário mudar a quantidade de itens por página
+function aoMudarItensPorPagina() {
+  paginaAtual.value = 1
+}
+
+// BÔNUS: Volta para a página 1 sempre que o usuário digitar algo na busca ou mudar os filtros
+watch(() => pedidosFiltrados.value.length, () => {
+  paginaAtual.value = 1
+})
+
 onMounted(carregarPedidos)
 </script>
 
@@ -503,5 +559,23 @@ onMounted(carregarPedidos)
 .component-row {
   border-left: 2px dashed rgba(128, 128, 128, 0.2);
   padding-left: 8px;
+}
+
+/* =========================================
+   Ajuste responsivo para o Status e Valor 
+   ========================================= */
+.col-status-valor {
+  align-items: flex-start;
+  text-align: left;
+  margin-top: 12px;
+}
+
+/* Quando for tela de computador/tablet, volta para a direita */
+@media (min-width: 600px) {
+  .col-status-valor {
+    align-items: flex-end;
+    text-align: right;
+    margin-top: 0;
+  }
 }
 </style>

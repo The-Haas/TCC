@@ -81,7 +81,7 @@
               <div class="order-col-forecast">
                 <span class="forecast-label">Previsão:</span>
                 <span class="forecast-value text-orange">
-                  {{ order.data_previsao_pedido ? formatDate(order.data_previsao_pedido) : 'Sem previsão' }}
+                  {{ order.data_previsao_pedido ? formatDate(order.data_previsao_pedido) : 'Aguardando definição' }}
                 </span>
               </div>
 
@@ -123,7 +123,7 @@
                   boxShadow: isDark ? 'none' : 'inset 0 1px 3px rgba(0,0,0,0.2)'
                 }" />
 
-              <template v-if="order.ordem_status !== 0">
+<template v-if="order.ordem_status !== 0">
                 <div class="row justify-end q-mt-xs">
                   <q-btn flat dense no-caps size="sm" color="primary" class="text-weight-bold"
                     :icon-right="pedidoTimelineAberto === order.id ? 'expand_less' : 'expand_more'"
@@ -131,46 +131,54 @@
                     @click="toggleTimeline(order.id)" />
                 </div>
 
+<!-- A animação de abrir/fechar as etapas -->
+<q-slide-transition>
+  <div v-show="pedidoTimelineAberto === order.id">
+    
+    <!-- Sem aquela div de fora, só o container direto! -->
+    <div class="timeline-hz-container q-mt-sm q-mb-md q-pa-md"
+      :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
+
+      <div class="timeline-hz-row">
+        <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id" class="timeline-hz-item">
+
+          <div v-if="index < listaEtapasDoBanco.length - 1" class="step-connect-line"
+            :class="{ 'line-pulsing': isTrackPulsing(step.ordem, order.ordem_status) }"
+            :style="getTrackStyle(step.ordem, order)">
+          </div>
+
+          <div class="step-circle"
+            :class="{ 'step-circle--active': step.ordem === order.ordem_status && order.ordem_status !== 0 }"
+            :style="{
+              background: getCircleBg(step.ordem, order, isDark),
+              color: step.ordem <= order.ordem_status && order.ordem_status !== 0 ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
+              boxShadow: step.ordem === order.ordem_status ? `0 0 0 4px ${order.cor}30` : 'none'
+            }">
+            <q-icon :name="getTimelineIcon(step.ordem, order.ordem_status)" size="12px" />
+          </div>
+
+          <span class="step-title q-mt-xs"
+            :style="{ color: step.ordem === order.ordem_status ? order.cor : '' }"
+            :class="{ 'text-weight-bold': step.ordem === order.ordem_status }">
+            {{ step.descricao }}
+          </span>
+
+          <span v-if="step.ordem === order.ordem_status && order.ordem_status !== 0"
+            class="step-current-tag" :style="{ background: order.cor }">
+            Atual
+          </span>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</q-slide-transition>
+
+                <!-- LINHA BRANCA MOVIDA PARA CA! 
+                     Fica fora da transição, então nunca some.
+                     Se a timeline abrir, ela é empurrada para baixo. -->
                 <q-separator :dark="isDark" class="q-mt-sm q-mb-xs" />
-
-                <q-slide-transition>
-                  <div v-if="pedidoTimelineAberto === order.id" class="timeline-hz-container q-mt-sm q-pa-md"
-                    :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
-
-                    <div class="timeline-hz-row">
-
-                      <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id" class="timeline-hz-item">
-
-                        <div v-if="index < listaEtapasDoBanco.length - 1" class="step-connect-line"
-                          :class="{ 'line-pulsing': isTrackPulsing(step.ordem, order.ordem_status) }"
-                          :style="getTrackStyle(step.ordem, order)">
-                        </div>
-
-                        <div class="step-circle"
-                          :class="{ 'step-circle--active': step.ordem === order.ordem_status && order.ordem_status !== 0 }"
-                          :style="{
-                            background: getCircleBg(step.ordem, order, isDark),
-                            color: step.ordem <= order.ordem_status && order.ordem_status !== 0 ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
-                            boxShadow: step.ordem === order.ordem_status ? `0 0 0 4px ${order.cor}30` : 'none'
-                          }">
-                          <q-icon :name="getTimelineIcon(step.ordem, order.ordem_status)" size="12px" />
-                        </div>
-
-                        <span class="step-title q-mt-xs"
-                          :style="{ color: step.ordem === order.ordem_status ? order.cor : '' }"
-                          :class="{ 'text-weight-bold': step.ordem === order.ordem_status }">
-                          {{ step.descricao }}
-                        </span>
-
-                        <span v-if="step.ordem === order.ordem_status && order.ordem_status !== 0"
-                          class="step-current-tag" :style="{ background: order.cor }">
-                          Atual
-                        </span>
-                      </div>
-
-                    </div>
-                  </div>
-                </q-slide-transition>
+                
               </template>
             </div>
           </div>
@@ -399,7 +407,7 @@ function abrirModalLojistas() {
 
 function abrirWhatsApp(telefone, nomeLojista) {
   const numLimpo = String(telefone).replace(/\D/g, '')
-  const texto = encodeURIComponent(`Olá ${nomeLojista}, sou cliente e gostaria de tirar uma dúvida sobre o meu projeto.`)
+  const texto = encodeURIComponent(`Olá ${nomeLojista}, gostaria de tirar uma dúvida sobre o meu projeto.`)
   window.open(`https://wa.me/55${numLimpo}?text=${texto}`, '_blank')
 }
 
@@ -514,6 +522,17 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 <style scoped>
 .page {
   padding: 32px 28px 48px;
+}
+
+/* No mobile, o Pedidos usa o padding padrão do Quasar (16px) tanto na
+   página quanto dentro dos cards. Aqui no Dashboard o padding da página
+   (28px) somado ao padding do .block (24px) e do card interno deixava
+   bem menos largura sobrando pro conteúdo — inclusive pro detalhamento
+   das etapas, que por isso ficava mais estreito/apertado que no Pedidos. */
+@media (max-width: 600px) {
+  .page {
+    padding: 12px 8px 24px;
+  }
 }
 
 /* ══════════════════════════════════════
@@ -635,6 +654,12 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 .block {
   border-radius: 20px;
   padding: 24px;
+}
+
+@media (max-width: 600px) {
+  .block {
+    padding: 12px;
+  }
 }
 
 .block--dark {
@@ -844,10 +869,8 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  position: relative;
   width: 100%;
-  padding: 4px 0;
-  overflow-x: auto;
+  max-width: 100%;
 }
 
 /* Barra de rolagem discreta para telas muito pequenas no mobile */
@@ -895,12 +918,13 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 /* Força o container do item a ser o ponto de referência da linha */
 .timeline-hz-item {
   flex: 1;
-  min-width: 85px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   position: relative;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* CLASSE ATIVA DA LINHA ATUAL: Injeta o feixe de luz sutil */
@@ -954,13 +978,17 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
   animation: pulse 2s infinite;
 }
 
-
-
 .step-title {
   font-size: 11px;
-  font-weight: 600;
   line-height: 1.2;
-  max-width: 80px;
+  margin-top: 6px;
+  max-width: 90px;
+
+  /* Quebra a linha normalmente nos espaços entre as palavras (como no
+     Pedidos), em vez de forçar a quebra no meio da palavra. */
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .step-current-tag {
@@ -985,6 +1013,16 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 
   100% {
     box-shadow: 0 0 0 0px rgba(25, 118, 210, 0);
+  }
+}
+
+/* Em telas pequenas, o Dashboard tem mais camadas de padding aninhadas do
+   que a tela de Pedidos (card > linha do pedido > container da timeline).
+   Aqui reduzimos só o padding do container da timeline para sobrar mais
+   espaço horizontal para as 5 etapas, sem mexer no resto do layout. */
+@media (max-width: 600px) {
+  .timeline-hz-container {
+    padding: 12px 8px !important;
   }
 }
 
@@ -1075,4 +1113,5 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
   /* Adiciona um gradiente de brilho na cor principal */
   background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.2) 100%);
 }
+
 </style>

@@ -259,7 +259,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // ── Sidebar ────────────────────────────────────────────────────────
-const drawerOpen = ref(true)
+const drawerOpen = ref(false)
 const isCollapsed = ref(false)
 
 const FULL_WIDTH = 252
