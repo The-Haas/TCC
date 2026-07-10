@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userTipo        = computed(() => user.value?.tipo  || null)
   const userName        = computed(() => user.value?.nome  || '')
   const userEmail       = computed(() => user.value?.email || '')
+  const userId          = computed(() => user.value?.id || null)
 
   const isAdmin         = computed(() => userTipo.value === 'admin')
   const isLojista       = computed(() => userTipo.value === 'lojista')
@@ -42,8 +43,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     token, user,
-    isAuthenticated, userTipo, userName, userEmail,
-    isAdmin, isLojista, isRepresentante, isCliente,
-    login, logout,
+    isAuthenticated, userTipo, userName, userEmail, 
+    userId, isAdmin, isLojista, isRepresentante, isCliente,
+    login, logout, 
   }
 })

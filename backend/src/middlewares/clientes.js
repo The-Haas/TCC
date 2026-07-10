@@ -13,7 +13,7 @@ function autorizarPerfis(...perfisPermitidos) {
   };
 }
 
-const apenasAdmin          = autorizarPerfis("admin");
+const apenasAdmin = autorizarPerfis("admin");
 const apenasAdminOuLojista = autorizarPerfis("admin", "lojista");
 
 /**
@@ -64,16 +64,19 @@ async function verificarAcessoClientePorId(req, res, next) {
   }
 
   if (tipo === "cliente") {
-    if (req.method !== "GET") {
+    // Permite consultar (GET) e editar (PUT, PATCH). Bloqueia DELETE ou outros métodos acidentais.
+    if (!["GET", "PUT", "PATCH"].includes(req.method)) {
       return res.status(403).json({
         success: false,
-        message: "Clientes só podem consultar seus próprios dados",
+        message: "Clientes só podem consultar e editar seus próprios dados",
       });
     }
+
+    // A trava principal: o ID da rota tem que ser o mesmo do token do cliente logado
     if (String(userId) !== String(clienteId)) {
       return res.status(403).json({
         success: false,
-        message: "Acesso negado: você só pode consultar seus próprios dados",
+        message: "Acesso negado: você só pode acessar e editar seus próprios dados",
       });
     }
     return next();

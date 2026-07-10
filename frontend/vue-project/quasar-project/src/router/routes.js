@@ -22,6 +22,10 @@ const routes = [
         path: 'pedidos',
         component: () => import('pages/PedidosPage.vue'), // Agora aponta para a Casca!
       },
+      { 
+        path: 'perfil', 
+        component: () => import('pages/Perfil.vue'),
+      },
     ],
   },
 

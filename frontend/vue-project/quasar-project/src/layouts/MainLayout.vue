@@ -184,9 +184,10 @@
                       <div class="text-caption q-mb-xs" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
                         {{ authStore.userEmail }}
                       </div>
-                        <q-badge outline :color="isDark ? 'grey-5' : 'grey-7'" class="q-px-sm q-py-xs" style="font-size: 11px;">
-                          {{ roleLabel }}
-                        </q-badge>
+                      <q-badge outline :color="isDark ? 'grey-5' : 'grey-7'" class="q-px-sm q-py-xs"
+                        style="font-size: 11px; display: block !important; text-align: center !important; width: 100% !important;">
+                        {{ roleLabel }}
+                      </q-badge>
                     </div>
                   </div>
                 </div>
@@ -203,20 +204,6 @@
                     <q-item-label caption>Editar dados pessoais</q-item-label>
                   </q-item-section>
                 </q-item>
-
-                <q-item clickable v-close-popup class="menu-item" @click="toggleTheme">
-                  <q-item-section avatar style="min-width:32px">
-                    <q-icon :name="isDark ? 'light_mode' : 'dark_mode'" :color="isDark ? 'yellow-5' : 'blue-grey-5'"
-                      size="18px" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label :class="isDark ? 'text-grey-2' : 'text-grey-8'" style="font-size:13.5px">
-                      {{ isDark ? 'Modo claro' : 'Modo escuro' }}
-                    </q-item-label>
-                    <q-item-label caption>Alterar aparência</q-item-label>
-                  </q-item-section>
-                </q-item>
-
                 <q-separator :dark="isDark" class="q-my-xs" />
 
                 <q-item clickable v-close-popup class="menu-item" @click="handleLogout">
@@ -287,9 +274,9 @@ function toggleTheme() {
 // ── Perfil ─────────────────────────────────────────────────────────
 const roleConfig = {
   admin: { label: 'Administrador', color: '#ff7b00' },
-  lojista: { label: 'Lojista', color: '#1976d2' },
-  representante: { label: 'Representante', color: '#00897b' },
-  cliente: { label: 'Cliente', color: '#7b1fa2' },
+  lojista: { label: 'Lojista', color: '#3b82f6' },
+  representante: { label: 'Representante', color: '#10b981' },
+  cliente: { label: 'Cliente', color: '#ff7b00' },
 }
 
 const roleLabel = computed(() => roleConfig[authStore.userTipo]?.label || authStore.userTipo || '—')
@@ -389,10 +376,31 @@ function toggleMobileDrawer() {
 function handleLogout() {
   $q.dialog({
     title: 'Encerrar sessão',
-    message: 'Deseja realmente sair do sistema?',
-    dark: isDark.value,
-    cancel: { label: 'Cancelar', flat: true },
-    ok: { label: 'Sair', color: 'negative', unelevated: true },
+    message: 'Deseja realmente sair do sistema e encerrar suas atividades?',
+
+    // Classes de cor dinâmicas (Claro / Escuro)
+    class: isDark.value ? 'bg-dark text-white' : 'bg-white text-grey-9',
+
+    // O pulo do gato: Borda superior fina vermelha, arredondamento médio e sombra suave
+    style: 'border-radius: 16px; border-top: 4px solid var(--q-negative); box-shadow: 0 10px 30px rgba(0,0,0,0.1);',
+
+    cancel: {
+      label: 'Cancelar',
+      color: 'grey-6',
+      flat: true,
+      noCaps: true,
+      class: 'text-weight-medium q-px-md' // Deixa o texto com peso médio
+    },
+    ok: {
+      label: 'Sair do sistema',
+      color: 'negative',
+      unelevated: true,
+      noCaps: true,
+      icon: 'logout', // Ícone no botão, porém mais sutil e à esquerda
+      class: 'text-weight-bold q-px-md' // Negrito no botão de ação principal
+    },
+    persistent: true // Evita fechar o modal se o usuário clicar fora por acidente
+
   }).onOk(() => {
     clearInterval(timerInterval)
     localStorage.removeItem('horus_login_ts')
