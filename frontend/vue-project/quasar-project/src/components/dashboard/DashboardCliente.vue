@@ -80,8 +80,10 @@
 
               <div class="order-col-forecast">
                 <span class="forecast-label">Previsão:</span>
-                <span class="forecast-value text-orange">
-                  {{ order.data_previsao_pedido ? formatDate(order.data_previsao_pedido) : 'Aguardando definição' }}
+                <span class="forecast-value" :style="{ color: order.ordem_status === 0 ? order.cor : '' }"
+                  :class="order.ordem_status !== 0 ? 'text-orange' : ''">
+                  {{ order.ordem_status === 0 ? 'Recusado' : (order.data_previsao_pedido ?
+                    formatDate(order.data_previsao_pedido) : 'Aguardando definição') }}
                 </span>
               </div>
 
@@ -99,8 +101,8 @@
 
             <div class="q-px-md q-pb-md q-pt-sm">
               <div class="row justify-between items-center q-mb-xs">
-                <span v-if="order.ordem_status === 0" class="text-negative text-weight-bold text-uppercase"
-                  style="font-size: 13px;">
+                <span v-if="order.ordem_status === 0" class="text-weight-bold text-uppercase"
+                  :style="{ color: order.cor, fontSize: '13px' }">
                   ⚠️ Projeto Suspenso / Recusado
                 </span>
                 <span v-else class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'"
@@ -109,21 +111,21 @@
                 </span>
 
                 <span class="text-weight-bold"
-                  :style="{ color: order.ordem_status === 0 ? '#FF5252' : 'var(--q-primary)', fontSize: '13px' }">
+                  :style="{ color: order.ordem_status === 0 ? order.cor : 'var(--q-primary)', fontSize: '13px' }">
                   {{ order.ordem_status === 0 ? '0%' : `${Math.round((order.ordem_status / totalEtapas) * 100)}%` }}
                 </span>
               </div>
 
               <q-linear-progress :value="order.ordem_status === 0 ? 0 : (order.ordem_status / totalEtapas)"
-                :color="order.ordem_status === 0 ? 'negative' : 'primary'" :dark="isDark"
-                :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                :dark="isDark" :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                  color: order.ordem_status === 0 ? order.cor : 'var(--q-primary)',
                   height: '8px',
                   borderRadius: '4px',
                   border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
                   boxShadow: isDark ? 'none' : 'inset 0 1px 3px rgba(0,0,0,0.2)'
                 }" />
 
-<template v-if="order.ordem_status !== 0">
+              <template v-if="order.ordem_status !== 0">
                 <div class="row justify-end q-mt-xs">
                   <q-btn flat dense no-caps size="sm" color="primary" class="text-weight-bold"
                     :icon-right="pedidoTimelineAberto === order.id ? 'expand_less' : 'expand_more'"
@@ -131,55 +133,56 @@
                     @click="toggleTimeline(order.id)" />
                 </div>
 
-<!-- A animação de abrir/fechar as etapas -->
-<q-slide-transition>
-  <div v-show="pedidoTimelineAberto === order.id">
-    
-    <!-- Sem aquela div de fora, só o container direto! -->
-    <div class="timeline-hz-container q-mt-sm q-mb-md q-pa-md"
-      :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
+                <!-- A animação de abrir/fechar as etapas -->
+                <q-slide-transition>
+                  <div v-show="pedidoTimelineAberto === order.id">
 
-      <div class="timeline-hz-row">
-        <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id" class="timeline-hz-item">
+                    <!-- Sem aquela div de fora, só o container direto! -->
+                    <div class="timeline-hz-container q-mt-sm q-mb-md q-pa-md"
+                      :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
 
-          <div v-if="index < listaEtapasDoBanco.length - 1" class="step-connect-line"
-            :class="{ 'line-pulsing': isTrackPulsing(step.ordem, order.ordem_status) }"
-            :style="getTrackStyle(step.ordem, order)">
-          </div>
+                      <div class="timeline-hz-row">
+                        <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id" class="timeline-hz-item">
 
-          <div class="step-circle"
-            :class="{ 'step-circle--active': step.ordem === order.ordem_status && order.ordem_status !== 0 }"
-            :style="{
-              background: getCircleBg(step.ordem, order, isDark),
-              color: step.ordem <= order.ordem_status && order.ordem_status !== 0 ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
-              boxShadow: step.ordem === order.ordem_status ? `0 0 0 4px ${order.cor}30` : 'none'
-            }">
-            <q-icon :name="getTimelineIcon(step.ordem, order.ordem_status)" size="12px" />
-          </div>
+                          <div v-if="index < listaEtapasDoBanco.length - 1" class="step-connect-line"
+                            :class="{ 'line-pulsing': isTrackPulsing(step.ordem, order.ordem_status) }"
+                            :style="getTrackStyle(step.ordem, order)">
+                          </div>
 
-          <span class="step-title q-mt-xs"
-            :style="{ color: step.ordem === order.ordem_status ? order.cor : '' }"
-            :class="{ 'text-weight-bold': step.ordem === order.ordem_status }">
-            {{ step.descricao }}
-          </span>
+                          <div class="step-circle"
+                            :class="{ 'step-circle--active': step.ordem === order.ordem_status && order.ordem_status !== 0 }"
+                            :style="{
+                              background: getCircleBg(step.ordem, order, isDark),
+                              color: step.ordem <= order.ordem_status && order.ordem_status !== 0 ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
+                              boxShadow: step.ordem === order.ordem_status ? `0 0 0 4px ${order.cor}30` : 'none'
+                            }">
+                            <q-icon :name="getTimelineIcon(step.ordem, order.ordem_status)" size="12px" />
+                          </div>
 
-          <span v-if="step.ordem === order.ordem_status && order.ordem_status !== 0"
-            class="step-current-tag" :style="{ background: order.cor }">
-            Atual
-          </span>
-        </div>
-      </div>
-      
-    </div>
-  </div>
-</q-slide-transition>
+                          <span class="step-title q-mt-xs"
+                            :style="{ color: step.ordem === order.ordem_status ? order.cor : '' }"
+                            :class="{ 'text-weight-bold': step.ordem === order.ordem_status }">
+                            {{ step.descricao }}
+                          </span>
 
-                <!-- LINHA BRANCA MOVIDA PARA CA! 
+                          <span v-if="step.ordem === order.ordem_status && order.ordem_status !== 0"
+                            class="step-current-tag" :style="{ background: order.cor }">
+                            Atual
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </q-slide-transition>
+
+
+
+              </template>
+                              <!-- LINHA BRANCA MOVIDA PARA CA! 
                      Fica fora da transição, então nunca some.
                      Se a timeline abrir, ela é empurrada para baixo. -->
                 <q-separator :dark="isDark" class="q-mt-sm q-mb-xs" />
-                
-              </template>
             </div>
           </div>
         </div>
@@ -831,7 +834,8 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 
 .status-badge {
   padding: 4px 8px;
-  border-radius: 4px; /* Deixa os cantos levemente arredondados, formato quadradinho */
+  border-radius: 4px;
+  /* Deixa os cantos levemente arredondados, formato quadradinho */
   font-size: 12px;
   font-weight: bold;
   white-space: nowrap;
@@ -1113,5 +1117,4 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
   /* Adiciona um gradiente de brilho na cor principal */
   background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.2) 100%);
 }
-
 </style>

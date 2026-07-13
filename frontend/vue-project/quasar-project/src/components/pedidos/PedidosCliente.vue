@@ -12,6 +12,7 @@
       </div>
     </div>
 
+    <!-- Filtros -->
     <q-card class="filter-card q-mb-lg" :class="isDark ? 'filter-card--dark' : 'filter-card--light'" flat bordered>
       <q-card-section class="row q-col-gutter-md items-center">
         <div class="col-12 col-md-4">
@@ -47,6 +48,7 @@
       </q-card-section>
     </q-card>
 
+    <!-- Loading e Empty States -->
     <div v-if="loading" class="text-center q-pa-xl">
       <q-spinner-tail color="primary" size="50px" />
       <p class="text-grey-6 q-mt-md font-weight-medium">Buscando seus projetos...</p>
@@ -58,12 +60,14 @@
       <p class="text-caption text-grey-5">Experimente ajustar os termos de busca ou filtros aplicados.</p>
     </div>
 
+    <!-- Lista de Pedidos -->
     <div v-else class="pedidos-list">
       <q-expansion-item v-for="order in pedidosPaginados" :key="order.id" group="meus-pedidos-group"
         class="order-expansion q-mb-md" :class="[
           isDark ? 'order-expansion--dark' : 'order-expansion--light',
           { 'order-expansion--expanded': pedidoExpandidoId === order.id }
         ]" header-class="q-pa-md items-center" @show="carregarDetalhesPedido(order.id)" @hide="fecharPedido(order.id)">
+
         <template v-slot:header>
           <div class="row full-width items-center q-col-gutter-sm">
             <div class="col-12 col-sm-3 flex column justify-center">
@@ -76,14 +80,20 @@
 
             <div class="col-12 col-sm-3 q-pr-md">
               <div class="row justify-between items-center q-mb-xs">
-                <span class="text-caption font-weight-bold text-grey-6">Progresso do projeto</span>
-                <span class="text-caption text-weight-bold text-primary">
-                  {{ Math.round((getOrdemStatus(order) / totalEtapas) * 100) || 0 }}%
+                <span v-if="getOrdemReal(order) === 0" class="text-weight-bold text-uppercase"
+                  :style="{ color: getCorReal(order), fontSize: '12px' }">
+                  ⚠️ Projeto Suspenso/Recusado
+                </span>
+                <span v-else class="text-caption font-weight-bold text-grey-6">Progresso do projeto</span>
+
+                <span class="text-caption text-weight-bold"
+                  :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : 'var(--q-primary)' }">
+                  {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) / totalEtapas) * 100)}%` }}
                 </span>
               </div>
-              <q-linear-progress :value="getOrdemStatus(order) / totalEtapas || 0"
-                :color="getOrdemStatus(order) === 0 || order.status.toLowerCase().includes('recusado') ? 'negative' : 'primary'"
-                :dark="isDark" :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+              <q-linear-progress :value="getOrdemReal(order) === 0 ? 0 : (getOrdemReal(order) / totalEtapas)"
+                :color="getOrdemReal(order) === 0 ? 'negative' : 'primary'" :dark="isDark"
+                :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
                   height: '8px',
                   borderRadius: '4px',
                   border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
@@ -93,19 +103,21 @@
 
             <div class="col-6 col-sm-2 text-caption flex column">
               <span class="text-grey-6 text-weight-medium">Previsão de Entrega</span>
-              <span class="text-orange text-weight-bold">
-                {{ order.data_previsao_pedido ? formatDate(order.data_previsao_pedido) : 'Aguardando definição' }}
+              <span class="text-weight-bold" :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : '' }"
+                :class="getOrdemReal(order) !== 0 ? 'text-orange' : ''">
+                {{ getOrdemReal(order) === 0 ? 'Recusado' : (order.data_previsao_pedido ?
+                  formatDate(order.data_previsao_pedido) : 'Aguardando definição') }}
               </span>
             </div>
 
             <div class="col-6 col-sm-2 text-caption flex column">
               <span class="text-grey-6 text-weight-medium">Loja responsável</span>
-              <span class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'">{{ order.lojista }}</span>
+              <span class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'">{{ order.lojista || 'Não informada' }}</span>
             </div>
 
-            <!-- Coluna 5 AJUSTADA PARA RESPONSIVIDADE -->
+            <!-- Coluna 5: Badge de Status com cor exata -->
             <div class="col-12 col-sm-2 flex column col-status-valor">
-              <span class="status-badge q-mb-xs" :style="getBadgeStyle(order)">
+              <span class="status-badge q-mb-xs" :style="getBadgeStyle(getCorReal(order))">
                 {{ order.status }}
               </span>
               <span class="text-weight-bold text-subtitle1" :class="isDark ? 'text-white' : 'text-grey-9'">
@@ -117,6 +129,7 @@
 
         <q-separator :dark="isDark" />
 
+        <!-- Detalhamento Interno do Pedido (Linha do Tempo) -->
         <q-card-section class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
           <div v-if="detalhesLoading && pedidoExpandidoId === order.id" class="text-center q-pa-md">
             <q-spinner color="primary" size="30px" />
@@ -124,33 +137,45 @@
           </div>
 
           <template v-else-if="detalhes[order.id]">
-            <div v-if="order.status.toLowerCase().indexOf('recusado') === -1" class="q-mb-md">
+            <!-- Oculta a linha do tempo se a ordem do status for 0 (suspenso/recusado/cancelado) -->
+            <div v-if="getOrdemReal(order) !== 0" class="q-mb-md">
               <div class="text-subtitle2 text-weight-bold q-mb-sm text-grey-7 flex items-center">
                 <q-icon name="route" class="q-mr-xs" size="16px" /> Etapas atuais de fabricação
               </div>
 
+              <!-- Estrutura de Timeline 100% Importada do Dashboard -->
               <div class="timeline-hz-container q-pa-md"
                 :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
                 <div class="timeline-hz-row">
                   <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id" class="timeline-hz-item">
 
+                    <!-- Linha Conectora (Pulsa se for a etapa atual) -->
                     <div v-if="index < listaEtapasDoBanco.length - 1" class="step-connect-line"
-                      :class="{ 'line-pulsing': step.ordem === detalhes[order.id].id_status }"
-                      :style="getTrackStyle(step.ordem, detalhes[order.id].id_status)">
+                      :class="{ 'line-pulsing': isTrackPulsing(step.ordem, getOrdemReal(order, detalhes[order.id])) }"
+                      :style="getTrackStyle(step.ordem, getOrdemReal(order, detalhes[order.id]))">
                     </div>
 
-                    <div class="step-circle" :style="{
-                      background: getCircleBg(step.ordem, detalhes[order.id].id_status),
-                      color: step.ordem <= detalhes[order.id].id_status ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
-                      boxShadow: step.ordem === detalhes[order.id].id_status ? `0 0 0 4px var(--q-primary)30` : 'none'
-                    }">
-                      <q-icon :name="getTimelineIcon(step.ordem, detalhes[order.id].id_status)" size="12px" />
+                    <!-- Círculo da Etapa -->
+                    <div class="step-circle"
+                      :class="{ 'step-circle--active': step.ordem === getOrdemReal(order, detalhes[order.id]) }" :style="{
+                        background: getCircleBg(step.ordem, getOrdemReal(order, detalhes[order.id]), getCorReal(order, detalhes[order.id])),
+                        color: step.ordem <= getOrdemReal(order, detalhes[order.id]) ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
+                        boxShadow: step.ordem === getOrdemReal(order, detalhes[order.id]) ? `0 0 0 4px ${getCorReal(order, detalhes[order.id])}30` : 'none'
+                      }">
+                      <q-icon :name="getTimelineIcon(step.ordem, getOrdemReal(order, detalhes[order.id]))"
+                        size="12px" />
                     </div>
 
+                    <!-- Título da Etapa -->
                     <span class="step-title q-mt-xs"
-                      :style="{ color: step.ordem === detalhes[order.id].id_status ? 'var(--q-primary)' : '' }"
-                      :class="{ 'text-weight-bold': step.ordem === detalhes[order.id].id_status }">
-                      {{ step.label || step.descricao }}
+                      :style="{ color: step.ordem === getOrdemReal(order, detalhes[order.id]) ? getCorReal(order, detalhes[order.id]) : '' }"
+                      :class="{ 'text-weight-bold': step.ordem === getOrdemReal(order, detalhes[order.id]) }">
+                      {{ step.descricao || step.label }}
+                    </span>
+
+                    <span v-if="step.ordem === getOrdemReal(order, detalhes[order.id])" class="step-current-tag"
+                      :style="{ background: getCorReal(order, detalhes[order.id]) }">
+                      Atual
                     </span>
                   </div>
                 </div>
@@ -165,44 +190,22 @@
         </q-card-section>
       </q-expansion-item>
     </div>
-    <!-- ======================================= -->
-    <!-- RODAPÉ DE PAGINAÇÃO MINIMALISTA         -->
-    <!-- ======================================= -->
-    <!-- Repare no q-mt-auto adicionado na linha abaixo -->
-    <div v-if="pedidosFiltrados.length > 0" class="row justify-between items-center q-mt-auto q-pt-md" style="border-top: 1px dashed rgba(128,128,128,0.2);">
-      
-      <!-- Seletor de itens por página -->
+
+    <!-- Paginação -->
+    <div v-if="pedidosFiltrados.length > 0" class="row justify-between items-center q-mt-auto q-pt-md"
+      style="border-top: 1px dashed rgba(128,128,128,0.2);">
       <div class="row items-center q-gutter-x-sm">
-        <span class="text-caption text-weight-medium gt-xs" :class="isDark ? 'text-grey-5' : 'text-grey-6'">Mostrar</span>
-        <q-select
-          v-model="itensPorPagina"
-          :options="opcoesItensPorPagina"
-          dense
-          outlined
-          :dark="isDark"
-          style="min-width: 65px"
-          @update:model-value="aoMudarItensPorPagina"
-        />
+        <span class="text-caption text-weight-medium gt-xs"
+          :class="isDark ? 'text-grey-5' : 'text-grey-6'">Mostrar</span>
+        <q-select v-model="itensPorPagina" :options="opcoesItensPorPagina" dense outlined :dark="isDark"
+          style="min-width: 65px" @update:model-value="aoMudarItensPorPagina" />
         <span class="text-caption text-weight-medium" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
           <span class="gt-xs">por página</span>
           <span class="lt-sm">itens</span>
         </span>
       </div>
-
-      <!-- Componente de Paginação do Quasar -->
-      <q-pagination
-        v-model="paginaAtual"
-        :max="totalPaginas"
-        :max-pages="5"
-        direction-links
-        boundary-numbers
-        round
-        flat
-        :color="isDark ? 'grey-4' : 'grey-8'"
-        active-color="primary"
-        active-text-color="white"
-        size="14px"
-      />
+      <q-pagination v-model="paginaAtual" :max="totalPaginas" :max-pages="5" direction-links boundary-numbers round flat
+        :color="isDark ? 'grey-4' : 'grey-8'" active-color="primary" active-text-color="white" size="14px" />
     </div>
   </q-page>
 </template>
@@ -220,29 +223,23 @@ const isDark = computed(() => $q.dark.isActive)
 // Estados Principais
 const loading = ref(true)
 const pedidos = ref([])
-const detalhes = ref({}) // Dicionário chaveado por ID do pedido { [id]: dadosDoPedido }
+const detalhes = ref({})
 const pedidoExpandidoId = ref(null)
 const detalhesLoading = ref(false)
 
-// Controle dinâmico de etapas vindo do banco (Igual ao Dashboard)
+
+// Configuração da Timeline
 const totalEtapas = ref(6)
 const listaEtapasDoBanco = ref([])
+const todosStatus = ref([])
 
-// Filtros Reativos
-const filtros = ref({
-  busca: '',
-  status: null,
-  dataInicio: '',
-  dataFim: ''
-})
-
-// Opções dinâmicas de Status geradas a partir da lista de pedidos carregada
+// Filtros
+const filtros = ref({ busca: '', status: null, dataInicio: '', dataFim: '' })
 const opcoesStatus = computed(() => {
   const set = new Set(pedidos.value.map(p => p.status))
   return Array.from(set).map(status => ({ label: status, value: status }))
 })
 
-// Requisição inicial (Listar pedidos e buscar status do banco)
 async function carregarPedidos() {
   loading.value = true
   try {
@@ -250,100 +247,122 @@ async function carregarPedidos() {
       api.get('/pedidos', { headers: { Authorization: `Bearer ${authStore.token}` } }),
       api.get('/status', { headers: { Authorization: `Bearer ${authStore.token}` } })
     ])
-
     pedidos.value = resPedidos.data.data || []
 
-    // Filtra para remover status com ordem zero da linha do tempo
-    listaEtapasDoBanco.value = (resStatus.data || []).filter(step => step.ordem !== 0)
-    totalEtapas.value = listaEtapasDoBanco.value.length || 6
+    // 1. Salva TODOS os status (incluindo os recusados/ordem 0) para consultar cores
+    todosStatus.value = resStatus.data || []
 
-  } catch (err) {
-    console.error('Erro ao buscar dados:', err)
+    // 2. Filtra os de ordem 0 apenas para a linha do tempo
+    listaEtapasDoBanco.value = todosStatus.value.filter(step => step.ordem !== 0)
+
+    totalEtapas.value = listaEtapasDoBanco.value.length || 6
+  } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar lista de pedidos e etapas.' })
   } finally {
     loading.value = false
   }
 }
 
-// Descobre em qual etapa o pedido está cruzando o texto do status com a lista do banco
-function getOrdemStatus(order) {
-  // Se a API por acaso já mandar o número, usa ele
-  if (order.ordem_status !== undefined) return order.ordem_status;
-  if (order.id_status !== undefined) return order.id_status;
-
-  // Se não, procura na lista do banco a etapa que tem o mesmo nome do status atual
-  const step = listaEtapasDoBanco.value.find(s =>
-    (s.label || s.descricao || '').toLowerCase() === (order.status || '').toLowerCase()
-  );
-
-  return step ? step.ordem : 0;
-}
-
-// Requisição sob demanda (Detalhar ID)
 async function carregarDetalhesPedido(id) {
   pedidoExpandidoId.value = id
-  // Evita re-buscar do backend se já foi carregado anteriormente
-  if (detalhes.value[id]) return
-
+  if (detalhes.value[id]) return // Cache
   detalhesLoading.value = true
   try {
     const response = await api.get(`/pedidos/${id}`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
     detalhes.value[id] = response.data.data
-  } catch (err) {
-    console.error(`Erro ao buscar detalhes do pedido #${id}:`, err)
-    $q.notify({ type: 'negative', message: 'Não foi possível carregar as especificações do item.' })
+  } catch { // <-- Removido o (err) que não estava sendo usado
+    $q.notify({ type: 'negative', message: 'Não foi possível carregar as especificações.' })
   } finally {
     detalhesLoading.value = false
   }
 }
 
-// Limpa o ID expandido ao fechar a sanfona
 function fecharPedido(id) {
-  if (pedidoExpandidoId.value === id) {
-    pedidoExpandidoId.value = null
+  if (pedidoExpandidoId.value === id) pedidoExpandidoId.value = null
+}
+
+// --- FUNÇÕES INTELIGENTES E UNIFICADAS (BASEADAS NO DASHBOARD) ---
+
+function getOrdemReal(order, detalhe = null) {
+  const alvo = detalhe || order || {};
+  const ordem = Number(alvo.ordem_status !== undefined ? alvo.ordem_status : alvo.id_status);
+
+  if (!isNaN(ordem) && ordem > 0) return ordem;
+
+  // Agora pesquisa na lista completa (todosStatus)
+  const step = todosStatus.value.find(s =>
+    (s.label || s.descricao || '').toLowerCase() === (alvo.status || '').toLowerCase()
+  );
+  return step ? Number(step.ordem) : 0;
+}
+
+function getCorReal(order, detalhe = null) {
+  const alvo = detalhe || order || {};
+  if (alvo.cor) return alvo.cor;
+
+  // Agora pesquisa na lista completa (todosStatus)
+  const step = todosStatus.value.find(s =>
+    (s.label || s.descricao || '').toLowerCase() === (alvo.status || '').toLowerCase()
+  );
+  if (step && step.cor) return step.cor;
+
+  const s = String(alvo.status || '').toLowerCase();
+  if (s.includes('pendente')) return '#F2C037';
+  if (s.includes('aprovado')) return '#21BA45';
+  if (s.includes('produção') || s.includes('andamento')) return '#027BE3';
+  if (s.includes('recusado') || s.includes('cancelado')) return '#C10015';
+  return '#1976D2'; // Padrão
+}
+
+// --- CONTROLES VISUAIS DA TIMELINE ---
+function getCircleBg(stepOrdem, currentOrdem, orderCor) {
+  if (currentOrdem === 0) return isDark.value ? '#22272e' : '#f3f4f6';
+  if (stepOrdem < currentOrdem) return '#21BA45';
+  if (stepOrdem === currentOrdem) return orderCor || 'var(--q-primary)';
+  return isDark.value ? '#22272e' : '#f3f4f6';
+}
+
+function getTimelineIcon(stepOrdem, currentOrdem) {
+  if (currentOrdem === 0) return 'radio_button_unchecked';
+  if (stepOrdem < currentOrdem) return 'check';
+  if (stepOrdem === currentOrdem) return 'hourglass_empty';
+  return 'radio_button_unchecked';
+}
+
+function getTrackStyle(stepOrdem, currentOrdem) {
+  if (stepOrdem < currentOrdem) return { background: '#21BA45' };
+  return { background: isDark.value ? '#262a33' : '#e0e0e0' };
+}
+
+function isTrackPulsing(stepOrdem, currentOrdem) {
+  return stepOrdem === currentOrdem && currentOrdem !== 0;
+}
+
+function getBadgeStyle(corBase) {
+  return {
+    backgroundColor: corBase + '15',
+    color: corBase,
+    border: `1px solid ${corBase}30`,
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    whiteSpace: 'nowrap'
   }
 }
 
-// Filtro Inteligente Combinado (Nome, ID, Lojista, Status e Período de Datas)
-const pedidosFiltrados = computed(() => {
-  return pedidos.value.filter(order => {
-    // 1. Filtro por Busca Global Texto (Case Insensitive)
-    if (filtros.value.busca) {
-      const term = filtros.value.busca.toLowerCase()
-      const matchesName = String(order.nome_projeto || '').toLowerCase().includes(term)
-      const matchesId = String(order.id).includes(term)
-      const matchesLojista = String(order.lojista || '').toLowerCase().includes(term)
+// --- AUXILIARES GERAIS ---
+function formatMoney(v) {
+  return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
 
-      if (!matchesName && !matchesId && !matchesLojista) return false
-    }
+function formatDate(d) {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+}
 
-    // 2. Filtro de Status Exato
-    if (filtros.value.status && order.status !== filtros.value.status) {
-      return false
-    }
-
-    // 3. Filtro por Período de Datas
-    if (order.data_pedido) {
-      const pDate = new Date(order.data_pedido).getTime()
-
-      if (filtros.value.dataInicio) {
-        const start = new Date(filtros.value.dataInicio + 'T00:00:00').getTime()
-        if (pDate < start) return false
-      }
-
-      if (filtros.value.dataFim) {
-        const end = new Date(filtros.value.dataFim + 'T23:59:59').getTime()
-        if (pDate > end) return false
-      }
-    }
-
-    return true
-  })
-})
-
-// Função de Download do XML Puro
 function downloadXML(pedido) {
   if (!pedido.xml) return
   const blob = new Blob([pedido.xml], { type: 'text/xml;charset=utf-8;' })
@@ -356,83 +375,44 @@ function downloadXML(pedido) {
   document.body.removeChild(link)
 }
 
-// Auxiliares de Tratamento Visual
-function formatMoney(v) {
-  return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
-}
-
-function getBadgeStyle(order) {
-  const s = order.status.toLowerCase()
-  let c = '#1976D2' // Default azul
-  if (s.includes('pendente')) c = '#F2C037' // Amarelo
-  if (s.includes('aprovado')) c = '#21BA45' // Verde
-  if (s.includes('produção')) c = '#027BE3' // Azul escuro
-  if (s.includes('recusado')) c = '#C10015' // Vermelho
-
-  return {
-    backgroundColor: c + '15',
-    color: c,
-    border: `1px solid ${c}30`,
-    padding: '4px 8px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: 'bold'
-  }
-}
-
-// Lógica de Renderização do Feixe de Luz da Timeline
-function getTrackStyle(stepOrdem, currentStatusId) {
-  if (stepOrdem === currentStatusId) {
-    return {
-      background: isDark.value ? '#21262d' : '#e0e0e0'
+// --- FILTROS E PAGINAÇÃO ---
+const pedidosFiltrados = computed(() => {
+  return pedidos.value.filter(order => {
+    if (filtros.value.busca) {
+      const term = filtros.value.busca.toLowerCase()
+      const matchesName = String(order.nome_projeto || '').toLowerCase().includes(term)
+      const matchesId = String(order.id).includes(term)
+      const matchesLojista = String(order.lojista || '').toLowerCase().includes(term)
+      if (!matchesName && !matchesId && !matchesLojista) return false
     }
-  }
-  if (stepOrdem < currentStatusId) return { background: '#21BA45' }
-  return { background: isDark.value ? '#21262d' : '#e0e0e0' }
-}
+    if (filtros.value.status && order.status !== filtros.value.status) return false
+    if (order.data_pedido) {
+      const pDate = new Date(order.data_pedido).getTime()
+      if (filtros.value.dataInicio && pDate < new Date(filtros.value.dataInicio + 'T00:00:00').getTime()) return false
+      if (filtros.value.dataFim && pDate > new Date(filtros.value.dataFim + 'T23:59:59').getTime()) return false
+    }
+    return true
+  })
+})
 
-function getCircleBg(stepOrdem, currentStatusId) {
-  if (stepOrdem < currentStatusId) return '#21BA45'
-  if (stepOrdem === currentStatusId) return 'var(--q-primary)'
-  return isDark.value ? '#22272e' : '#f3f4f6'
-}
-
-function getTimelineIcon(stepOrdem, currentStatusId) {
-  if (stepOrdem < currentStatusId) return 'check'
-  if (stepOrdem === currentStatusId) return 'hourglass_empty'
-  return 'radio_button_unchecked'
-}
-
-// --- CONTROLE DE PAGINAÇÃO ---
 const paginaAtual = ref(1)
 const itensPorPagina = ref(10)
-const opcoesItensPorPagina = [ 5, 10, 20, 50]
+const opcoesItensPorPagina = [5, 10, 20, 50]
 
-// Calcula o total de páginas com base no array já filtrado
 const totalPaginas = computed(() => {
   if (!pedidosFiltrados.value || pedidosFiltrados.value.length === 0) return 1
   return Math.ceil(pedidosFiltrados.value.length / itensPorPagina.value)
 })
 
-// Cria a lista recortada que realmente vai aparecer na tela
 const pedidosPaginados = computed(() => {
   const inicio = (paginaAtual.value - 1) * itensPorPagina.value
-  const fim = inicio + itensPorPagina.value
-  // Fazemos o slice (recorte) em cima do array que já passou pelos filtros de busca/data
-  return pedidosFiltrados.value.slice(inicio, fim)
+  return pedidosFiltrados.value.slice(inicio, inicio + itensPorPagina.value)
 })
 
-// Volta para a página 1 sempre que o usuário mudar a quantidade de itens por página
 function aoMudarItensPorPagina() {
   paginaAtual.value = 1
 }
 
-// BÔNUS: Volta para a página 1 sempre que o usuário digitar algo na busca ou mudar os filtros
 watch(() => pedidosFiltrados.value.length, () => {
   paginaAtual.value = 1
 })
@@ -466,7 +446,7 @@ onMounted(carregarPedidos)
   background: #14181f;
 }
 
-/* Container de Baixo Relevo da Linha do Tempo */
+/* Container da Linha do Tempo (Igual ao Dashboard) */
 .timeline-hz-container {
   border-radius: 12px;
   position: relative;
@@ -475,7 +455,7 @@ onMounted(carregarPedidos)
 
 .timeline-hz-container--light {
   background: #f8f9fa;
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .timeline-hz-container--dark {
@@ -489,6 +469,16 @@ onMounted(carregarPedidos)
   justify-content: space-between;
   align-items: flex-start;
   width: 100%;
+  max-width: 100%;
+}
+
+.timeline-hz-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.timeline-hz-row::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.2);
+  border-radius: 4px;
 }
 
 .timeline-hz-item {
@@ -498,8 +488,11 @@ onMounted(carregarPedidos)
   align-items: center;
   text-align: center;
   position: relative;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
+/* Círculos e Textos */
 .step-circle {
   width: 22px;
   height: 22px;
@@ -511,13 +504,46 @@ onMounted(carregarPedidos)
   z-index: 2;
 }
 
-.step-title {
-  font-size: 11px;
-  max-width: 90px;
-  line-height: 1.2;
+.step-circle--active {
+  box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
+  animation: pulse 2s infinite;
 }
 
-/* Nova Linha Conectora com Feixe de Luz Varrendo */
+.step-title {
+  font-size: 11px;
+  line-height: 1.2;
+  margin-top: 6px;
+  max-width: 90px;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.step-current-tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0px rgba(25, 118, 210, 0.3);
+  }
+
+  70% {
+    box-shadow: 0 0 0 5px rgba(25, 118, 210, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0px rgba(25, 118, 210, 0);
+  }
+}
+
+/* Linha Conectora e Feixe de Luz */
 .step-connect-line {
   position: absolute;
   top: 10px;
@@ -530,10 +556,7 @@ onMounted(carregarPedidos)
 
 .line-pulsing {
   height: 3px;
-  background-image: linear-gradient(90deg,
-      rgba(33, 186, 69, 0) 0%,
-      rgba(33, 186, 69, 1) 50%,
-      rgba(33, 186, 69, 0) 100%) !important;
+  background-image: linear-gradient(90deg, rgba(33, 186, 69, 0) 0%, rgba(33, 186, 69, 1) 50%, rgba(33, 186, 69, 0) 100%) !important;
   background-size: 60px 100% !important;
   background-repeat: no-repeat !important;
   animation: light-sweep 2.2s infinite ease-in-out !important;
@@ -555,22 +578,19 @@ onMounted(carregarPedidos)
   }
 }
 
-/* Estrutura de subitens técnicos */
-.component-row {
-  border-left: 2px dashed rgba(128, 128, 128, 0.2);
-  padding-left: 8px;
+/* Ajustes de Responsividade */
+@media (max-width: 600px) {
+  .timeline-hz-container {
+    padding: 12px 8px !important;
+  }
 }
 
-/* =========================================
-   Ajuste responsivo para o Status e Valor 
-   ========================================= */
 .col-status-valor {
   align-items: flex-start;
   text-align: left;
   margin-top: 12px;
 }
 
-/* Quando for tela de computador/tablet, volta para a direita */
 @media (min-width: 600px) {
   .col-status-valor {
     align-items: flex-end;
