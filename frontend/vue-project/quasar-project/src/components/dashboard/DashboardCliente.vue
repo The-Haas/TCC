@@ -71,11 +71,19 @@
             :class="isDark ? 'order-card--dark' : 'order-card--light'">
             <div class="order-row q-pa-md">
               <div class="order-col-info">
-                <span class="text-weight-bold text-subtitle1 text-primary">
-                  {{ order.nome_projeto }} <span class="text-grey-6 text-weight-medium" style="font-size: 13px;">#{{
-                    order.id }}</span>
+                <span class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2">
+                  <q-icon name="storefront" size="18px" class="q-mr-xs" />
+                  {{ order.nome_lojista || 'Loja não informada' }}
+
+                  <!-- Exibe o ID do Lojista ao lado do nome -->
+                  <span v-if="order.id_lojista" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                    #{{ order.id_lojista }}
+                  </span>
                 </span>
-                <span class="text-caption text-grey-6">Pedido: {{ formatDate(order.data_pedido) }}</span>
+                <span class="text-caption text-grey-6">
+                  Projeto: <strong :class="isDark ? 'text-grey-4' : 'text-grey-8'">{{ order.nome_projeto }}</strong> #{{
+                  order.id }}
+                </span>
               </div>
 
               <div class="order-col-forecast">
@@ -179,10 +187,10 @@
 
 
               </template>
-                              <!-- LINHA BRANCA MOVIDA PARA CA! 
+              <!-- LINHA BRANCA MOVIDA PARA CA! 
                      Fica fora da transição, então nunca some.
                      Se a timeline abrir, ela é empurrada para baixo. -->
-                <q-separator :dark="isDark" class="q-mt-sm q-mb-xs" />
+              <q-separator :dark="isDark" class="q-mt-sm q-mb-xs" />
             </div>
           </div>
         </div>
@@ -246,7 +254,13 @@
               <q-avatar color="primary" text-color="white" icon="store" size="42px" class="q-mr-md" />
 
               <div class="col">
-                <div class="text-weight-bold" style="font-size: 15px;">{{ lojista.nome }}</div>
+                <!-- Nome do lojista + ID -->
+                <div class="text-weight-bold flex items-center" style="font-size: 15px;">
+                  {{ lojista.nome }}
+                  <span v-if="lojista.id" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                    #{{ lojista.id }}
+                  </span>
+                </div>
                 <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
                   {{ lojista.email }}
                 </div>
@@ -384,6 +398,7 @@ const lojistasFiltrados = computed(() => {
     if (p.email_lojista) {
       if (!mapa.has(p.email_lojista)) {
         mapa.set(p.email_lojista, {
+          id: p.id_lojista, // <-- Capturando o ID do lojista aqui!
           nome: p.nome_lojista || 'Lojista Sem Nome',
           email: p.email_lojista,
           telefone: p.telefone_lojista || '',
@@ -568,7 +583,7 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
    ══════════════════════════════════════ */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin-bottom: 28px;
 }
