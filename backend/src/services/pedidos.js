@@ -249,7 +249,9 @@ async function getPedidos(filtroPedidos = null) {
        p.data_pedido,
        p.data_previsao_pedido,
        p.enviado_por,
+       p.id_cliente,
        c.nome    AS cliente,
+       p.id_lojista,
        l.nome    AS lojista,
        r.nome    AS representante,
        sp.descricao AS status

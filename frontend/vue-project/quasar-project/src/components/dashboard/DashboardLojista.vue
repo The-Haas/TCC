@@ -238,9 +238,11 @@
                 </div>
 
                 <template v-else>
-                    <q-card v-for="cliente in clientesFiltrados" :key="cliente.email" flat bordered class="q-mb-md"
+<q-card v-for="cliente in clientesFiltrados" :key="cliente.email" flat bordered class="q-mb-md"
                         :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
                         style="border-radius: 12px; overflow: hidden;">
+                        
+                        <!-- Dados do Cliente -->
                         <q-card-section class="row items-center q-pb-sm">
                             <q-avatar color="primary" text-color="white" icon="person" size="42px" class="q-mr-md" />
 
@@ -272,6 +274,38 @@
                                     @click="abrirEmail(cliente.email)">
                                     <q-tooltip>Enviar E-mail</q-tooltip>
                                 </q-btn>
+                            </div>
+                        </q-card-section>
+
+                        <q-separator :dark="isDark" />
+
+                        <!-- Listagem dos Projetos do Cliente -->
+                        <q-card-section class="q-pt-sm q-pb-sm" :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
+                            <div class="text-caption text-weight-bold q-mb-xs" :class="isDark ? 'text-grey-5' : 'text-grey-7'">
+                                <q-icon name="receipt_long" size="14px" class="q-mr-xs" /> Projetos vinculados
+                            </div>
+                            
+                            <div v-for="projeto in cliente.projetos" :key="projeto.id"
+                                class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
+                                :class="isDark ? 'bg-dark' : 'bg-white'"
+                                style="border: 1px solid rgba(128,128,128,0.15);">
+                                
+                                <div class="col-7 flex column">
+                                    <span class="text-weight-bold text-primary" style="font-size: 13px; line-height: 1.2;">
+                                        {{ projeto.nome || 'Projeto sem nome' }}
+                                        <span class="text-grey-6 text-weight-medium q-ml-xs">#{{ projeto.id }}</span>
+                                    </span>
+                                </div>
+
+                                <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
+                                    <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'" style="font-size: 12px;">
+                                        {{ formatMoney(projeto.valor) }}
+                                    </span>
+                                    <span class="status-badge"
+                                        :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
+                                        {{ projeto.status }}
+                                    </span>
+                                </div>
                             </div>
                         </q-card-section>
                     </q-card>
@@ -408,12 +442,25 @@ const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3))
 const clientesFiltrados = computed(() => {
     const mapa = new Map()
     meusPedidos.value.forEach(p => {
-        if (p.email_cliente && !mapa.has(p.email_cliente)) {
-            mapa.set(p.email_cliente, {
-                id: p.id_cliente, // <-- Adicionado aqui para o modal ter acesso ao ID!
-                nome: p.nome_cliente || 'Cliente Sem Nome',
-                email: p.email_cliente,
-                telefone: p.telefone_cliente || ''
+        if (p.email_cliente) {
+            // Se o cliente ainda não existe no mapa, cria ele
+            if (!mapa.has(p.email_cliente)) {
+                mapa.set(p.email_cliente, {
+                    id: p.id_cliente,
+                    nome: p.nome_cliente || 'Cliente Sem Nome',
+                    email: p.email_cliente,
+                    telefone: p.telefone_cliente || '',
+                    projetos: [] // <-- Novo: Array para guardar os projetos
+                })
+            }
+            
+            // Adiciona o projeto atual na lista de projetos desse cliente
+            mapa.get(p.email_cliente).projetos.push({
+                id: p.id,
+                nome: p.nome_projeto,
+                status: p.status,
+                cor: p.cor || '#1976D2',
+                valor: p.valor
             })
         }
     })

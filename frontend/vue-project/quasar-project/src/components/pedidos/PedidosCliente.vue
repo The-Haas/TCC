@@ -112,7 +112,13 @@
 
             <div class="col-6 col-sm-2 text-caption flex column">
               <span class="text-grey-6 text-weight-medium">Loja responsável</span>
-              <span class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'">{{ order.lojista || 'Não informada' }}</span>
+              <span class="text-weight-bold flex items-center" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                {{ order.lojista || 'Não informada' }}
+                <!-- Exibe o ID do Lojista ao lado do nome da loja -->
+                <span v-if="order.id_lojista" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                  #{{ order.id_lojista }}
+                </span>
+              </span>
             </div>
 
             <!-- Coluna 5: Badge de Status com cor exata -->
