@@ -123,7 +123,7 @@
                                 </span>
                                 <span v-else class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'"
                                     style="font-size: 13px; letter-spacing: 0.2px;">
-                                    Progresso na fábrica
+                                    Progresso do pedido
                                 </span>
 
                                 <span class="text-weight-bold"
