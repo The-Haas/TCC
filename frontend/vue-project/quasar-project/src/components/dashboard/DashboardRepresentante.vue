@@ -7,7 +7,7 @@
                     {{ greeting }}, <span class="greeting-name">{{ firstName }}</span>.
                 </h1>
                 <p class="greeting-sub" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                    {{ dateStr }} — Acompanhe suas vendas, as lojas parceiras e os projetos em andamento.
+                    {{ dateStr }} — Acompanhe, as lojas parceiras e os projetos em andamento.
                 </p>
             </div>
         </div>

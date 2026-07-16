@@ -5,10 +5,10 @@
       <div>
         <h1 class="text-h5 text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'">
           <q-icon name="people" color="primary" class="q-mr-sm" size="28px" />
-          Meus Clientes
+          Clientes
         </h1>
         <p class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-          Gerencie o cadastro dos clientes que possuem projetos com a loja.
+          Gerencie o cadastro dos clientes.
         </p>
       </div>
     </div>

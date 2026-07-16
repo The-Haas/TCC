@@ -17,10 +17,9 @@ const routes = [
         path: 'dashboard',
         component: () => import('pages/DashboardPage.vue'), // será o Dashboard futuramente
       },
-      // 👇 AQUI ENTRA A SUA NOVA ROTA 👇
       {
         path: 'pedidos',
-        component: () => import('pages/PedidosPage.vue'), // Agora aponta para a Casca!
+        component: () => import('pages/PedidosPage.vue'), // Aponta para a Casca de Pedidos
       },
       { 
         path: 'perfil', 
@@ -29,6 +28,10 @@ const routes = [
       {
         path: 'clientes',
         component: () => import('pages/ClientesPage.vue'),
+      },
+      {
+        path: 'lojistas',
+        component: () => import('pages/LojistasPage.vue'),
       },
     ],
   },
