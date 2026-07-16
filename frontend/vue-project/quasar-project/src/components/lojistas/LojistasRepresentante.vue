@@ -1,8 +1,8 @@
 <template>
   <div class="column fit">
-    <!-- Filtros -->
+    <!-- Filtros e Ações -->
     <q-card class="filter-card q-mb-lg" :class="isDark ? 'bg-dark-card border-dark-sharp' : 'bg-white border-light-sharp'" flat>
-      <q-card-section class="row q-col-gutter-md items-center">
+      <q-card-section class="row q-col-gutter-md items-center justify-between">
         <div class="col-12 col-md-5">
           <q-input 
             v-model="busca" 
@@ -17,6 +17,19 @@
               <q-icon name="search" color="grey-6" />
             </template>
           </q-input>
+        </div>
+        
+        <!-- Botão Novo Lojista -->
+        <div class="col-12 col-md-auto text-right" v-if="podeEditar">
+          <q-btn 
+            color="primary" 
+            icon="add" 
+            label="Novo Lojista" 
+            no-caps 
+            unevaluated
+            class="text-weight-bold radius-8"
+            @click="abrirNovo" 
+          />
         </div>
       </q-card-section>
     </q-card>
@@ -113,16 +126,17 @@
       />
     </div>
 
-    <!-- Modal de Edição -->
+    <!-- Modal de Formulário (Edição / Criação) -->
     <q-dialog v-model="modalEdicao" transition-show="scale" transition-hide="scale">
       <q-card style="width: 100%; max-width: 600px; border-radius: 14px;" :class="isDark ? 'bg-dark-modal text-white' : 'bg-white text-grey-9'">
         <q-card-section class="row items-center q-px-xl q-py-lg header-border">
           <div>
             <div class="text-h6 text-weight-bold tracking-tight text-slate-main flex items-center">
-              <q-icon name="manage_accounts" color="primary" size="24px" class="q-mr-sm" />
-              Atualizar Lojista
+              <q-icon :name="lojistaEditando.id ? 'manage_accounts' : 'person_add'" color="primary" size="24px" class="q-mr-sm" />
+              {{ lojistaEditando.id ? 'Atualizar Lojista' : 'Novo Lojista' }}
             </div>
-            <div class="text-caption text-grey-5 font-12 q-mt-xs">Registro único: #{{ lojistaEditando.id }}</div>
+            <div v-if="lojistaEditando.id" class="text-caption text-grey-5 font-12 q-mt-xs">Registro único: #{{ lojistaEditando.id }}</div>
+            <div v-else class="text-caption text-grey-5 font-12 q-mt-xs">Preencha os dados para adicionar à sua carteira</div>
           </div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup :disable="salvando" class="text-grey-4" />
@@ -175,12 +189,35 @@
                       class="premium-field" 
                     />
                   </div>
+
+                  <!-- Senha (Aparece apenas na criação de um novo lojista) -->
+                  <div class="col-12" v-if="!lojistaEditando.id">
+                    <q-input 
+                      v-model="lojistaEditando.senha" 
+                      label="Senha de Acesso *" 
+                      outlined 
+                      dense 
+                      :dark="isDark" 
+                      :type="ocultarSenha ? 'password' : 'text'"
+                      :rules="[val => !!val || 'A senha é obrigatória para novos cadastros']" 
+                      hide-bottom-space 
+                      class="premium-field" 
+                    >
+                      <template v-slot:append>
+                        <q-icon 
+                          :name="ocultarSenha ? 'visibility_off' : 'visibility'" 
+                          class="cursor-pointer text-grey-5" 
+                          @click="ocultarSenha = !ocultarSenha" 
+                        />
+                      </template>
+                    </q-input>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Metadados de Data -->
-            <div class="col-12 row justify-between items-center metadata-row q-pt-sm">
+            <!-- Metadados de Data (Ocultos se for novo cadastro) -->
+            <div v-if="lojistaEditando.id" class="col-12 row justify-between items-center metadata-row q-pt-sm">
               <div class="text-caption text-grey-5 font-11">
                 Criado em: <span class="text-weight-medium" :class="isDark ? 'text-grey-3' : 'text-grey-7'">{{ formatarData(lojistaEditando.created_at) }}</span>
               </div>
@@ -192,7 +229,7 @@
             <!-- Botões -->
             <div class="col-12 row justify-end q-gutter-x-md q-mt-lg">
               <q-btn label="Cancelar" color="grey-6" flat v-close-popup :disable="salvando" no-caps class="text-weight-bold font-14" />
-              <q-btn v-if="podeEditar" label="Salvar Alterações" color="primary" type="submit" :loading="salvando" unevaluated no-caps class="text-weight-bold px-xl font-14 radius-8" />
+              <q-btn v-if="podeEditar" :label="lojistaEditando.id ? 'Salvar Alterações' : 'Cadastrar Lojista'" color="primary" type="submit" :loading="salvando" unevaluated no-caps class="text-weight-bold px-xl font-14 radius-8" />
             </div>
           </q-form>
         </q-card-section>
@@ -232,6 +269,7 @@ const paginacao = ref({
 const modalEdicao = ref(false)
 const salvando = ref(false)
 const lojistaEditando = ref({})
+const ocultarSenha = ref(true) // Variável para controlar visualização da senha
 
 // Cálculo Dinâmico das Páginas
 const numeroDePaginas = computed(() => {
@@ -289,23 +327,44 @@ function abrirEdicao(lojista) {
   modalEdicao.value = true
 }
 
+function abrirNovo() {
+  // Limpa o objeto para abrir um modal vazio, agora com o campo 'senha'
+  lojistaEditando.value = {
+    nome: '',
+    email: '',
+    telefone: '',
+    senha: '' 
+  }
+  ocultarSenha.value = true // Garante que a senha inicia oculta
+  modalEdicao.value = true
+}
+
 async function salvarLojista() {
   salvando.value = true
   try {
-    const id = lojistaEditando.value.id
-    
-    // Enviando apenas os campos que o representante tem permissão para alterar
+    // Monta o payload base
     const payload = {
       nome: lojistaEditando.value.nome,
       email: lojistaEditando.value.email,
       telefone: lojistaEditando.value.telefone
     }
 
-    await api.patch(`/lojistas/${id}`, payload, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
+    if (lojistaEditando.value.id) {
+      // Se tem ID, é uma ATUALIZAÇÃO (PATCH)
+      await api.patch(`/lojistas/${lojistaEditando.value.id}`, payload, {
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+      $q.notify({ type: 'positive', message: 'Lojista atualizado com sucesso.' })
+    } else {
+      // Se NÃO tem ID, é uma CRIAÇÃO (POST). Adicionamos a senha no payload!
+      payload.senha = lojistaEditando.value.senha
+      
+      await api.post('/lojistas', payload, {
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+      $q.notify({ type: 'positive', message: 'Novo lojista adicionado com sucesso.' })
+    }
     
-    $q.notify({ type: 'positive', message: 'Lojista atualizado com sucesso.' })
     modalEdicao.value = false
     await carregarLojistas()
   } catch (error) {
