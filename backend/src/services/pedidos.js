@@ -141,7 +141,7 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
     const idAdminEnviou = user.tipo === "admin" ? user.id : null;
 
     const statusPadrao = (await db.query(
-      `SELECT id FROM status_pedido WHERE padrao = true LIMIT 1`
+      `SELECT id, ordem, descricao, cor FROM status_pedido WHERE padrao = true LIMIT 1`
     )).rows[0];
 
     if (!statusPadrao) {
@@ -205,8 +205,14 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
         );
       }
     }
-
-    return { success: true, idPedido };
+    return { 
+      success: true, 
+      idPedido,
+      id_status: statusPadrao.id,
+      ordem_status: statusPadrao.ordem,
+      status: statusPadrao.descricao,
+      cor: statusPadrao.cor
+    };
 
   } catch (error) {
     console.error("Erro no importaxml:", error);
@@ -254,7 +260,10 @@ async function getPedidos(filtroPedidos = null) {
        p.id_lojista,
        l.nome    AS lojista,
        r.nome    AS representante,
-       sp.descricao AS status
+       p.id_status,
+       sp.descricao AS status,
+       sp.ordem AS ordem_status,
+       sp.cor
      FROM pedidos p
      LEFT JOIN clientes       c  ON c.id  = p.id_cliente
      LEFT JOIN lojistas       l  ON l.id  = p.id_lojista
@@ -279,7 +288,9 @@ async function getPedidoById(id) {
        c.nome    AS cliente,
        l.nome    AS lojista,
        r.nome    AS representante,
-       sp.descricao AS status
+       sp.descricao AS status,
+       sp.ordem AS ordem_status,
+       sp.cor
      FROM pedidos p
      LEFT JOIN clientes       c  ON c.id  = p.id_cliente
      LEFT JOIN lojistas       l  ON l.id  = p.id_lojista
