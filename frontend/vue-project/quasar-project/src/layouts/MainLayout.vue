@@ -298,31 +298,25 @@ const allMenu = [
     label: 'Principal',
     items: [
       { label: 'Dashboard', icon: 'dashboard', to: '/dashboard', roles: ['admin', 'lojista', 'representante', 'cliente'] },
-      
+
       // Pedidos gerais (Admin e Lojista)
-      { label: 'Projetos', icon: 'receipt_long', to: '/pedidos', roles: ['admin', 'lojista'] },
-      
+      { label: 'Projetos', icon: 'receipt_long', to: '/pedidos', roles: ['admin', 'lojista', 'representante'] },
+
       // Tela de Projetos/Pedidos específica do Representante (A que fizemos com upload de XML)
-      { label: 'Projetos', icon: 'receipt_long', to: '/pedidos', roles: ['representante'] },
-      
+
       // Pedidos do Cliente Final
       { label: 'Meus Projetos', icon: 'local_mall', to: '/pedidos', roles: ['cliente'] },
-      
-      // Gestão de Clientes (admin e lojista)
-      { label: 'Clientes', icon: 'people_alt', to: '/clientes', roles: ['admin', 'lojista'] },
-      
-      // Apenas representante e admin
-      { label: 'Lojistas', icon: 'storefront', to: '/lojistas', roles: ['representante'] },
     ],
   },
   {
     key: 'admin',
     label: 'Administração',
     items: [
-      { label: 'Lojistas', icon: 'storefront', to: '/lojistas', roles: ['admin'] },
+      { label: 'Clientes', icon: 'people_alt', to: '/clientes', roles: ['admin', 'lojista'] },
+      { label: 'Lojistas', icon: 'storefront', to: '/lojistas', roles: ['admin', 'representante'] },
       { label: 'Representantes', icon: 'badge', to: '/representantes', roles: ['admin'] },
       { label: 'Administradores', icon: 'admin_panel_settings', to: '/admins', roles: ['admin'] },
-      { label: 'Status de Pedido', icon: 'label', to: '/status-pedido', roles: ['admin'] },
+      { label: 'Status de Pedido', icon: 'label', to: '/status', roles: ['admin'] },
     ],
   },
 ]

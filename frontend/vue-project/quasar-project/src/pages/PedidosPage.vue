@@ -8,6 +8,8 @@
 
     <!-- Exibe a tela do representante se for representante -->
     <PedidosRepresentante v-else-if="tipoUsuario === 'representante'" />
+
+    <PedidosAdmin v-else-if="tipoUsuario === 'admin'" />
   </q-page>
 </template>
 
@@ -19,6 +21,7 @@ import { useAuthStore } from 'stores/auth'
 import PedidosCliente from 'components/pedidos/PedidosCliente.vue'
 import PedidosLojista from 'components/pedidos/PedidosLojista.vue'
 import PedidosRepresentante from 'components/pedidos/PedidosRepresentante.vue'
+import PedidosAdmin from 'components/pedidos/PedidosAdmin.vue'
 
 const authStore = useAuthStore()
 const tipoUsuario = computed(() => authStore.userTipo)

@@ -216,7 +216,7 @@
                     </div>
                     <h3 class="support-title" :class="isDark ? 'text-white' : 'text-grey-9'">Minha Rede</h3>
                     <p class="support-text" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                        Acesse rapidamente a agenda e os contatos dos seus representantes comerciais[cite: 2].
+                        Acesse rapidamente a agenda e os contatos dos seus representantes comerciais.
                     </p>
 
                     <q-btn unelevated no-caps color="primary" icon="assignment_ind" label="Representantes"
@@ -233,7 +233,7 @@
         <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;"
             :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
             <q-card-section class="row items-center q-pb-none">
-                <div class="text-h6 text-weight-bold">Representantes Cadastrados[cite: 2]</div>
+                <div class="text-h6 text-weight-bold">Representantes Cadastrados</div>
                 <q-space />
                 <q-btn icon="close" flat round dense v-close-popup />
             </q-card-section>
@@ -241,7 +241,7 @@
             <q-card-section class="q-pa-md">
                 <div v-if="representantesFiltrados.length === 0" class="text-center q-pa-md"
                     style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
-                    <span class="text-grey-6">Nenhum representante encontrado[cite: 2].</span>
+                    <span class="text-grey-6">Nenhum representante encontrado.</span>
                 </div>
 
                 <template v-else>

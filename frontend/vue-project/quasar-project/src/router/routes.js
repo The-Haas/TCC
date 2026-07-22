@@ -33,6 +33,19 @@ const routes = [
         path: 'lojistas',
         component: () => import('pages/LojistasPage.vue'),
       },
+      {
+        path: 'representantes',
+        component: () => import('pages/RepresentantesPage.vue'),
+      },
+      {
+        path: 'admins',
+        component: () => import('pages/AdminsPage.vue'),
+      },
+      {
+        path: 'status',
+        component: () => import('pages/StatusPage.vue'),
+      }
+
     ],
   },
 
