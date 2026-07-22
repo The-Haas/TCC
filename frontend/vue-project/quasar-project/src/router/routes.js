@@ -21,8 +21,8 @@ const routes = [
         path: 'pedidos',
         component: () => import('pages/PedidosPage.vue'), // Aponta para a Casca de Pedidos
       },
-      { 
-        path: 'perfil', 
+      {
+        path: 'perfil',
         component: () => import('pages/Perfil.vue'),
       },
       {
@@ -44,6 +44,10 @@ const routes = [
       {
         path: 'status',
         component: () => import('pages/StatusPage.vue'),
+      },
+      {
+        path: 'configuracoes',
+        component: () => import('pages/ConfiguracoesPage.vue'),
       }
 
     ],

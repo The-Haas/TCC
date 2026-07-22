@@ -6,6 +6,7 @@ const lojistasRoute = require('./lojistas');
 const adminsRoute = require('./admins');
 const statusPedidoRoute = require('./statusPedido');
 const dashboardRoute = require('./dashboard');
+const configRoute = require('./configuracoes');
 
 module.exports = (app) => {
     importaxmlRoute(app);
@@ -16,4 +17,5 @@ module.exports = (app) => {
     adminsRoute(app);
     statusPedidoRoute(app);
     dashboardRoute(app);
+    configRoute(app);
 }

@@ -319,6 +319,13 @@ const allMenu = [
       { label: 'Status de Pedido', icon: 'label', to: '/status', roles: ['admin'] },
     ],
   },
+  {
+    key: 'admin',
+    label: 'Configurações',
+    items: [
+      { label: 'Configurações', icon: 'settings', to: '/configuracoes', roles: ['admin'] },
+    ],
+  },
 ]
 
 const visibleMenu = computed(() => {
