@@ -80,7 +80,9 @@ async function getDashboardLojista(idLojista) {
                 c.nome AS nome_cliente,
                 c.telefone AS telefone_cliente,
                 c.email AS email_cliente,
+                r.id AS id_representante,
                 r.nome AS nome_representante,
+                r.email AS email_representante,
                 r.telefone AS telefone_representante
             FROM pedidos p
             INNER JOIN status_pedido sp 

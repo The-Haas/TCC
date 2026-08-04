@@ -89,7 +89,7 @@
                                         order.nome_projeto }}</strong> #{{ order.id }}
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                }}</span>
+                                    }}</span>
                             </div>
 
                             <div class="order-col-forecast">
@@ -238,10 +238,10 @@
                 </div>
 
                 <template v-else>
-<q-card v-for="cliente in clientesFiltrados" :key="cliente.email" flat bordered class="q-mb-md"
+                    <q-card v-for="cliente in clientesFiltrados" :key="cliente.email" flat bordered class="q-mb-md"
                         :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
                         style="border-radius: 12px; overflow: hidden;">
-                        
+
                         <!-- Dados do Cliente -->
                         <q-card-section class="row items-center q-pb-sm">
                             <q-avatar color="primary" text-color="white" icon="person" size="42px" class="q-mr-md" />
@@ -261,7 +261,7 @@
                                 <div v-if="cliente.telefone" :class="isDark ? 'text-grey-4' : 'text-grey-7'"
                                     class="text-caption text-weight-medium q-mt-xs flex items-center">
                                     <q-icon name="phone" size="14px" class="q-mr-xs" />{{
-                                    formatarTelefone(cliente.telefone) }}
+                                        formatarTelefone(cliente.telefone) }}
                                 </div>
                             </div>
 
@@ -281,24 +281,27 @@
 
                         <!-- Listagem dos Projetos do Cliente -->
                         <q-card-section class="q-pt-sm q-pb-sm" :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
-                            <div class="text-caption text-weight-bold q-mb-xs" :class="isDark ? 'text-grey-5' : 'text-grey-7'">
+                            <div class="text-caption text-weight-bold q-mb-xs"
+                                :class="isDark ? 'text-grey-5' : 'text-grey-7'">
                                 <q-icon name="receipt_long" size="14px" class="q-mr-xs" /> Projetos vinculados
                             </div>
-                            
+
                             <div v-for="projeto in cliente.projetos" :key="projeto.id"
                                 class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
                                 :class="isDark ? 'bg-dark' : 'bg-white'"
                                 style="border: 1px solid rgba(128,128,128,0.15);">
-                                
+
                                 <div class="col-7 flex column">
-                                    <span class="text-weight-bold text-primary" style="font-size: 13px; line-height: 1.2;">
+                                    <span class="text-weight-bold text-primary"
+                                        style="font-size: 13px; line-height: 1.2;">
                                         {{ projeto.nome || 'Projeto sem nome' }}
                                         <span class="text-grey-6 text-weight-medium q-ml-xs">#{{ projeto.id }}</span>
                                     </span>
                                 </div>
 
                                 <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
-                                    <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'" style="font-size: 12px;">
+                                    <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'"
+                                        style="font-size: 12px;">
                                         {{ formatMoney(projeto.valor) }}
                                     </span>
                                     <span class="status-badge"
@@ -339,7 +342,19 @@
                                 class="q-mr-md" />
 
                             <div class="col">
-                                <div class="text-weight-bold" style="font-size: 15px;">{{ rep.nome }}</div>
+                                <!-- Nome do representante + ID -->
+                                <div class="text-weight-bold flex items-center" style="font-size: 15px;">
+                                    {{ rep.nome }}
+                                    <span v-if="rep.id" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                                        #{{ rep.id }}
+                                    </span>
+                                </div>
+
+                                <!-- E-mail do representante -->
+                                <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                                    {{ rep.email || 'E-mail não informado' }}
+                                </div>
+
                                 <div v-if="rep.telefone" :class="isDark ? 'text-grey-4' : 'text-grey-7'"
                                     class="text-caption text-weight-medium q-mt-xs flex items-center">
                                     <q-icon name="phone" size="14px" class="q-mr-xs" />{{ formatarTelefone(rep.telefone)
@@ -351,6 +366,11 @@
                                 <q-btn v-if="rep.telefone" round flat dense color="green" icon="chat" size="14px"
                                     @click="abrirWhatsApp(rep.telefone, rep.nome)">
                                     <q-tooltip>Chamar no WhatsApp</q-tooltip>
+                                </q-btn>
+                                <!-- Adicionado o botão de E-mail para o representante também -->
+                                <q-btn v-if="rep.email" round flat dense color="primary" icon="mail" size="14px"
+                                    @click="abrirEmail(rep.email)">
+                                    <q-tooltip>Enviar E-mail</q-tooltip>
                                 </q-btn>
                             </div>
                         </q-card-section>
@@ -453,7 +473,7 @@ const clientesFiltrados = computed(() => {
                     projetos: [] // <-- Novo: Array para guardar os projetos
                 })
             }
-            
+
             // Adiciona o projeto atual na lista de projetos desse cliente
             mapa.get(p.email_cliente).projetos.push({
                 id: p.id,
@@ -472,7 +492,9 @@ const representantesFiltrados = computed(() => {
     meusPedidos.value.forEach(p => {
         if (p.nome_representante && !mapa.has(p.nome_representante)) {
             mapa.set(p.nome_representante, {
+                id: p.id_representante,          // Puxando o ID
                 nome: p.nome_representante,
+                email: p.email_representante,    // Puxando o E-mail
                 telefone: p.telefone_representante || ''
             })
         }
