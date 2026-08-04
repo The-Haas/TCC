@@ -189,7 +189,7 @@
             </div>
 
             <div v-if="detalhes[order.id].xml" class="row justify-end q-mt-md">
-              <q-btn color="secondary" icon="download" no-caps outline label="Baixar Arquivo de Projeto (XML)"
+              <q-btn color="secondary" icon="download" no-caps outline label="Download XML"
                 @click="downloadXML(detalhes[order.id])" />
             </div>
           </template>

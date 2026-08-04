@@ -256,7 +256,7 @@
                                 
                                 <q-btn color="primary" icon="save" label="Salvar Alterações" @click="salvarEdicao(order)" :loading="salvandoEdicao === order.id" no-caps />
                                 
-                                <q-btn v-if="detalhes[order.id].xml" color="secondary" icon="download" label="Baixar XML" no-caps outline @click="downloadXML(detalhes[order.id])" />
+                                <q-btn v-if="detalhes[order.id].xml" color="secondary" icon="download" label="Download XML" no-caps outline @click="downloadXML(detalhes[order.id])" />
                             </div>
                         </div>
                     </template>
