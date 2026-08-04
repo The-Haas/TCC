@@ -7,6 +7,7 @@ const adminsRoute = require('./admins');
 const statusPedidoRoute = require('./statusPedido');
 const dashboardRoute = require('./dashboard');
 const configRoute = require('./configuracoes');
+const resetSenhasRoute = require('./resetSenhas');
 
 module.exports = (app) => {
     importaxmlRoute(app);
@@ -18,4 +19,5 @@ module.exports = (app) => {
     statusPedidoRoute(app);
     dashboardRoute(app);
     configRoute(app);
+    resetSenhasRoute(app);
 }

@@ -1,8 +1,13 @@
 const routes = [
-  // ── Rota pública: Login ────────────────────────────────────────────
+  // ── Rota pública: Login e Recuperação de Senha ─────────────────────
   {
     path: '/login',
     component: () => import('pages/LoginPage.vue'),
+    meta: { guest: true }, // só acessível sem login
+  },
+  {
+    path: '/esqueceu-senha',
+    component: () => import('pages/EsqueceuSenhaPage.vue'),
     meta: { guest: true }, // só acessível sem login
   },
 
@@ -48,8 +53,7 @@ const routes = [
       {
         path: 'configuracoes',
         component: () => import('pages/ConfiguracoesPage.vue'),
-      }
-
+      },
     ],
   },
 

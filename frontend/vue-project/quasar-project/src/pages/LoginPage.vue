@@ -150,6 +150,18 @@
                 />
               </template>
             </q-input>
+            
+            <!-- Botão Esqueceu a Senha (alinhado à direita sob o campo) -->
+            <div class="text-right q-mt-xs">
+              <q-btn
+                flat
+                dense
+                no-caps
+                label="Esqueceu a senha?"
+                to="/esqueceu-senha"
+                class="forgot-link"
+              />
+            </div>
           </div>
 
           <!-- Erro -->
@@ -160,19 +172,28 @@
             </div>
           </transition>
 
-          <!-- Botão -->
+          <!-- Botão Entrar -->
           <q-btn
             type="submit"
             label="Entrar no sistema"
             unelevated no-caps
             :loading="loading"
-            class="login-btn full-width q-mt-lg"
+            class="login-btn full-width q-mt-md"
           >
             <template #loading>
               <q-spinner-tail color="white" size="1.2em" />
               <span class="q-ml-sm">Verificando...</span>
             </template>
           </q-btn>
+
+          <!-- Botão Primeiro Acesso -->
+          <q-btn
+            outline
+            no-caps
+            label="Primeiro Acesso"
+            to="/esqueceu-senha"
+            class="first-access-btn full-width q-mt-md"
+          />
 
         </q-form>
 
@@ -482,7 +503,7 @@ async function handleLogin() {
   margin-top: 8px;
 }
 
-/* ── Botão entrar ── */
+/* ── Botões principais ── */
 .login-btn {
   background: #ff7b00 !important;
   color: #fff !important;
@@ -498,6 +519,36 @@ async function handleLogin() {
   box-shadow: 0 12px 32px rgba(255,123,0,.48) !important;
 }
 .login-btn:active:not(:disabled) { transform: translateY(0); }
+
+/* ── Botão Primeiro Acesso (Vazado) ── */
+.first-access-btn {
+  height: 46px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: #ff7b00 !important;
+  border: 1px solid #ff7b00;
+  transition: all .15s;
+}
+.first-access-btn:hover {
+  background: rgba(255, 123, 0, 0.08) !important;
+  transform: translateY(-2px);
+}
+.first-access-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Link Esqueceu a Senha ── */
+.forgot-link {
+  font-size: 12.5px;
+  color: rgba(255,255,255,.45) !important;
+  transition: color 0.2s ease;
+  padding: 2px 8px;
+  margin-right: -8px; /* Remove o espaçamento extra à direita */
+}
+.forgot-link:hover {
+  color: #ff7b00 !important;
+}
 
 /* ── Rodapé ── */
 .form-footer {
