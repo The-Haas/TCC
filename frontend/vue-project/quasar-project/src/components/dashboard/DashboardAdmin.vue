@@ -70,11 +70,20 @@
                         :class="isDark ? 'order-card--dark' : 'order-card--light'">
                         <div class="order-row q-pa-md">
                             <div class="order-col-info">
+                                <!-- NOVO: Badge de ID do Pedido -->
+                                <div class="q-mb-xs">
+                                    <span class="text-caption text-weight-bold"
+                                        :class="isDark ? 'bg-grey-9 text-grey-3' : 'bg-blue-1 text-primary'"
+                                        style="padding: 3px 8px; border-radius: 6px; font-size: 11px;">
+                                        Pedido #{{ order.id }}
+                                    </span>
+                                </div>
+
                                 <!-- Destaque para o NOME DA LOJA / LOJISTA -->
-                                <span class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2">
+                                <span
+                                    class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2 q-mt-xs">
                                     <q-icon name="storefront" size="18px" class="q-mr-xs" />
                                     {{ order.nome_lojista || 'Lojista não informado' }}
-
                                     <span v-if="order.id_lojista"
                                         class="text-caption text-grey-6 text-weight-normal q-ml-xs">
                                         #{{ order.id_lojista }}
@@ -88,20 +97,15 @@
                                     <strong :class="isDark ? 'text-grey-4' : 'text-grey-9'" class="q-ml-xs">
                                         {{ order.nome_cliente || 'Não informado' }}
                                     </strong>
-
-                                    <span v-if="order.id_cliente"
-                                        class="text-caption text-grey-6 text-weight-normal q-ml-xs">
-                                        #{{ order.id_cliente }}
-                                    </span>
                                 </span>
 
                                 <!-- Dados do Projeto -->
-                                <span class="text-caption text-grey-6">
+                                <span class="text-caption text-grey-6 q-mt-xs">
                                     Projeto: <strong :class="isDark ? 'text-grey-4' : 'text-grey-8'">{{
-                                        order.nome_projeto }}</strong> #{{ order.id }}
+                                        order.nome_projeto }}</strong>
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                }}</span>
+                                    }}</span>
                             </div>
 
                             <div class="order-col-forecast">
@@ -514,22 +518,22 @@ const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3))
 // Agrupando Representantes e inserindo seus respectivos projetos
 const representantesFiltrados = computed(() => {
     const mapa = new Map()
-    
+
     // Alimenta o mapa com a lista oficial de representantes garantindo que o ID seja String
     todosOsRepresentantes.value.forEach(r => {
         mapa.set(String(r.id), {
             id: r.id,
             nome: r.nome,
-            email: r.email || 'Não informado', 
+            email: r.email || 'Não informado',
             telefone: r.telefone || null,
             projetos: []
         })
     })
-    
+
     // Distribui os projetos de meusPedidos para os respectivos representantes
     meusPedidos.value.forEach(p => {
         const idRep = p.id_representante || p.representante_id
-        
+
         if (idRep) {
             const key = String(idRep) // Transforma em String para garantir o "Match"
 
@@ -538,12 +542,12 @@ const representantesFiltrados = computed(() => {
                 mapa.set(key, {
                     id: key,
                     nome: p.nome_representante || 'Representante Sem Nome',
-                    email: p.email_representante || 'Não informado', 
+                    email: p.email_representante || 'Não informado',
                     telefone: p.telefone_representante || null,
                     projetos: []
                 })
             }
-            
+
             mapa.get(key).projetos.push({
                 id: p.id,
                 nome: p.nome_projeto || p.projeto || 'Projeto sem nome',

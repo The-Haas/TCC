@@ -70,8 +70,18 @@
                         :class="isDark ? 'order-card--dark' : 'order-card--light'">
                         <div class="order-row q-pa-md">
                             <div class="order-col-info">
+                                <!-- NOVO: Badge de ID do Pedido -->
+                                <div class="q-mb-xs">
+                                    <span class="text-caption text-weight-bold"
+                                        :class="isDark ? 'bg-grey-9 text-grey-3' : 'bg-blue-1 text-primary'"
+                                        style="padding: 3px 8px; border-radius: 6px; font-size: 11px;">
+                                        Pedido #{{ order.id }}
+                                    </span>
+                                </div>
+
                                 <!-- Destaque para o NOME DA LOJA / LOJISTA -->
-                                <span class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2">
+                                <span
+                                    class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2 q-mt-xs">
                                     <q-icon name="storefront" size="18px" class="q-mr-xs" />
                                     {{ order.nome_lojista || 'Lojista não informado' }}
 
@@ -96,9 +106,9 @@
                                 </span>
 
                                 <!-- Dados do Projeto -->
-                                <span class="text-caption text-grey-6">
+                                <span class="text-caption text-grey-6 q-mt-xs">
                                     Projeto: <strong :class="isDark ? 'text-grey-4' : 'text-grey-8'">{{
-                                        order.nome_projeto }}</strong> #{{ order.id }}
+                                        order.nome_projeto }}</strong>
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
                                     }}</span>
@@ -219,8 +229,7 @@
                         Acesse rapidamente a agenda e os contatos das suas lojas parceiras.
                     </p>
 
-                    <q-btn unelevated no-caps color="primary" icon="storefront" label="Minhas Lojas"
-                        class="full-width"
+                    <q-btn unelevated no-caps color="primary" icon="storefront" label="Minhas Lojas" class="full-width"
                         style="border-radius: 10px; font-weight: 700; font-size: 14px; padding: 12px 0;"
                         @click="modalLojistas = true" />
                 </div>
@@ -229,104 +238,104 @@
     </q-page>
 
     <!-- Modal de Lojistas (Minhas Lojas) -->
-<q-dialog v-model="modalLojistas">
-    <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;"
-        :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
-        <q-card-section class="row items-center q-pb-none">
-            <div class="text-h6 text-weight-bold">Lojas Parceiras Recentes</div>
-            <q-space />
-            <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
+    <q-dialog v-model="modalLojistas">
+        <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;"
+            :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
+            <q-card-section class="row items-center q-pb-none">
+                <div class="text-h6 text-weight-bold">Lojas Parceiras Recentes</div>
+                <q-space />
+                <q-btn icon="close" flat round dense v-close-popup />
+            </q-card-section>
 
-        <q-card-section class="q-pa-md">
-            <div v-if="lojistasFiltrados.length === 0" class="text-center q-pa-md"
-                style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
-                <span class="text-grey-6">Nenhum lojista recente encontrado.</span>
-            </div>
+            <q-card-section class="q-pa-md">
+                <div v-if="lojistasFiltrados.length === 0" class="text-center q-pa-md"
+                    style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
+                    <span class="text-grey-6">Nenhum lojista recente encontrado.</span>
+                </div>
 
-            <template v-else>
-                <!-- Alterado :key para usar o id único do lojista -->
-                <q-card v-for="lojista in lojistasFiltrados" :key="lojista.id" flat bordered class="q-mb-md"
-                    :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
-                    style="border-radius: 12px; overflow: hidden;">
+                <template v-else>
+                    <!-- Alterado :key para usar o id único do lojista -->
+                    <q-card v-for="lojista in lojistasFiltrados" :key="lojista.id" flat bordered class="q-mb-md"
+                        :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
+                        style="border-radius: 12px; overflow: hidden;">
 
-                    <!-- Dados do Lojista -->
-                    <q-card-section class="row items-center q-pb-sm">
-                        <q-avatar color="primary" text-color="white" icon="storefront" size="42px"
-                            class="q-mr-md" />
+                        <!-- Dados do Lojista -->
+                        <q-card-section class="row items-center q-pb-sm">
+                            <q-avatar color="primary" text-color="white" icon="storefront" size="42px"
+                                class="q-mr-md" />
 
-                        <div class="col">
-                            <div class="text-weight-bold flex items-center" style="font-size: 15px;">
-                                {{ lojista.nome }}
-                                <span v-if="lojista.id" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
-                                    #{{ lojista.id }}
-                                </span>
+                            <div class="col">
+                                <div class="text-weight-bold flex items-center" style="font-size: 15px;">
+                                    {{ lojista.nome }}
+                                    <span v-if="lojista.id" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                                        #{{ lojista.id }}
+                                    </span>
+                                </div>
+
+                                <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                                    {{ lojista.email }}
+                                </div>
+                                <div v-if="lojista.telefone" :class="isDark ? 'text-grey-4' : 'text-grey-7'"
+                                    class="text-caption text-weight-medium q-mt-xs flex items-center">
+                                    <q-icon name="phone" size="14px" class="q-mr-xs" />
+                                    {{ formatarTelefone(lojista.telefone) }}
+                                </div>
                             </div>
 
-                            <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                                {{ lojista.email }}
+                            <!-- Botões de ação com o LOJISTA -->
+                            <div class="col-auto row q-gutter-xs">
+                                <q-btn v-if="lojista.telefone" round flat dense color="green" icon="chat" size="14px"
+                                    @click="abrirWhatsApp(lojista.telefone, lojista.nome)">
+                                    <q-tooltip>Chamar no WhatsApp</q-tooltip>
+                                </q-btn>
+                                <q-btn round flat dense color="primary" icon="mail" size="14px"
+                                    @click="abrirEmail(lojista.email, lojista.nome)">
+                                    <q-tooltip>Enviar E-mail</q-tooltip>
+                                </q-btn>
                             </div>
-                            <div v-if="lojista.telefone" :class="isDark ? 'text-grey-4' : 'text-grey-7'"
-                                class="text-caption text-weight-medium q-mt-xs flex items-center">
-                                <q-icon name="phone" size="14px" class="q-mr-xs" />
-                                {{ formatarTelefone(lojista.telefone) }}
-                            </div>
-                        </div>
+                        </q-card-section>
 
-                        <!-- Botões de ação com o LOJISTA -->
-                        <div class="col-auto row q-gutter-xs">
-                            <q-btn v-if="lojista.telefone" round flat dense color="green" icon="chat" size="14px"
-                                @click="abrirWhatsApp(lojista.telefone, lojista.nome)">
-                                <q-tooltip>Chamar no WhatsApp</q-tooltip>
-                            </q-btn>
-                            <q-btn round flat dense color="primary" icon="mail" size="14px"
-                                @click="abrirEmail(lojista.email, lojista.nome)">
-                                <q-tooltip>Enviar E-mail</q-tooltip>
-                            </q-btn>
-                        </div>
-                    </q-card-section>
+                        <q-separator :dark="isDark" />
 
-                    <q-separator :dark="isDark" />
-
-                    <!-- Listagem dos Projetos da Loja -->
-                    <q-card-section class="q-pt-sm q-pb-sm" :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
-                        <div class="text-caption text-weight-bold q-mb-xs"
-                            :class="isDark ? 'text-grey-5' : 'text-grey-7'">
-                            <q-icon name="receipt_long" size="14px" class="q-mr-xs" /> Projetos desta loja
-                        </div>
-
-                        <div v-for="projeto in lojista.projetos" :key="projeto.id"
-                            class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
-                            :class="isDark ? 'bg-dark' : 'bg-white'"
-                            style="border: 1px solid rgba(128,128,128,0.15);">
-
-                            <div class="col-7 flex column">
-                                <span class="text-weight-bold text-primary"
-                                    style="font-size: 13px; line-height: 1.2;">
-                                    {{ projeto.nome || 'Projeto sem nome' }}
-                                    <span class="text-grey-6 text-weight-medium q-ml-xs">#{{ projeto.id }}</span>
-                                </span>
-                                <span class="text-caption text-grey-6" style="font-size: 11px;">Cli: {{
-                                    projeto.nome_cliente || 'Não inf.' }}</span>
+                        <!-- Listagem dos Projetos da Loja -->
+                        <q-card-section class="q-pt-sm q-pb-sm" :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
+                            <div class="text-caption text-weight-bold q-mb-xs"
+                                :class="isDark ? 'text-grey-5' : 'text-grey-7'">
+                                <q-icon name="receipt_long" size="14px" class="q-mr-xs" /> Projetos desta loja
                             </div>
 
-                            <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
-                                <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'"
-                                    style="font-size: 12px;">
-                                    {{ formatMoney(projeto.valor) }}
-                                </span>
-                                <span class="status-badge"
-                                    :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
-                                    {{ projeto.status }}
-                                </span>
+                            <div v-for="projeto in lojista.projetos" :key="projeto.id"
+                                class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
+                                :class="isDark ? 'bg-dark' : 'bg-white'"
+                                style="border: 1px solid rgba(128,128,128,0.15);">
+
+                                <div class="col-7 flex column">
+                                    <span class="text-weight-bold text-primary"
+                                        style="font-size: 13px; line-height: 1.2;">
+                                        {{ projeto.nome || 'Projeto sem nome' }}
+                                        <span class="text-grey-6 text-weight-medium q-ml-xs">#{{ projeto.id }}</span>
+                                    </span>
+                                    <span class="text-caption text-grey-6" style="font-size: 11px;">Cli: {{
+                                        projeto.nome_cliente || 'Não inf.' }}</span>
+                                </div>
+
+                                <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
+                                    <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'"
+                                        style="font-size: 12px;">
+                                        {{ formatMoney(projeto.valor) }}
+                                    </span>
+                                    <span class="status-badge"
+                                        :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
+                                        {{ projeto.status }}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    </q-card-section>
-                </q-card>
-            </template>
-        </q-card-section>
-    </q-card>
-</q-dialog>
+                        </q-card-section>
+                    </q-card>
+                </template>
+            </q-card-section>
+        </q-card>
+    </q-dialog>
 
 
 </template>
@@ -435,17 +444,17 @@ async function carregarDados() {
 
         meusPedidos.value = rawData.map(p => {
             const infoStatus = mapearStatusDinamico(p.status)
-            
+
             // Procura os dados cadastrais atualizados do lojista no banco
             const lojistaOficial = todosOsLojistas.value.find(l => l.id === p.id_lojista)
 
             return {
                 ...p,
-                nome_lojista: lojistaOficial?.nome || p.lojista, 
+                nome_lojista: lojistaOficial?.nome || p.lojista,
                 nome_cliente: p.cliente,
                 ordem_status: infoStatus.ordem,
                 cor: infoStatus.cor,
-                
+
                 // Salva os contatos oficiais obtidos na rota /lojistas
                 telefone_lojista: lojistaOficial?.telefone || p.telefone_lojista || null,
                 email_lojista: lojistaOficial?.email || p.email_lojista || null
@@ -511,18 +520,18 @@ const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3)) // Mostr
 // Agrupando Lojistas usando a lista oficial e inserindo seus respectivos projetos
 const lojistasFiltrados = computed(() => {
     const mapa = new Map()
-    
+
     // Alimenta o mapa primeiro com as lojas que pertencem ao representante logado
     todosOsLojistas.value.forEach(l => {
         mapa.set(l.id, {
             id: l.id,
             nome: l.nome,
-            email: l.email || 'Não informado', 
+            email: l.email || 'Não informado',
             telefone: l.telefone || null,
             projetos: []
         })
     })
-    
+
     // Distribui os projetos de meusPedidos para suas respectivas lojas
     meusPedidos.value.forEach(p => {
         const idLojista = p.id_lojista || p.lojista_id
@@ -532,12 +541,12 @@ const lojistasFiltrados = computed(() => {
                 mapa.set(idLojista, {
                     id: idLojista,
                     nome: p.nome_lojista || 'Lojista Sem Nome',
-                    email: p.email_lojista || 'Não informado', 
+                    email: p.email_lojista || 'Não informado',
                     telefone: p.telefone_lojista || null,
                     projetos: []
                 })
             }
-            
+
             mapa.get(idLojista).projetos.push({
                 id: p.id,
                 nome: p.nome_projeto,

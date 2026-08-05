@@ -73,20 +73,31 @@
                         :class="isDark ? 'order-card--dark' : 'order-card--light'">
                         <div class="order-row q-pa-md">
                             <div class="order-col-info">
+                                <!-- NOVO: Badge de ID do Pedido -->
+                                <div class="q-mb-xs">
+                                    <span class="text-caption text-weight-bold"
+                                        :class="isDark ? 'bg-grey-9 text-grey-3' : 'bg-blue-1 text-primary'"
+                                        style="padding: 3px 8px; border-radius: 6px; font-size: 11px;">
+                                        Pedido #{{ order.id }}
+                                    </span>
+                                </div>
+
                                 <!-- Destaque para o NOME DO CLIENTE -->
-                                <span class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2">
+                                <span
+                                    class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2 q-mt-xs">
                                     <q-icon name="person" size="18px" class="q-mr-xs" />
                                     {{ order.nome_cliente || 'Cliente não informado' }}
 
-                                    <!-- ID do cliente ao lado do nome -->
+                                    <!-- Exibe o ID do Cliente ao lado do nome -->
                                     <span v-if="order.id_cliente"
                                         class="text-caption text-grey-6 text-weight-normal q-ml-xs">
                                         #{{ order.id_cliente }}
                                     </span>
                                 </span>
-                                <span class="text-caption text-grey-6">
+
+                                <span class="text-caption text-grey-6 q-mt-xs">
                                     Projeto: <strong :class="isDark ? 'text-grey-4' : 'text-grey-8'">{{
-                                        order.nome_projeto }}</strong> #{{ order.id }}
+                                        order.nome_projeto }}</strong>
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
                                     }}</span>
