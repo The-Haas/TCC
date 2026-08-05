@@ -101,7 +101,7 @@
                                         order.nome_projeto }}</strong> #{{ order.id }}
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                    }}</span>
+                                }}</span>
                             </div>
 
                             <div class="order-col-forecast">
@@ -245,8 +245,8 @@
                 </div>
 
                 <template v-else>
-                    <q-card v-for="representante in representantesFiltrados" :key="representante.id" flat bordered class="q-mb-md"
-                        :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
+                    <q-card v-for="representante in representantesFiltrados" :key="representante.id" flat bordered
+                        class="q-mb-md" :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
                         style="border-radius: 12px; overflow: hidden;">
 
                         <!-- Dados do Representante -->
@@ -257,7 +257,8 @@
                             <div class="col">
                                 <div class="text-weight-bold flex items-center" style="font-size: 15px;">
                                     {{ representante.nome }}
-                                    <span v-if="representante.id" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                                    <span v-if="representante.id"
+                                        class="text-caption text-grey-6 text-weight-normal q-ml-xs">
                                         #{{ representante.id }}
                                     </span>
                                 </div>
@@ -274,8 +275,8 @@
 
                             <!-- Botões de ação com o REPRESENTANTE -->
                             <div class="col-auto row q-gutter-xs">
-                                <q-btn v-if="representante.telefone" round flat dense color="green" icon="chat" size="14px"
-                                    @click="abrirWhatsApp(representante.telefone, representante.nome)">
+                                <q-btn v-if="representante.telefone" round flat dense color="green" icon="chat"
+                                    size="14px" @click="abrirWhatsApp(representante.telefone, representante.nome)">
                                     <q-tooltip>Chamar no WhatsApp</q-tooltip>
                                 </q-btn>
                                 <q-btn round flat dense color="primary" icon="mail" size="14px"
@@ -374,9 +375,9 @@ const modalRepresentantes = ref(false) // Alterado para modalRepresentantes
 
 // 1. DECLARAÇÃO DAS VARIÁVEIS DE STATUS E RECURSOS
 const totalEtapas = ref(0)
-const todosOsStatusDoBanco = ref([]) 
-const listaEtapasDoBanco = ref([])   
-const todosOsLojistas = ref([])      
+const todosOsStatusDoBanco = ref([])
+const listaEtapasDoBanco = ref([])
+const todosOsLojistas = ref([])
 const todosOsRepresentantes = ref([]) // Nova lista para alimentar o modal do Admin
 
 // 2. FUNÇÃO PARA BUSCAR AS ETAPAS NO BANCO
@@ -439,16 +440,18 @@ async function carregarDados() {
 
         meusPedidos.value = rawData.map(p => {
             const infoStatus = mapearStatusDinamico(p.status)
-            
-            // Continua mapeando os lojistas para a lista principal da timeline
+
+            // Mapeando os lojistas para a lista principal da timeline
             const lojistaOficial = todosOsLojistas.value.find(l => l.id === p.id_lojista)
 
             return {
                 ...p,
-                nome_lojista: lojistaOficial?.nome || p.lojista, 
-                nome_cliente: p.cliente,
+                nome_lojista: lojistaOficial?.nome || p.lojista,
+                nome_cliente: p.nome_cliente || p.cliente,
                 ordem_status: infoStatus.ordem,
                 cor: infoStatus.cor,
+                // NOVIDADE AQUI: Busca o representante diretamente do lojista, caso o pedido não traga
+                id_representante: p.id_representante || p.representante_id || lojistaOficial?.id_representante
             }
         })
 
@@ -512,9 +515,9 @@ const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3))
 const representantesFiltrados = computed(() => {
     const mapa = new Map()
     
-    // Alimenta o mapa com a lista oficial de representantes
+    // Alimenta o mapa com a lista oficial de representantes garantindo que o ID seja String
     todosOsRepresentantes.value.forEach(r => {
-        mapa.set(r.id, {
+        mapa.set(String(r.id), {
             id: r.id,
             nome: r.nome,
             email: r.email || 'Não informado', 
@@ -526,11 +529,14 @@ const representantesFiltrados = computed(() => {
     // Distribui os projetos de meusPedidos para os respectivos representantes
     meusPedidos.value.forEach(p => {
         const idRep = p.id_representante || p.representante_id
+        
         if (idRep) {
-            if (!mapa.has(idRep)) {
+            const key = String(idRep) // Transforma em String para garantir o "Match"
+
+            if (!mapa.has(key)) {
                 // Fallback caso venha um ID que não estava na listagem principal
-                mapa.set(idRep, {
-                    id: idRep,
+                mapa.set(key, {
+                    id: key,
                     nome: p.nome_representante || 'Representante Sem Nome',
                     email: p.email_representante || 'Não informado', 
                     telefone: p.telefone_representante || null,
@@ -538,12 +544,12 @@ const representantesFiltrados = computed(() => {
                 })
             }
             
-            mapa.get(idRep).projetos.push({
+            mapa.get(key).projetos.push({
                 id: p.id,
-                nome: p.nome_projeto,
-                nome_cliente: p.nome_cliente,
+                nome: p.nome_projeto || p.projeto || 'Projeto sem nome',
+                nome_cliente: p.nome_cliente || p.cliente || 'Não inf.',
                 status: p.status,
-                cor: p.cor,
+                cor: p.cor || '#1976D2',
                 valor: p.valor
             })
         }
