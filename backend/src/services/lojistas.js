@@ -235,6 +235,21 @@ async function patchLojista(id, dados) {
 
 async function deleteLojista(id) {
     try {
+        // 1. Verifica se existem pedidos vinculados a este lojista
+        // Assumindo que a tabela se chama 'pedidos' e a chave estrangeira 'id_lojista'
+        const pedidosCheck = await db.query(
+            `SELECT id FROM pedidos WHERE id_lojista = $1 LIMIT 1`,
+            [id]
+        );
+
+        if (pedidosCheck.rows.length > 0) {
+            return { 
+                success: false, 
+                message: 'Não é possível excluir: este lojista possui pedidos vinculados.' 
+            };
+        }
+
+        // 2. Se não houver pedidos, prossegue com a exclusão
         const result = await db.query(
             `DELETE FROM lojistas WHERE id = $1 RETURNING id`,
             [id]
