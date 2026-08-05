@@ -87,13 +87,14 @@
                 <span v-else class="text-caption font-weight-bold text-grey-6">Progresso do projeto</span>
 
                 <span class="text-caption text-weight-bold"
-                  :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : 'var(--q-primary)' }">
-                  {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) / totalEtapas) * 100)}%` }}
+                  :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : (getOrdemReal(order) === totalEtapas ? '#21BA45' : 'var(--q-primary)') }">
+                  {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) /
+                    totalEtapas) * 100)}%` }}
                 </span>
               </div>
               <q-linear-progress :value="getOrdemReal(order) === 0 ? 0 : (getOrdemReal(order) / totalEtapas)"
-                :color="getOrdemReal(order) === 0 ? 'negative' : 'primary'" :dark="isDark"
-                :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                :dark="isDark" :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                  color: getOrdemReal(order) === totalEtapas ? '#21BA45' : 'var(--q-primary)',
                   height: '8px',
                   borderRadius: '4px',
                   border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',

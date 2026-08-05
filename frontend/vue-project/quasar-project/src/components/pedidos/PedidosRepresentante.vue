@@ -80,14 +80,17 @@
                         <!-- Coluna 1: Dados do Projeto -->
                         <div class="col-12 col-sm-2 flex column justify-center">
                             <div class="row items-center q-gutter-x-sm">
-                                <span class="text-weight-bold text-subtitle1 text-primary">{{ order.nome_projeto }}</span>
-                                <span class="text-grey-6 text-weight-bold" style="font-size: 13px;">#{{ order.id }}</span>
+                                <span class="text-weight-bold text-subtitle1 text-primary">{{ order.nome_projeto
+                                    }}</span>
+                                <span class="text-grey-6 text-weight-bold" style="font-size: 13px;">#{{ order.id
+                                    }}</span>
                             </div>
                             <span class="text-caption text-grey-6">Pedido: {{ formatDate(order.data_pedido) }}</span>
 
                             <!-- Exibe quem enviou o projeto ao sistema -->
                             <span v-if="order.enviado_por" class="text-caption text-grey-5" style="font-size: 11px;">
-                                Enviado por: <span class="text-weight-medium text-capitalize">{{ order.enviado_por }}</span>
+                                Enviado por: <span class="text-weight-medium text-capitalize">{{ order.enviado_por
+                                    }}</span>
                             </span>
                         </div>
 
@@ -101,14 +104,15 @@
                                 <span v-else class="text-caption font-weight-bold text-grey-6">Progresso</span>
 
                                 <span class="text-caption text-weight-bold"
-                                    :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : 'var(--q-primary)' }">
-                                    {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) / totalEtapas) * 100)}%` }}
+                                    :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : (getOrdemReal(order) === totalEtapas ? '#21BA45' : 'var(--q-primary)') }">
+                                    {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) /
+                                        totalEtapas) * 100)}%` }}
                                 </span>
                             </div>
                             <q-linear-progress
                                 :value="getOrdemReal(order) === 0 ? 0 : (getOrdemReal(order) / totalEtapas)"
-                                :color="getOrdemReal(order) === 0 ? 'negative' : 'primary'" :dark="isDark"
-                                :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                                :dark="isDark" :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
+                                    color: getOrdemReal(order) === totalEtapas ? '#21BA45' : 'var(--q-primary)',
                                     height: '8px',
                                     borderRadius: '4px',
                                     border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
@@ -122,7 +126,8 @@
                             <span class="text-weight-bold"
                                 :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : '' }"
                                 :class="getOrdemReal(order) !== 0 ? 'text-orange' : ''">
-                                {{ getOrdemReal(order) === 0 ? 'Recusado' : (order.data_previsao_pedido ? formatDate(order.data_previsao_pedido) : 'Aguardando definição') }}
+                                {{ getOrdemReal(order) === 0 ? 'Recusado' : (order.data_previsao_pedido ?
+                                    formatDate(order.data_previsao_pedido) : 'Aguardando definição') }}
                             </span>
                         </div>
 
@@ -133,7 +138,8 @@
                                 :class="isDark ? 'text-grey-3' : 'text-grey-8'">
                                 <q-icon name="storefront" size="14px" class="q-mr-xs" />
                                 {{ order.lojista || 'Não informada' }}
-                                <span v-if="order.id_lojista" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                                <span v-if="order.id_lojista"
+                                    class="text-caption text-grey-6 text-weight-normal q-ml-xs">
                                     #{{ order.id_lojista }}
                                 </span>
                             </span>
@@ -146,7 +152,8 @@
                                 :class="isDark ? 'text-grey-3' : 'text-grey-8'">
                                 <q-icon name="person" size="14px" class="q-mr-xs" />
                                 {{ order.cliente || 'Não informado' }}
-                                <span v-if="order.id_cliente" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
+                                <span v-if="order.id_cliente"
+                                    class="text-caption text-grey-6 text-weight-normal q-ml-xs">
                                     #{{ order.id_cliente }}
                                 </span>
                             </span>
@@ -220,8 +227,8 @@
                         </div>
 
                         <div v-if="detalhes[order.id].xml" class="row justify-end q-mt-md">
-                            <q-btn color="secondary" icon="download" no-caps outline
-                                label="Download XML" @click="downloadXML(detalhes[order.id])" />
+                            <q-btn color="secondary" icon="download" no-caps outline label="Download XML"
+                                @click="downloadXML(detalhes[order.id])" />
                         </div>
                     </template>
                 </q-card-section>
@@ -248,136 +255,115 @@
 
         <!-- Modal de Importação de XML (Moderno) -->
         <q-dialog v-model="modalUploadAberta" persistent>
-          <q-card style="width: 100%; max-width: 650px; border-radius: 16px;" :class="isDark ? 'bg-dark text-white' : 'bg-white'">
-            <q-card-section class="row items-center q-pb-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
-              <div class="text-h6 flex items-center text-weight-bold">
-                <q-icon name="cloud_upload" color="primary" class="q-mr-sm" size="28px" />
-                Importar Novos Projetos
-              </div>
-              <q-space />
-              <q-btn icon="close" flat round dense v-close-popup :disable="enviandoArquivos" />
-            </q-card-section>
+            <q-card style="width: 100%; max-width: 650px; border-radius: 16px;"
+                :class="isDark ? 'bg-dark text-white' : 'bg-white'">
+                <q-card-section class="row items-center q-pb-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
+                    <div class="text-h6 flex items-center text-weight-bold">
+                        <q-icon name="cloud_upload" color="primary" class="q-mr-sm" size="28px" />
+                        Importar Novos Projetos
+                    </div>
+                    <q-space />
+                    <q-btn icon="close" flat round dense v-close-popup :disable="enviandoArquivos" />
+                </q-card-section>
 
-            <q-card-section class="q-pa-lg">
-              
-              <div v-if="resultadosUpload.length === 0">
-                <!-- SELEÇÃO DE LOJISTA (NOVO) -->
-                <div class="q-mb-lg">
-                  <q-select
-                    v-model="lojistaSelecionado"
-                    :options="listaLojistas"
-                    option-value="id"
-                    :option-label="(item) => item.nome_fantasia || item.nome || item.razao_social || `Lojista #${item.id}`"
-                    label="Selecione o Lojista *"
-                    outlined
-                    dense
-                    emit-value
-                    map-options
-                    :loading="loadingLojistas"
-                    :dark="isDark"
-                    hide-bottom-space
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="storefront" />
-                    </template>
-                  </q-select>
-                </div>
+                <q-card-section class="q-pa-lg">
 
-                <!-- ÁREA DE UPLOAD -->
-                <div class="upload-dropzone q-pa-xl text-center cursor-pointer" :class="isDark ? 'upload-dropzone--dark' : 'upload-dropzone--light'">
-                  <q-file
-                    v-model="arquivosXml"
-                    multiple
-                    accept=".xml"
-                    borderless
-                    class="fit absolute-full"
-                    style="opacity: 0; z-index: 2;"
-                  />
-                  <q-icon name="note_add" size="64px" color="primary" class="q-mb-md" />
-                  <h3 class="text-h6 text-weight-bold q-mb-xs q-mt-none">Clique ou arraste seus arquivos XML</h3>
-                  <p class="text-caption text-grey-6 q-mb-none">
-                    Você pode selecionar vários arquivos de uma vez. Eles serão vinculados ao lojista selecionado.
-                  </p>
-                  
-                  <div v-if="arquivosXml.length > 0" class="q-mt-lg flex flex-center q-gutter-sm" style="position: relative; z-index: 3;">
-                    <q-chip v-for="file in arquivosXml" :key="file.name" removable @remove="arquivosXml = arquivosXml.filter(f => f.name !== file.name)" color="primary" text-color="white" icon="insert_drive_file">
-                      {{ file.name }}
-                    </q-chip>
-                  </div>
-                </div>
-              </div>
+                    <div v-if="resultadosUpload.length === 0">
+                        <!-- SELEÇÃO DE LOJISTA (NOVO) -->
+                        <div class="q-mb-lg">
+                            <q-select v-model="lojistaSelecionado" :options="listaLojistas" option-value="id"
+                                :option-label="(item) => item.nome_fantasia || item.nome || item.razao_social || `Lojista #${item.id}`"
+                                label="Selecione o Lojista *" outlined dense emit-value map-options
+                                :loading="loadingLojistas" :dark="isDark" hide-bottom-space>
+                                <template v-slot:prepend>
+                                    <q-icon name="storefront" />
+                                </template>
+                            </q-select>
+                        </div>
 
-              <!-- RESULTADOS -->
-              <div v-else class="upload-results">
-                <div class="text-subtitle1 text-weight-bold q-mb-md flex items-center">
-                  <q-icon name="list_alt" class="q-mr-sm" size="20px"/>
-                  Progresso da Importação
-                </div>
-                
-                <div class="results-list column q-gutter-y-sm">
-                  <div 
-                    v-for="(resultado, index) in resultadosUpload" 
-                    :key="index"
-                    class="result-card row items-center q-pa-md"
-                    :class="[
-                      isDark ? 'bg-dark-soft' : 'bg-grey-1',
-                      { 'border-positive': resultado.status === 'success', 'border-negative': resultado.status === 'error', 'border-primary pulsing': resultado.status === 'loading' }
-                    ]"
-                  >
-                    <div class="q-mr-md">
-                      <q-spinner v-if="resultado.status === 'loading'" color="primary" size="24px" />
-                      <q-icon v-else-if="resultado.status === 'success'" name="check_circle" color="positive" size="28px" />
-                      <q-icon v-else name="error" color="negative" size="28px" />
+                        <!-- ÁREA DE UPLOAD -->
+                        <div class="upload-dropzone q-pa-xl text-center cursor-pointer"
+                            :class="isDark ? 'upload-dropzone--dark' : 'upload-dropzone--light'">
+                            <q-file v-model="arquivosXml" multiple accept=".xml" borderless class="fit absolute-full"
+                                style="opacity: 0; z-index: 2;" />
+                            <q-icon name="note_add" size="64px" color="primary" class="q-mb-md" />
+                            <h3 class="text-h6 text-weight-bold q-mb-xs q-mt-none">Clique ou arraste seus arquivos XML
+                            </h3>
+                            <p class="text-caption text-grey-6 q-mb-none">
+                                Você pode selecionar vários arquivos de uma vez. Eles serão vinculados ao lojista
+                                selecionado.
+                            </p>
+
+                            <div v-if="arquivosXml.length > 0" class="q-mt-lg flex flex-center q-gutter-sm"
+                                style="position: relative; z-index: 3;">
+                                <q-chip v-for="file in arquivosXml" :key="file.name" removable
+                                    @remove="arquivosXml = arquivosXml.filter(f => f.name !== file.name)"
+                                    color="primary" text-color="white" icon="insert_drive_file">
+                                    {{ file.name }}
+                                </q-chip>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="col">
-                      <div class="text-weight-bold" style="word-break: break-all;">{{ resultado.nome }}</div>
-                      <div class="text-caption" :class="resultado.status === 'success' ? 'text-positive' : (resultado.status === 'error' ? 'text-negative' : 'text-grey-6')">
-                        {{ resultado.mensagem }}
-                      </div>
+                    <!-- RESULTADOS -->
+                    <div v-else class="upload-results">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md flex items-center">
+                            <q-icon name="list_alt" class="q-mr-sm" size="20px" />
+                            Progresso da Importação
+                        </div>
+
+                        <div class="results-list column q-gutter-y-sm">
+                            <div v-for="(resultado, index) in resultadosUpload" :key="index"
+                                class="result-card row items-center q-pa-md" :class="[
+                                    isDark ? 'bg-dark-soft' : 'bg-grey-1',
+                                    { 'border-positive': resultado.status === 'success', 'border-negative': resultado.status === 'error', 'border-primary pulsing': resultado.status === 'loading' }
+                                ]">
+                                <div class="q-mr-md">
+                                    <q-spinner v-if="resultado.status === 'loading'" color="primary" size="24px" />
+                                    <q-icon v-else-if="resultado.status === 'success'" name="check_circle"
+                                        color="positive" size="28px" />
+                                    <q-icon v-else name="error" color="negative" size="28px" />
+                                </div>
+
+                                <div class="col">
+                                    <div class="text-weight-bold" style="word-break: break-all;">{{ resultado.nome }}
+                                    </div>
+                                    <div class="text-caption"
+                                        :class="resultado.status === 'success' ? 'text-positive' : (resultado.status === 'error' ? 'text-negative' : 'text-grey-6')">
+                                        {{ resultado.mensagem }}
+                                    </div>
+                                </div>
+
+                                <div v-if="resultado.id" class="q-ml-md text-right">
+                                    <div class="text-caption text-grey-6 text-uppercase" style="font-size: 10px;">ID do
+                                        Pedido
+                                    </div>
+                                    <q-badge color="positive" class="text-weight-bold q-pa-sm text-subtitle2">
+                                        #{{ resultado.id }}
+                                    </q-badge>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </q-card-section>
 
-                    <div v-if="resultado.id" class="q-ml-md text-right">
-                      <div class="text-caption text-grey-6 text-uppercase" style="font-size: 10px;">ID do Pedido</div>
-                      <q-badge color="positive" class="text-weight-bold q-pa-sm text-subtitle2">
-                        #{{ resultado.id }}
-                      </q-badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </q-card-section>
+                <q-separator :dark="isDark" />
 
-            <q-separator :dark="isDark" />
+                <q-card-actions align="right" class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
+                    <q-btn flat label="Cancelar" color="grey" v-close-popup v-if="resultadosUpload.length === 0" />
 
-            <q-card-actions align="right" class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
-              <q-btn flat label="Cancelar" color="grey" v-close-popup v-if="resultadosUpload.length === 0" />
-              
-              <q-btn 
-                v-if="resultadosUpload.length === 0"
-                label="Iniciar Importação" 
-                color="primary" 
-                icon="play_arrow"
-                @click="enviarArquivos" 
-                :disable="arquivosXml.length === 0 || !lojistaSelecionado" 
-                padding="8px 24px"
-                class="text-weight-bold"
-              >
-                <q-tooltip v-if="!lojistaSelecionado">Selecione um lojista primeiro</q-tooltip>
-              </q-btn>
+                    <q-btn v-if="resultadosUpload.length === 0" label="Iniciar Importação" color="primary"
+                        icon="play_arrow" @click="enviarArquivos"
+                        :disable="arquivosXml.length === 0 || !lojistaSelecionado" padding="8px 24px"
+                        class="text-weight-bold">
+                        <q-tooltip v-if="!lojistaSelecionado">Selecione um lojista primeiro</q-tooltip>
+                    </q-btn>
 
-              <q-btn 
-                v-else
-                label="Concluir e Fechar" 
-                color="primary" 
-                icon="done_all"
-                @click="modalUploadAberta = false" 
-                :disable="enviandoArquivos"
-                padding="8px 24px"
-                class="text-weight-bold"
-              />
-            </q-card-actions>
-          </q-card>
+                    <q-btn v-else label="Concluir e Fechar" color="primary" icon="done_all"
+                        @click="modalUploadAberta = false" :disable="enviandoArquivos" padding="8px 24px"
+                        class="text-weight-bold" />
+                </q-card-actions>
+            </q-card>
         </q-dialog>
     </q-page>
 </template>
@@ -432,7 +418,7 @@ async function carregarPedidos() {
 
 async function carregarDetalhesPedido(id) {
     pedidoExpandidoId.value = id
-    if (detalhes.value[id]) return 
+    if (detalhes.value[id]) return
     detalhesLoading.value = true
     try {
         const response = await api.get(`/pedidos/${id}`, {
@@ -589,91 +575,91 @@ const lojistaSelecionado = ref(null)
 const loadingLojistas = ref(false)
 
 async function carregarLojistas() {
-  loadingLojistas.value = true
-  try {
-    // ATENÇÃO: Ajuste a rota '/lojistas' caso o seu backend utilize outro endpoint
-    const response = await api.get('/lojistas', {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    listaLojistas.value = response.data.data || response.data || []
-  } catch (error) {
-    console.error('Erro ao carregar lojistas', error)
-    $q.notify({ type: 'warning', message: 'Não foi possível carregar a lista de lojistas.' })
-  } finally {
-    loadingLojistas.value = false
-  }
+    loadingLojistas.value = true
+    try {
+        // ATENÇÃO: Ajuste a rota '/lojistas' caso o seu backend utilize outro endpoint
+        const response = await api.get('/lojistas', {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        })
+        listaLojistas.value = response.data.data || response.data || []
+    } catch (error) {
+        console.error('Erro ao carregar lojistas', error)
+        $q.notify({ type: 'warning', message: 'Não foi possível carregar a lista de lojistas.' })
+    } finally {
+        loadingLojistas.value = false
+    }
 }
 
 function abrirModalUpload() {
-  arquivosXml.value = []
-  resultadosUpload.value = []
-  lojistaSelecionado.value = null
-  modalUploadAberta.value = true
-  
-  // Carrega os lojistas caso a lista esteja vazia
-  if (listaLojistas.value.length === 0) {
-    carregarLojistas()
-  }
+    arquivosXml.value = []
+    resultadosUpload.value = []
+    lojistaSelecionado.value = null
+    modalUploadAberta.value = true
+
+    // Carrega os lojistas caso a lista esteja vazia
+    if (listaLojistas.value.length === 0) {
+        carregarLojistas()
+    }
 }
 
 async function enviarArquivos() {
-  if (!arquivosXml.value || arquivosXml.value.length === 0 || !lojistaSelecionado.value) return
+    if (!arquivosXml.value || arquivosXml.value.length === 0 || !lojistaSelecionado.value) return
 
-  enviandoArquivos.value = true
-  
-  resultadosUpload.value = arquivosXml.value.map(file => ({
-    nome: file.name,
-    status: 'loading',
-    mensagem: 'Processando...',
-    id: null
-  }))
+    enviandoArquivos.value = true
 
-  const formData = new FormData()
-  for (const file of arquivosXml.value) {
-    formData.append('xml', file)
-  }
-  
-  // Adiciona o ID do Lojista no FormData
-  formData.append('id_lojista', lojistaSelecionado.value)
+    resultadosUpload.value = arquivosXml.value.map(file => ({
+        nome: file.name,
+        status: 'loading',
+        mensagem: 'Processando...',
+        id: null
+    }))
 
-  try {
-    const response = await api.post('/importaxml', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
-    
-    const resultadosBackend = response.data.resultados || []
-    
-    for (const res of resultadosBackend) {
-      const itemTela = resultadosUpload.value.find(item => item.nome === res.arquivo)
-      
-      if (itemTela) {
-        if (res.success) {
-          itemTela.status = 'success'
-          itemTela.mensagem = 'Projeto importado com sucesso!'
-          itemTela.id = res.data?.idPedido 
-        } else {
-          itemTela.status = 'error'
-          itemTela.mensagem = res.mensagem || 'Falha ao importar o arquivo.'
+    const formData = new FormData()
+    for (const file of arquivosXml.value) {
+        formData.append('xml', file)
+    }
+
+    // Adiciona o ID do Lojista no FormData
+    formData.append('id_lojista', lojistaSelecionado.value)
+
+    try {
+        const response = await api.post('/importaxml', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                Authorization: `Bearer ${authStore.token}`
+            }
+        })
+
+        const resultadosBackend = response.data.resultados || []
+
+        for (const res of resultadosBackend) {
+            const itemTela = resultadosUpload.value.find(item => item.nome === res.arquivo)
+
+            if (itemTela) {
+                if (res.success) {
+                    itemTela.status = 'success'
+                    itemTela.mensagem = 'Projeto importado com sucesso!'
+                    itemTela.id = res.data?.idPedido
+                } else {
+                    itemTela.status = 'error'
+                    itemTela.mensagem = res.mensagem || 'Falha ao importar o arquivo.'
+                }
+            }
         }
-      }
-    }
-    
-  } catch (error) {
-    for (const item of resultadosUpload.value) {
-      if (item.status === 'loading') {
-        item.status = 'error'
-        item.mensagem = error.response?.data?.message || 'Erro de comunicação com o servidor.'
-      }
-    }
-  }
 
-  enviandoArquivos.value = false
-  arquivosXml.value = [] 
-  
-  carregarPedidos()
+    } catch (error) {
+        for (const item of resultadosUpload.value) {
+            if (item.status === 'loading') {
+                item.status = 'error'
+                item.mensagem = error.response?.data?.message || 'Erro de comunicação com o servidor.'
+            }
+        }
+    }
+
+    enviandoArquivos.value = false
+    arquivosXml.value = []
+
+    carregarPedidos()
 }
 
 onMounted(carregarPedidos)
@@ -853,56 +839,61 @@ onMounted(carregarPedidos)
 }
 
 .upload-dropzone {
-  position: relative;
-  border-radius: 16px;
-  transition: all 0.3s ease;
-  overflow: hidden;
+    position: relative;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .upload-dropzone--light {
-  background-color: rgba(25, 118, 210, 0.03);
-  border: 2px dashed rgba(25, 118, 210, 0.3);
+    background-color: rgba(25, 118, 210, 0.03);
+    border: 2px dashed rgba(25, 118, 210, 0.3);
 }
 
 .upload-dropzone--light:hover {
-  background-color: rgba(25, 118, 210, 0.08);
-  border-color: var(--q-primary);
+    background-color: rgba(25, 118, 210, 0.08);
+    border-color: var(--q-primary);
 }
 
 .upload-dropzone--dark {
-  background-color: rgba(255, 255, 255, 0.02);
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
 }
 
 .upload-dropzone--dark:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: var(--q-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--q-primary);
 }
 
 .result-card {
-  border-radius: 12px;
-  border-left: 4px solid transparent;
-  transition: all 0.3s ease;
+    border-radius: 12px;
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
 }
 
 .border-positive {
-  border-left-color: var(--q-positive);
+    border-left-color: var(--q-positive);
 }
 
 .border-negative {
-  border-left-color: var(--q-negative);
+    border-left-color: var(--q-negative);
 }
 
 .border-primary {
-  border-left-color: var(--q-primary);
+    border-left-color: var(--q-primary);
 }
 
 .pulsing {
-  animation: pulse-bg 1.5s infinite alternate;
+    animation: pulse-bg 1.5s infinite alternate;
 }
 
 @keyframes pulse-bg {
-  0% { opacity: 0.8; }
-  100% { opacity: 1; }
+    0% {
+        opacity: 0.8;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 </style>
