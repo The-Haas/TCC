@@ -197,6 +197,21 @@ async function patchRepresentante(id, dados) {
 
 async function deleteRepresentante(id) {
     try {
+        // 1. Verifica se existem lojistas vinculados a este representante
+        const lojistasCheck = await db.query(
+            `SELECT id FROM lojistas WHERE id_representante = $1 LIMIT 1`,
+            [id]
+        );
+
+        // Se encontrou algum lojista, bloqueia a exclusão
+        if (lojistasCheck.rows.length > 0) {
+            return { 
+                success: false, 
+                message: 'Não é possível excluir: este representante possui lojistas vinculados a ele.' 
+            };
+        }
+
+        // 2. Se não houver vínculos, prossegue com a exclusão
         const result = await db.query(
             `DELETE FROM representantes WHERE id = $1 RETURNING id`,
             [id]
