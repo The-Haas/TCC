@@ -259,6 +259,7 @@ async function getPedidos(filtroPedidos = null) {
        c.nome    AS cliente,
        p.id_lojista,
        l.nome    AS lojista,
+       r.id      AS id_representante,
        r.nome    AS representante,
        p.id_status,
        sp.descricao AS status,

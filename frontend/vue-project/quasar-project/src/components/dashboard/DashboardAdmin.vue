@@ -92,6 +92,13 @@
                                     </span>
                                 </span>
 
+                                <!-- NOVO: Representante vinculado ao Pedido -->
+                                <span class="flex items-center" style="font-size: 11.5px; margin-top: -2px;"
+                                    :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                                    <q-icon name="badge" size="13px" class="q-mr-xs" />
+                                    {{ order.representante || order.nome_representante || 'Sem representante' }}
+                                </span>
+
                                 <!-- Dados do Cliente Final -->
                                 <span class="text-caption text-grey-7 q-mt-xs flex items-center">
                                     <q-icon name="person" size="14px" class="q-mr-xs text-grey-5" />
@@ -107,7 +114,7 @@
                                         order.nome_projeto }}</strong>
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                }}</span>
+                                    }}</span>
                             </div>
 
                             <div class="order-col-forecast">
@@ -148,7 +155,7 @@
                                 <span class="text-weight-bold"
                                     :style="{ color: order.ordem_status === 0 ? order.cor : (order.ordem_status === totalEtapas ? '#21BA45' : 'var(--q-primary)'), fontSize: '13px' }">
                                     {{ order.ordem_status === 0 ? '0%' : `${Math.round((order.ordem_status /
-                                    (totalEtapas || 1)) * 100)}%` }}
+                                        (totalEtapas || 1)) * 100)}%` }}
                                 </span>
                             </div>
 
