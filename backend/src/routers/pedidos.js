@@ -19,5 +19,5 @@ module.exports = (app) => {
     app.get('/pedidos/:id',    autenticarToken, verificarAcessoPedidoPorId, controller.getPedidoPorId);
     app.put('/pedidos/:id',    autenticarToken, apenasAdmin,                controller.putPedidoController);
     app.patch('/pedidos/:id',  autenticarToken, apenasAdmin,                controller.patchPedidoController);
-    app.delete('/pedidos/:id', autenticarToken, apenasAdmin,                controller.deletePedidoController);
+    app.delete('/pedidos/:id', autenticarToken, verificarAcessoPedidoPorId, controller.deletePedidoController);
 };

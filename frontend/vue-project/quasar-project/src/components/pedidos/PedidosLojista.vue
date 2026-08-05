@@ -4,14 +4,14 @@
             <div>
                 <h1 class="text-h5 text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'">
                     <q-icon name="receipt_long" color="primary" class="q-mr-sm" size="28px" />
-                    Projetos da Loja
+                    Meus Projetos
                 </h1>
                 <p class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                    Gerencie os projetos e rastreie as etapas de fabricação dos seus clientes.
+                    Gerencie seus projetos e acompanhe as etapas de fabricação em tempo real.
                 </p>
             </div>
 
-            <!-- NOVO BOTÃO AQUI -->
+            <!-- BOTÃO DE UPLOAD -->
             <div>
                 <q-btn color="primary" icon="upload" label="Novo Projeto" no-caps @click="abrirModalUpload" />
             </div>
@@ -56,13 +56,13 @@
         <!-- Loading e Empty States -->
         <div v-if="loading" class="text-center q-pa-xl">
             <q-spinner-tail color="primary" size="50px" />
-            <p class="text-grey-6 q-mt-md font-weight-medium">Buscando projetos da loja...</p>
+            <p class="text-grey-6 q-mt-md font-weight-medium">Buscando projetos...</p>
         </div>
 
         <div v-else-if="pedidosFiltrados.length === 0" class="empty-state text-center q-pa-xl">
             <q-icon name="inventory_2" size="64px" color="grey-4" class="q-mb-md" />
             <h3 class="text-h6 text-grey-6 text-weight-bold">Nenhum projeto encontrado</h3>
-            <p class="text-caption text-grey-5">Experimente ajustar os termos de busca ou filtros aplicados.</p>
+            <p class="text-caption text-grey-5">Experimente ajustar os termos de busca ou enviar um novo projeto.</p>
         </div>
 
         <!-- Lista de Pedidos -->
@@ -80,39 +80,29 @@
                         <!-- Coluna 1: Dados do Projeto -->
                         <div class="col-12 col-sm-3 flex column justify-center">
                             <div class="row items-center q-gutter-x-sm">
-                                <span class="text-weight-bold text-subtitle1 text-primary">{{ order.nome_projeto
-                                    }}</span>
-                                <span class="text-grey-6 text-weight-bold" style="font-size: 13px;">#{{ order.id
-                                    }}</span>
+                                <span class="text-weight-bold text-subtitle1 text-primary">{{ order.nome_projeto }}</span>
+                                <span class="text-grey-6 text-weight-bold" style="font-size: 13px;">#{{ order.id }}</span>
                             </div>
                             <span class="text-caption text-grey-6">Pedido: {{ formatDate(order.data_pedido) }}</span>
-
-                            <!-- Exibe quem enviou o projeto ao sistema -->
-                            <span v-if="order.enviado_por" class="text-caption text-grey-5" style="font-size: 11px;">
-                                Enviado por: <span class="text-weight-medium text-capitalize">{{ order.enviado_por
-                                    }}</span>
-                            </span>
                         </div>
 
                         <!-- Coluna 2: Barra de Progresso -->
-                        <div class="col-12 col-sm-3 q-pr-md">
+                        <div class="col-12 col-sm-2 q-pr-md">
                             <div class="row justify-between items-center q-mb-xs">
                                 <span v-if="getOrdemReal(order) === 0" class="text-weight-bold text-uppercase"
                                     :style="{ color: getCorReal(order), fontSize: '12px' }">
-                                    ⚠️ Projeto Suspenso/Recusado
+                                    ⚠️ Suspenso
                                 </span>
-                                <span v-else class="text-caption font-weight-bold text-grey-6">Progresso do
-                                    projeto</span>
+                                <span v-else class="text-caption font-weight-bold text-grey-6">Progresso</span>
 
                                 <span class="text-caption text-weight-bold"
-                                    :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : 'var(--q-primary)' }">
-                                    {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) /
-                                        totalEtapas) * 100)}%` }}
+                                    :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : (getOrdemReal(order) === totalEtapas ? '#21BA45' : 'var(--q-primary)') }">
+                                    {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) / totalEtapas) * 100)}%` }}
                                 </span>
                             </div>
                             <q-linear-progress
                                 :value="getOrdemReal(order) === 0 ? 0 : (getOrdemReal(order) / totalEtapas)"
-                                :color="getOrdemReal(order) === 0 ? 'negative' : 'primary'" :dark="isDark"
+                                :color="getOrdemReal(order) === 0 ? 'negative' : (getOrdemReal(order) === totalEtapas ? 'positive' : 'primary')" :dark="isDark"
                                 :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
                                     height: '8px',
                                     borderRadius: '4px',
@@ -123,27 +113,21 @@
 
                         <!-- Coluna 3: Previsão -->
                         <div class="col-6 col-sm-2 text-caption flex column">
-                            <span class="text-grey-6 text-weight-medium">Previsão de Entrega</span>
+                            <span class="text-grey-6 text-weight-medium">Previsão</span>
                             <span class="text-weight-bold"
                                 :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : '' }"
                                 :class="getOrdemReal(order) !== 0 ? 'text-orange' : ''">
-                                {{ getOrdemReal(order) === 0 ? 'Recusado' : (order.data_previsao_pedido ?
-                                    formatDate(order.data_previsao_pedido) : 'Aguardando definição') }}
+                                {{ getOrdemReal(order) === 0 ? 'Recusado' : (order.data_previsao_pedido ? formatDate(order.data_previsao_pedido) : 'Aguardando definição') }}
                             </span>
                         </div>
 
-                        <!-- Coluna 4: Cliente do Lojista -->
-                        <div class="col-6 col-sm-2 text-caption flex column">
-                            <span class="text-grey-6 text-weight-medium">Cliente</span>
+                        <!-- Coluna 4: Cliente Final -->
+                        <div class="col-6 col-sm-3 text-caption flex column">
+                            <span class="text-grey-6 text-weight-medium">Cliente Final</span>
                             <span class="text-weight-bold flex items-center"
                                 :class="isDark ? 'text-grey-3' : 'text-grey-8'">
                                 <q-icon name="person" size="14px" class="q-mr-xs" />
                                 {{ order.cliente || 'Não informado' }}
-                                <!-- Exibe o ID do Cliente ao lado do nome -->
-                                <span v-if="order.id_cliente"
-                                    class="text-caption text-grey-6 text-weight-normal q-ml-xs">
-                                    #{{ order.id_cliente }}
-                                </span>
                             </span>
                         </div>
 
@@ -162,7 +146,7 @@
 
                 <q-separator :dark="isDark" />
 
-                <!-- Detalhamento Interno do Pedido (Linha do Tempo) -->
+                <!-- Detalhamento Interno do Pedido (Linha do Tempo e Ações) -->
                 <q-card-section class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
                     <div v-if="detalhesLoading && pedidoExpandidoId === order.id" class="text-center q-pa-md">
                         <q-spinner color="primary" size="30px" />
@@ -170,48 +154,44 @@
                     </div>
 
                     <template v-else-if="detalhes[order.id]">
-                        <!-- Oculta a linha do tempo se a ordem do status for 0 (suspenso/recusado/cancelado) -->
+                        <!-- Linha do Tempo -->
                         <div v-if="getOrdemReal(order) !== 0" class="q-mb-md">
                             <div class="text-subtitle2 text-weight-bold q-mb-sm text-grey-7 flex items-center">
                                 <q-icon name="route" class="q-mr-xs" size="16px" /> Etapas atuais de fabricação
                             </div>
 
-                            <!-- Estrutura de Timeline -->
                             <div class="timeline-hz-container q-pa-md"
                                 :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
                                 <div class="timeline-hz-row">
                                     <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id"
                                         class="timeline-hz-item">
 
-                                        <!-- Linha Conectora (Pulsa se for a etapa atual) -->
                                         <div v-if="index < listaEtapasDoBanco.length - 1" class="step-connect-line"
                                             :class="{ 'line-pulsing': isTrackPulsing(step.ordem, getOrdemReal(order, detalhes[order.id])) }"
                                             :style="getTrackStyle(step.ordem, getOrdemReal(order, detalhes[order.id]))">
                                         </div>
 
-                                        <!-- Círculo da Etapa -->
                                         <div class="step-circle"
                                             :class="{ 'step-circle--active': step.ordem === getOrdemReal(order, detalhes[order.id]) }"
                                             :style="{
                                                 background: getCircleBg(step.ordem, getOrdemReal(order, detalhes[order.id]), getCorReal(order, detalhes[order.id])),
                                                 color: step.ordem <= getOrdemReal(order, detalhes[order.id]) ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
-                                                boxShadow: step.ordem === getOrdemReal(order, detalhes[order.id]) ? `0 0 0 4px ${getCorReal(order, detalhes[order.id])}30` : 'none'
+                                                boxShadow: step.ordem === getOrdemReal(order, detalhes[order.id]) ? `0 0 0 4px ${getTimelineColor(step.ordem, getOrdemReal(order, detalhes[order.id]), getCorReal(order, detalhes[order.id]))}30` : 'none'
                                             }">
                                             <q-icon
                                                 :name="getTimelineIcon(step.ordem, getOrdemReal(order, detalhes[order.id]))"
                                                 size="12px" />
                                         </div>
 
-                                        <!-- Título da Etapa -->
                                         <span class="step-title q-mt-xs"
-                                            :style="{ color: step.ordem === getOrdemReal(order, detalhes[order.id]) ? getCorReal(order, detalhes[order.id]) : '' }"
+                                            :style="{ color: step.ordem === getOrdemReal(order, detalhes[order.id]) ? getTimelineColor(step.ordem, getOrdemReal(order, detalhes[order.id]), getCorReal(order, detalhes[order.id])) : '' }"
                                             :class="{ 'text-weight-bold': step.ordem === getOrdemReal(order, detalhes[order.id]) }">
-                                            {{ step.descricao || step.label }}
+                                            {{ step.descricao || step.label || step.status }}
                                         </span>
 
                                         <span v-if="step.ordem === getOrdemReal(order, detalhes[order.id])"
                                             class="step-current-tag"
-                                            :style="{ background: getCorReal(order, detalhes[order.id]) }">
+                                            :style="{ background: getTimelineColor(step.ordem, getOrdemReal(order, detalhes[order.id]), getCorReal(order, detalhes[order.id])) }">
                                             Atual
                                         </span>
                                     </div>
@@ -219,9 +199,34 @@
                             </div>
                         </div>
 
-                        <div v-if="detalhes[order.id].xml" class="row justify-end q-mt-md">
-                            <q-btn color="secondary" icon="download" no-caps outline
-                                label="Download XML" @click="downloadXML(detalhes[order.id])" />
+                        <!-- AÇÕES DO LOJISTA -->
+                        <q-separator class="q-my-md" :dark="isDark" />
+                        
+                        <div class="text-subtitle2 text-weight-bold q-mb-md flex items-center" :class="isDark ? 'text-grey-4' : 'text-grey-8'">
+                            <q-icon name="touch_app" class="q-mr-sm" size="18px" /> Ações do Projeto
+                        </div>
+
+                        <div class="row justify-end q-gutter-sm items-center">
+                            <!-- BOTÃO DE EXCLUSÃO COM A REGRA DE ORDEM 0 OU 1 -->
+                            <q-btn 
+                                v-if="getOrdemReal(order) === 0 || getOrdemReal(order) === 1"
+                                color="negative" 
+                                icon="delete_outline" 
+                                outline 
+                                label="Excluir Projeto" 
+                                @click="confirmarExclusao(order)" 
+                                no-caps 
+                            />
+                            
+                            <q-btn 
+                                v-if="detalhes[order.id].xml" 
+                                color="secondary" 
+                                icon="download" 
+                                label="Download XML" 
+                                no-caps 
+                                outline 
+                                @click="downloadXML(detalhes[order.id])" 
+                            />
                         </div>
                     </template>
                 </q-card-section>
@@ -247,116 +252,72 @@
         </div>
 
         <!-- Modal de Importação de XML -->
-<!-- Modal de Importação de XML (Moderno) -->
-    <q-dialog v-model="modalUploadAberta" persistent>
-      <q-card style="width: 100%; max-width: 650px; border-radius: 16px;" :class="isDark ? 'bg-dark text-white' : 'bg-white'">
-        <q-card-section class="row items-center q-pb-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
-          <div class="text-h6 flex items-center text-weight-bold">
-            <q-icon name="cloud_upload" color="primary" class="q-mr-sm" size="28px" />
-            Importar Novos Projetos
-          </div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup :disable="enviandoArquivos" />
-        </q-card-section>
+        <q-dialog v-model="modalUploadAberta" persistent>
+          <q-card style="width: 100%; max-width: 650px; border-radius: 16px;" :class="isDark ? 'bg-dark text-white' : 'bg-white'">
+            <q-card-section class="row items-center q-pb-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
+              <div class="text-h6 flex items-center text-weight-bold">
+                <q-icon name="cloud_upload" color="primary" class="q-mr-sm" size="28px" />
+                Importar Novos Projetos
+              </div>
+              <q-space />
+              <q-btn icon="close" flat round dense v-close-popup :disable="enviandoArquivos" />
+            </q-card-section>
 
-        <q-card-section class="q-pa-lg">
-          
-          <!-- Passo 1: Seleção de Arquivos (Esconde durante/após o envio) -->
-          <div v-if="resultadosUpload.length === 0" class="upload-dropzone q-pa-xl text-center cursor-pointer" :class="isDark ? 'upload-dropzone--dark' : 'upload-dropzone--light'">
-            <q-file
-              v-model="arquivosXml"
-              multiple
-              accept=".xml"
-              borderless
-              class="fit absolute-full"
-              style="opacity: 0; z-index: 2;"
-            />
-            <q-icon name="note_add" size="64px" color="primary" class="q-mb-md" />
-            <h3 class="text-h6 text-weight-bold q-mb-xs q-mt-none">Clique ou arraste seus arquivos XML</h3>
-            <p class="text-caption text-grey-6 q-mb-none">
-              Você pode selecionar vários arquivos de uma vez. Eles serão processados individualmente.
-            </p>
-            
-            <div v-if="arquivosXml.length > 0" class="q-mt-lg flex flex-center q-gutter-sm">
-              <q-chip v-for="file in arquivosXml" :key="file.name" removable @remove="arquivosXml = arquivosXml.filter(f => f.name !== file.name)" color="primary" text-color="white" icon="insert_drive_file">
-                {{ file.name }}
-              </q-chip>
-            </div>
-          </div>
-
-          <!-- Passo 2: Resultados e Progresso -->
-          <div v-else class="upload-results">
-            <div class="text-subtitle1 text-weight-bold q-mb-md flex items-center">
-              <q-icon name="list_alt" class="q-mr-sm" size="20px"/>
-              Progresso da Importação
-            </div>
-            
-            <div class="results-list column q-gutter-y-sm">
-              <div 
-                v-for="(resultado, index) in resultadosUpload" 
-                :key="index"
-                class="result-card row items-center q-pa-md"
-                :class="[
-                  isDark ? 'bg-dark-soft' : 'bg-grey-1',
-                  { 'border-positive': resultado.status === 'success', 'border-negative': resultado.status === 'error', 'border-primary pulsing': resultado.status === 'loading' }
-                ]"
-              >
-                <!-- Ícone de Status -->
-                <div class="q-mr-md">
-                  <q-spinner v-if="resultado.status === 'loading'" color="primary" size="24px" />
-                  <q-icon v-else-if="resultado.status === 'success'" name="check_circle" color="positive" size="28px" />
-                  <q-icon v-else name="error" color="negative" size="28px" />
-                </div>
-
-                <!-- Detalhes do Arquivo -->
-                <div class="col">
-                  <div class="text-weight-bold" style="word-break: break-all;">{{ resultado.nome }}</div>
-                  <div class="text-caption" :class="resultado.status === 'success' ? 'text-positive' : (resultado.status === 'error' ? 'text-negative' : 'text-grey-6')">
-                    {{ resultado.mensagem }}
+            <q-card-section class="q-pa-lg">
+              
+              <div v-if="resultadosUpload.length === 0">
+                <div class="upload-dropzone q-pa-xl text-center cursor-pointer" :class="isDark ? 'upload-dropzone--dark' : 'upload-dropzone--light'">
+                  <q-file v-model="arquivosXml" multiple accept=".xml" borderless class="fit absolute-full" style="opacity: 0; z-index: 2;" />
+                  <q-icon name="note_add" size="64px" color="primary" class="q-mb-md" />
+                  <h3 class="text-h6 text-weight-bold q-mb-xs q-mt-none">Clique ou arraste seus arquivos XML</h3>
+                  <p class="text-caption text-grey-6 q-mb-none">
+                    Você pode selecionar vários arquivos de uma vez para importação rápida.
+                  </p>
+                  
+                  <div v-if="arquivosXml.length > 0" class="q-mt-lg flex flex-center q-gutter-sm" style="position: relative; z-index: 3;">
+                    <q-chip v-for="file in arquivosXml" :key="file.name" removable @remove="arquivosXml = arquivosXml.filter(f => f.name !== file.name)" color="primary" text-color="white" icon="insert_drive_file">
+                      {{ file.name }}
+                    </q-chip>
                   </div>
                 </div>
+              </div>
 
-                <!-- Badge com o ID do Pedido (Aparece se tiver sucesso) -->
-                <div v-if="resultado.id" class="q-ml-md text-right">
-                  <div class="text-caption text-grey-6 text-uppercase" style="font-size: 10px;">ID do Pedido</div>
-                  <q-badge color="positive" class="text-weight-bold q-pa-sm text-subtitle2">
-                    #{{ resultado.id }}
-                  </q-badge>
+              <!-- RESULTADOS -->
+              <div v-else class="upload-results">
+                <div class="text-subtitle1 text-weight-bold q-mb-md flex items-center">
+                  <q-icon name="list_alt" class="q-mr-sm" size="20px"/>
+                  Progresso da Importação
+                </div>
+                
+                <div class="results-list column q-gutter-y-sm">
+                  <div v-for="(resultado, index) in resultadosUpload" :key="index" class="result-card row items-center q-pa-md" :class="[isDark ? 'bg-dark-soft' : 'bg-grey-1', { 'border-positive': resultado.status === 'success', 'border-negative': resultado.status === 'error', 'border-primary pulsing': resultado.status === 'loading' }]">
+                    <div class="q-mr-md">
+                      <q-spinner v-if="resultado.status === 'loading'" color="primary" size="24px" />
+                      <q-icon v-else-if="resultado.status === 'success'" name="check_circle" color="positive" size="28px" />
+                      <q-icon v-else name="error" color="negative" size="28px" />
+                    </div>
+                    <div class="col">
+                      <div class="text-weight-bold" style="word-break: break-all;">{{ resultado.nome }}</div>
+                      <div class="text-caption" :class="resultado.status === 'success' ? 'text-positive' : (resultado.status === 'error' ? 'text-negative' : 'text-grey-6')">{{ resultado.mensagem }}</div>
+                    </div>
+                    <div v-if="resultado.id" class="q-ml-md text-right">
+                      <div class="text-caption text-grey-6 text-uppercase" style="font-size: 10px;">ID do Pedido</div>
+                      <q-badge color="positive" class="text-weight-bold q-pa-sm text-subtitle2">#{{ resultado.id }}</q-badge>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </q-card-section>
+            </q-card-section>
 
-        <q-separator :dark="isDark" />
+            <q-separator :dark="isDark" />
 
-        <q-card-actions align="right" class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
-          <q-btn flat label="Cancelar" color="grey" v-close-popup v-if="resultadosUpload.length === 0" />
-          
-          <q-btn 
-            v-if="resultadosUpload.length === 0"
-            label="Iniciar Importação" 
-            color="primary" 
-            icon="play_arrow"
-            @click="enviarArquivos" 
-            :disable="arquivosXml.length === 0" 
-            padding="8px 24px"
-            class="text-weight-bold"
-          />
-
-          <q-btn 
-            v-else
-            label="Concluir e Fechar" 
-            color="primary" 
-            icon="done_all"
-            @click="modalUploadAberta = false" 
-            :disable="enviandoArquivos"
-            padding="8px 24px"
-            class="text-weight-bold"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+            <q-card-actions align="right" class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
+              <q-btn flat label="Cancelar" color="grey" v-close-popup v-if="resultadosUpload.length === 0" />
+              <q-btn v-if="resultadosUpload.length === 0" label="Iniciar Importação" color="primary" icon="play_arrow" @click="enviarArquivos" :disable="arquivosXml.length === 0" padding="8px 24px" class="text-weight-bold" />
+              <q-btn v-else label="Concluir e Fechar" color="primary" icon="done_all" @click="modalUploadAberta = false" :disable="enviandoArquivos" padding="8px 24px" class="text-weight-bold" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
     </q-page>
 </template>
 
@@ -385,7 +346,7 @@ const todosStatus = ref([])
 // Filtros
 const filtros = ref({ busca: '', status: null, dataInicio: '', dataFim: '' })
 const opcoesStatus = computed(() => {
-    const set = new Set(pedidos.value.map(p => p.status))
+    const set = new Set(pedidos.value.map(p => p.status).filter(Boolean))
     return Array.from(set).map(status => ({ label: status, value: status }))
 })
 
@@ -396,15 +357,13 @@ async function carregarPedidos() {
             api.get('/pedidos', { headers: { Authorization: `Bearer ${authStore.token}` } }),
             api.get('/status', { headers: { Authorization: `Bearer ${authStore.token}` } })
         ])
-        pedidos.value = resPedidos.data.data || []
+        pedidos.value = resPedidos.data.data || resPedidos.data || []
 
-        // Salva TODOS os status (incluindo os recusados/ordem 0) para consultar cores
         todosStatus.value = resStatus.data || []
-
-        // Filtra os de ordem 0 apenas para a linha do tempo
+        
         listaEtapasDoBanco.value = todosStatus.value.filter(step => step.ordem !== 0)
-
         totalEtapas.value = listaEtapasDoBanco.value.length || 6
+
     } catch {
         $q.notify({ type: 'negative', message: 'Erro ao carregar lista de projetos e etapas.' })
     } finally {
@@ -414,13 +373,15 @@ async function carregarPedidos() {
 
 async function carregarDetalhesPedido(id) {
     pedidoExpandidoId.value = id
-    if (detalhes.value[id]) return // Cache
+    
+    if (detalhes.value[id]) return 
+    
     detalhesLoading.value = true
     try {
         const response = await api.get(`/pedidos/${id}`, {
             headers: { Authorization: `Bearer ${authStore.token}` }
         })
-        detalhes.value[id] = response.data.data
+        detalhes.value[id] = response.data.data || response.data
     } catch {
         $q.notify({ type: 'negative', message: 'Não foi possível carregar as especificações.' })
     } finally {
@@ -432,7 +393,50 @@ function fecharPedido(id) {
     if (pedidoExpandidoId.value === id) pedidoExpandidoId.value = null
 }
 
-// --- FUNÇÕES INTELIGENTES E UNIFICADAS ---
+// ------ FUNÇÃO DE EXCLUSÃO ------
+
+function confirmarExclusao(pedido) {
+    $q.dialog({
+        title: 'Confirmar Exclusão',
+        message: `Atenção: Você está prestes a excluir o projeto <strong>${pedido.nome_projeto}</strong>. Esta ação é irreversível. Deseja continuar?`,
+        html: true,
+        cancel: { label: 'Cancelar', flat: true, color: 'grey-7' },
+        ok: { label: 'Excluir', color: 'negative', unelevated: true },
+        persistent: true
+    }).onOk(async () => {
+        try {
+            console.log("Preparando para excluir o ID:", pedido.id);
+            
+            // Removi o $q.loading temporariamente
+            
+            await api.delete(`/pedidos/${pedido.id}`, {
+                headers: { Authorization: `Bearer ${authStore.token}` }
+            });
+            
+            console.log("Exclusão concluída com sucesso no backend!");
+            
+            $q.notify({ type: 'positive', message: 'Projeto removido com sucesso!' });
+            
+            // Atualiza a lista na tela
+            pedidos.value = pedidos.value.filter(p => p.id !== pedido.id);
+            if (pedidoExpandidoId.value === pedido.id) {
+                pedidoExpandidoId.value = null;
+            }
+        } catch (error) {
+            // Se quebrar, vai mostrar exatamente O QUE quebrou na aba CONSOLE
+            console.error('ERRO DETALHADO AO EXCLUIR:', error);
+            
+            $q.notify({ 
+                type: 'negative', 
+                message: error.response?.data?.message || 'Erro ao excluir o pedido. Verifique o console do F12.' 
+            });
+        }
+    });
+}
+
+// ------------------------------------------
+// LÓGICA DE CORES E TIMELINE
+// ------------------------------------------
 
 function getOrdemReal(order, detalhe = null) {
     const alvo = detalhe || order || {};
@@ -441,7 +445,7 @@ function getOrdemReal(order, detalhe = null) {
     if (!isNaN(ordem) && ordem > 0) return ordem;
 
     const step = todosStatus.value.find(s =>
-        (s.label || s.descricao || '').toLowerCase() === (alvo.status || '').toLowerCase()
+        (s.label || s.descricao || s.status || '').toLowerCase() === (alvo.status || '').toLowerCase()
     );
     return step ? Number(step.ordem) : 0;
 }
@@ -451,30 +455,39 @@ function getCorReal(order, detalhe = null) {
     if (alvo.cor) return alvo.cor;
 
     const step = todosStatus.value.find(s =>
-        (s.label || s.descricao || '').toLowerCase() === (alvo.status || '').toLowerCase()
+        (s.label || s.descricao || s.status || '').toLowerCase() === (alvo.status || '').toLowerCase()
     );
     if (step && step.cor) return step.cor;
 
-    const s = String(alvo.status || '').toLowerCase();
-    if (s.includes('pendente')) return '#F2C037';
-    if (s.includes('aprovado')) return '#21BA45';
-    if (s.includes('produção') || s.includes('andamento')) return '#027BE3';
-    if (s.includes('recusado') || s.includes('cancelado')) return '#C10015';
-    return '#1976D2';
+    return 'var(--q-primary)'; 
 }
 
-// --- CONTROLES VISUAIS DA TIMELINE ---
+function getTimelineColor(stepOrdem, currentOrdem, orderCor) {
+    if (currentOrdem === totalEtapas.value && stepOrdem === currentOrdem) {
+        return '#21BA45';
+    }
+    return orderCor || 'var(--q-primary)';
+}
+
 function getCircleBg(stepOrdem, currentOrdem, orderCor) {
     if (currentOrdem === 0) return isDark.value ? '#22272e' : '#f3f4f6';
     if (stepOrdem < currentOrdem) return '#21BA45';
-    if (stepOrdem === currentOrdem) return orderCor || 'var(--q-primary)';
+    
+    if (stepOrdem === currentOrdem) {
+        if (currentOrdem === totalEtapas.value) return '#21BA45';
+        return orderCor || 'var(--q-primary)';
+    }
+    
     return isDark.value ? '#22272e' : '#f3f4f6';
 }
 
 function getTimelineIcon(stepOrdem, currentOrdem) {
     if (currentOrdem === 0) return 'radio_button_unchecked';
     if (stepOrdem < currentOrdem) return 'check';
-    if (stepOrdem === currentOrdem) return 'hourglass_empty';
+    if (stepOrdem === currentOrdem) {
+        if (currentOrdem === totalEtapas.value) return 'check';
+        return 'hourglass_empty';
+    }
     return 'radio_button_unchecked';
 }
 
@@ -484,7 +497,7 @@ function getTrackStyle(stepOrdem, currentOrdem) {
 }
 
 function isTrackPulsing(stepOrdem, currentOrdem) {
-    return stepOrdem === currentOrdem && currentOrdem !== 0;
+    return stepOrdem === currentOrdem && currentOrdem !== 0 && currentOrdem !== totalEtapas.value;
 }
 
 function getBadgeStyle(corBase) {
@@ -500,7 +513,6 @@ function getBadgeStyle(corBase) {
     }
 }
 
-// --- AUXILIARES GERAIS ---
 function formatMoney(v) {
     return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
@@ -522,15 +534,12 @@ function downloadXML(pedido) {
     document.body.removeChild(link)
 }
 
-// --- FILTROS E PAGINAÇÃO ---
 const pedidosFiltrados = computed(() => {
     return pedidos.value.filter(order => {
         if (filtros.value.busca) {
             const term = filtros.value.busca.toLowerCase()
             const matchesName = String(order.nome_projeto || '').toLowerCase().includes(term)
             const matchesId = String(order.id).includes(term)
-
-            // NOVA BUSCA PELO NOME DO CLIENTE
             const matchesCliente = String(order.cliente || '').toLowerCase().includes(term)
 
             if (!matchesName && !matchesId && !matchesCliente) return false
@@ -567,7 +576,7 @@ watch(() => pedidosFiltrados.value.length, () => {
     paginaAtual.value = 1
 })
 
-// --- ESTADOS DO UPLOAD DE XML ---
+// --- ESTADOS DE UPLOAD ---
 const modalUploadAberta = ref(false)
 const arquivosXml = ref([])
 const enviandoArquivos = ref(false)
@@ -584,7 +593,6 @@ async function enviarArquivos() {
 
   enviandoArquivos.value = true
   
-  // 1. Prepara a lista visual para mostrar "carregando..." para todos os arquivos
   resultadosUpload.value = arquivosXml.value.map(file => ({
     nome: file.name,
     status: 'loading',
@@ -592,14 +600,12 @@ async function enviarArquivos() {
     id: null
   }))
 
-  // 2. Anexa TODOS os arquivos no mesmo FormData para enviar de uma vez só
   const formData = new FormData()
   for (const file of arquivosXml.value) {
     formData.append('xml', file)
   }
 
   try {
-    // 3. Faz o envio em lote
     const response = await api.post('/importaxml', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -607,30 +613,24 @@ async function enviarArquivos() {
       }
     })
     
-    // 4. Pega o array "resultados" do seu JSON
     const resultadosBackend = response.data.resultados || []
     
-    // 5. Atualiza a tela com base no que o backend respondeu para cada arquivo
     for (const res of resultadosBackend) {
-      // Procura o item correspondente na interface pelo nome do arquivo
       const itemTela = resultadosUpload.value.find(item => item.nome === res.arquivo)
       
       if (itemTela) {
         if (res.success) {
           itemTela.status = 'success'
           itemTela.mensagem = 'Projeto importado com sucesso!'
-          // Aqui pegamos o idPedido exatamente como vem no seu JSON!
           itemTela.id = res.data?.idPedido 
         } else {
           itemTela.status = 'error'
-          // Caso o backend mande um motivo de erro, mostramos. Se não, mensagem padrão.
           itemTela.mensagem = res.mensagem || 'Falha ao importar o arquivo.'
         }
       }
     }
     
   } catch (error) {
-    // Se a requisição inteira falhar (ex: erro 500 ou queda de internet)
     for (const item of resultadosUpload.value) {
       if (item.status === 'loading') {
         item.status = 'error'
@@ -640,9 +640,8 @@ async function enviarArquivos() {
   }
 
   enviandoArquivos.value = false
-  arquivosXml.value = [] // Limpa a seleção
+  arquivosXml.value = [] 
   
-  // Atualiza a tabela no fundo da tela para já exibir os novos pedidos
   carregarPedidos()
 }
 
@@ -650,7 +649,6 @@ onMounted(carregarPedidos)
 </script>
 
 <style scoped>
-/* Cards Principais e Accordions */
 .order-expansion {
     border-radius: 12px;
     overflow: hidden;
@@ -675,7 +673,6 @@ onMounted(carregarPedidos)
     background: #14181f;
 }
 
-/* Container da Linha do Tempo */
 .timeline-hz-container {
     border-radius: 12px;
     position: relative;
@@ -692,7 +689,6 @@ onMounted(carregarPedidos)
     border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-/* Elementos do Fluxo Horizontal */
 .timeline-hz-row {
     display: flex;
     justify-content: space-between;
@@ -721,7 +717,6 @@ onMounted(carregarPedidos)
     box-sizing: border-box;
 }
 
-/* Círculos e Textos */
 .step-circle {
     width: 22px;
     height: 22px;
@@ -772,7 +767,6 @@ onMounted(carregarPedidos)
     }
 }
 
-/* Linha Conectora e Feixe de Luz */
 .step-connect-line {
     position: absolute;
     top: 10px;
@@ -807,7 +801,6 @@ onMounted(carregarPedidos)
     }
 }
 
-/* Ajustes de Responsividade */
 @media (max-width: 600px) {
     .timeline-hz-container {
         padding: 12px 8px !important;
@@ -828,7 +821,6 @@ onMounted(carregarPedidos)
     }
 }
 
-/* Estilos do Modal de Upload */
 .upload-dropzone {
   position: relative;
   border-radius: 16px;
@@ -856,7 +848,6 @@ onMounted(carregarPedidos)
   border-color: var(--q-primary);
 }
 
-/* Cards de Resultado */
 .result-card {
   border-radius: 12px;
   border-left: 4px solid transparent;

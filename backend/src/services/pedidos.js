@@ -398,9 +398,32 @@ async function patchPedido(id, dados) {
 }
 
 // ==============================
-// DELETE — remover pedido (admin only)
+// DELETE — remover pedido
 // ==============================
-async function deletePedido(id) {
+async function deletePedido(id, user) {
+  // 1. Busca as informações do pedido e a ordem do status atual
+  const pedidoInfo = (await db.query(`
+    SELECT p.id_lojista, sp.ordem 
+    FROM pedidos p 
+    LEFT JOIN status_pedido sp ON sp.id = p.id_status 
+    WHERE p.id = $1`, 
+    [id]
+  )).rows[0];
+
+  if (!pedidoInfo) throw new Error("Pedido não encontrado");
+
+  // 2. Validação de regras de negócio por tipo de usuário
+  if (user.tipo === 'lojista') {
+    // Se a ordem for maior que 1, significa que o pedido já avançou
+    if (pedidoInfo.ordem !== null && pedidoInfo.ordem > 1) {
+      throw new Error("Ação não permitida. Lojistas só podem excluir projetos que estejam pendentes ou recusados.");
+    }
+  } else if (user.tipo !== 'admin') {
+    // Representantes e clientes não podem excluir pedidos
+    throw new Error("Acesso negado para exclusão de projetos.");
+  }
+
+  // 3. Exclusão em cascata (mantido como no seu código original)
   const itens = (await db.query(`SELECT id FROM itens_pedido WHERE id_pedido = $1`, [id])).rows;
 
   for (const item of itens) {

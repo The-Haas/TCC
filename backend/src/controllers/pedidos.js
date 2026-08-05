@@ -121,7 +121,7 @@ async function patchPedidoController(req, res) {
 
 async function deletePedidoController(req, res) {
     try {
-        const pedido = await service.deletePedido(req.params.id);
+        const pedido = await service.deletePedido(req.params.id, req.user);
 
         if (!pedido) {
             return res.status(404).json({ success: false, message: "Pedido não encontrado" });
@@ -129,7 +129,12 @@ async function deletePedidoController(req, res) {
 
         return res.status(200).json({ success: true, message: "Pedido removido com sucesso" });
     } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
+        console.error("🔥 ERRO AO EXCLUIR PROJETO:", error); 
+        
+        const errorMessage = error.message || "Erro interno no servidor";
+        const statusCode = errorMessage.includes("permitido") || errorMessage.includes("negado") ? 403 : 500;
+        
+        return res.status(statusCode).json({ success: false, message: errorMessage });
     }
 }
 
