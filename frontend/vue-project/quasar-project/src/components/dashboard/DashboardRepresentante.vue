@@ -75,6 +75,8 @@
                                     <span class="text-caption text-weight-bold"
                                         :class="isDark ? 'bg-grey-9 text-grey-3' : 'bg-blue-1 text-primary'"
                                         style="padding: 3px 8px; border-radius: 6px; font-size: 11px;">
+                                        <q-icon name="receipt_long" size="12px" class="q-mr-xs"
+                                            style="margin-top: -2px" />
                                         Pedido #{{ order.id }}
                                     </span>
                                 </div>
@@ -111,7 +113,7 @@
                                         order.nome_projeto }}</strong>
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                    }}</span>
+                                }}</span>
                             </div>
 
                             <div class="order-col-forecast">
@@ -148,17 +150,19 @@
                                     Progresso do pedido
                                 </span>
 
+                                <!-- Porcentagem idêntica à tela de Pedidos -->
                                 <span class="text-weight-bold"
-                                    :style="{ color: order.ordem_status === 0 ? order.cor : 'var(--q-primary)', fontSize: '13px' }">
+                                    :style="{ color: order.ordem_status === 0 ? order.cor : (order.ordem_status === totalEtapas ? '#21BA45' : 'var(--q-primary)'), fontSize: '13px' }">
                                     {{ order.ordem_status === 0 ? '0%' : `${Math.round((order.ordem_status /
-                                        totalEtapas) * 100)}%` }}
+                                    (totalEtapas || 1)) * 100)}%` }}
                                 </span>
                             </div>
 
+                            <!-- Barra de Progresso idêntica à tela de Pedidos -->
                             <q-linear-progress
-                                :value="order.ordem_status === 0 ? 0 : (order.ordem_status / totalEtapas)"
+                                :value="order.ordem_status === 0 ? 0 : (order.ordem_status / (totalEtapas || 1))"
+                                :color="order.ordem_status === 0 ? 'negative' : (order.ordem_status === totalEtapas ? 'positive' : 'primary')"
                                 :dark="isDark" :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
-                                    color: order.ordem_status === 0 ? order.cor : 'var(--q-primary)',
                                     height: '8px',
                                     borderRadius: '4px',
                                     border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
