@@ -236,6 +236,96 @@
                             </div>
                         </div>
 
+
+                        <!-- ========================================================= -->
+                        <!-- NOVA SEÇÃO: LISTA DE ITENS E COMPONENTES (SLIM & DENSE)   -->
+                        <!-- ========================================================= -->
+                        <div v-if="detalhes[order.id].itens && detalhes[order.id].itens.length > 0" class="q-mt-lg q-mb-md">
+                            
+                            <!-- ACORDEÃO PRINCIPAL -->
+                            <q-expansion-item
+                                dense
+                                icon="list_alt"
+                                label="Especificações e Itens do Projeto"
+                                :caption="`${detalhes[order.id].itens.length} itens registrados`"
+                                header-class="text-weight-bold q-pa-sm text-subtitle2"
+                                expand-icon-class="text-primary"
+                                class="rounded-borders"
+                                :class="isDark ? 'bg-dark' : 'bg-white'"
+                                style="border: 1px solid rgba(128,128,128,0.2);"
+                            >
+                                <q-separator :dark="isDark" />
+                                
+                                <q-list separator dense>
+                                    <template v-for="item in detalhes[order.id].itens" :key="item.id">
+                                    
+                                        <!-- ITEM TIPO 1: Com Componentes (Expansível) -->
+                                        <q-expansion-item
+                                            v-if="item.componentes && item.componentes.length > 0"
+                                            :group="`itens_${order.id}`"
+                                            dense
+                                            header-class="q-py-sm"
+                                            expand-icon-class="text-primary"
+                                        >
+                                            <template v-slot:header>
+                                                <!-- Reduzida a largura mínima do avatar para colar mais no texto -->
+                                                <q-item-section avatar style="min-width: 36px;">
+                                                    <q-icon name="kitchen" :color="isDark ? 'blue-4' : 'primary'" size="22px" />
+                                                </q-item-section>
+                                                <q-item-section>
+                                                    <q-item-label class="text-weight-bold" style="font-size: 13.5px;">{{ item.descricao_item }}</q-item-label>
+                                                    <q-item-label caption style="font-size: 11.5px;" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                                                        Contém {{ item.componentes.length }} peças
+                                                    </q-item-label>
+                                                </q-item-section>
+                                                <q-item-section side>
+                                                    <!-- Badge mais compacta -->
+                                                    <q-badge color="primary" rounded class="text-weight-bold shadow-1 q-px-sm" style="font-size: 11.5px; padding-top: 3px; padding-bottom: 3px;">
+                                                        Qtd: {{ item.quantidade_item }}
+                                                    </q-badge>
+                                                </q-item-section>
+                                            </template>
+
+                                            <!-- Lista de Peças Interna (Árvore Compacta) -->
+                                            <div class="q-pl-xl q-pb-sm q-pr-sm">
+                                                <div class="q-pl-sm q-py-xs" style="border-left: 2px solid var(--q-primary); opacity: 0.9;">
+                                                    <q-list dense>
+                                                        <!-- min-height força a linha a ficar bem fina -->
+                                                        <q-item v-for="(comp, i) in item.componentes" :key="i" class="q-py-none" style="min-height: 22px;">
+                                                            <q-item-section avatar style="min-width: 18px; padding-right: 4px;">
+                                                                <q-icon name="circle" size="4px" :color="isDark ? 'grey-6' : 'grey-4'" />
+                                                            </q-item-section>
+                                                            <q-item-section :class="isDark ? 'text-grey-4' : 'text-grey-8'" style="font-size: 12px; line-height: 1.2;">
+                                                                {{ comp }}
+                                                            </q-item-section>
+                                                        </q-item>
+                                                    </q-list>
+                                                </div>
+                                            </div>
+                                        </q-expansion-item>
+
+                                        <!-- ITEM TIPO 2: Sem Componentes (Ferragens - Fixo) -->
+                                        <q-item v-else dense class="q-py-sm">
+                                            <q-item-section avatar style="min-width: 36px;">
+                                                <q-icon name="build" :color="isDark ? 'grey-5' : 'grey-6'" size="22px" />
+                                            </q-item-section>
+                                            <q-item-section>
+                                                <q-item-label class="text-weight-bold" style="font-size: 13.5px;">{{ item.descricao_item }}</q-item-label>
+                                                <q-item-label caption style="font-size: 11.5px;" :class="isDark ? 'text-grey-5' : 'text-grey-6'">Acessório / Material</q-item-label>
+                                            </q-item-section>
+                                            <q-item-section side>
+                                                <q-badge color="grey-7" rounded class="text-weight-bold shadow-1 q-px-sm" style="font-size: 11.5px; padding-top: 3px; padding-bottom: 3px;">
+                                                    Qtd: {{ item.quantidade_item }}
+                                                </q-badge>
+                                            </q-item-section>
+                                        </q-item>
+                                    
+                                    </template>
+                                </q-list>
+                            </q-expansion-item>
+                        </div>
+                        <!-- ========================================================= -->
+
                         <!-- AREA DE EDIÇÃO E EXCLUSÃO DO ADMIN -->
                         <q-separator class="q-my-md" :dark="isDark" />
 
