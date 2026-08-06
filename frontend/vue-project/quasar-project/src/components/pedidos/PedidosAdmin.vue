@@ -417,14 +417,13 @@
 
                     <div v-if="resultadosUpload.length === 0">
                         <div class="q-mb-lg">
-<!-- SELEÇÃO DE LOJISTA COM PESQUISA -->
+<!-- SELEÇÃO DE LOJISTA E REPRESENTANTE COM PESQUISA -->
 <div class="q-mb-lg">
     <q-select 
         v-model="lojistaSelecionado" 
         :options="opcoesLojistas" 
         option-value="id"
-        :option-label="(item) => item.nome_fantasia || item.nome || item.razao_social || `Lojista #${item.id}`"
-        label="Selecione o Lojista *" 
+        label="Selecione o Lojista ou Representante *" 
         outlined 
         dense 
         emit-value 
@@ -439,10 +438,36 @@
         <template v-slot:prepend>
             <q-icon name="storefront" />
         </template>
+
+        <!-- COMO CADA ITEM APARECE NA LISTA SUSPENSA -->
+        <template v-slot:option="scope">
+            <q-item v-bind="scope.itemProps">
+                <q-item-section>
+                    <q-item-label class="text-weight-bold">
+                        {{ scope.opt.nome_fantasia || scope.opt.nome || scope.opt.razao_social }}
+                    </q-item-label>
+                    <q-item-label caption class="text-grey-7">
+                        <q-icon name="person" size="14px" class="q-mr-xs" />
+                        Rep: {{ scope.opt.representante?.nome || scope.opt.nome_representante || 'Sem Representante' }}
+                    </q-item-label>
+                </q-item-section>
+            </q-item>
+        </template>
+
+        <!-- COMO O ITEM SELECIONADO FICARÁ EXIBIDO NO CAMPO -->
+        <template v-slot:selected-item="scope">
+            <span class="ellipsis" v-if="scope.opt">
+                {{ scope.opt.nome_fantasia || scope.opt.nome }} 
+                <span class="text-caption text-grey-7 q-ml-xs">
+                    (Rep: {{ scope.opt.representante?.nome || scope.opt.nome_representante || 'N/A' }})
+                </span>
+            </span>
+        </template>
+
         <template v-slot:no-option>
             <q-item>
                 <q-item-section class="text-grey">
-                    Nenhum lojista encontrado
+                    Nenhum lojista ou representante encontrado
                 </q-item-section>
             </q-item>
         </template>
@@ -897,7 +922,6 @@ async function carregarLojistas() {
     }
 }
 
-// NOVA FUNÇÃO: Lógica que faz a pesquisa no select
 function filtrarLojistas(val, update) {
     if (val === '') {
         update(() => {
@@ -907,10 +931,17 @@ function filtrarLojistas(val, update) {
     }
 
     update(() => {
-        const needle = val.toLowerCase()
+        const needle = val.toLowerCase().trim()
+
         opcoesLojistas.value = listaLojistas.value.filter(v => {
-            const nomeStr = (v.nome_fantasia || v.nome || v.razao_social || `Lojista #${v.id}`).toLowerCase()
-            return nomeStr.includes(needle)
+            // Nome do Lojista
+            const nomeLojista = (v.nome_fantasia || v.nome || v.razao_social || '').toLowerCase()
+            
+            // Nome do Representante (ajuste a propriedade conforme o retorno do seu Back-end)
+            const nomeRepresentante = (v.representante?.nome || v.nome_representante || '').toLowerCase()
+
+            // Retorna true se encontrar o texto digitado no Lojista OU no Representante
+            return nomeLojista.includes(needle) || nomeRepresentante.includes(needle)
         })
     })
 }
