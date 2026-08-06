@@ -80,7 +80,10 @@
           <!-- Célula: Ações -->
           <template v-slot:body-cell-acoes="props">
             <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="edit" color="primary" size="sm" class="action-btn" />
+              <q-btn flat round dense icon="edit" color="primary" size="sm" class="action-btn q-mr-sm"
+                @click.stop="abrirEdicao(props.row)" />
+              <q-btn flat round dense icon="delete" color="negative" size="sm" class="action-btn"
+                @click.stop="confirmarExclusao(props.row)" />
             </q-td>
           </template>
         </q-table>
@@ -281,13 +284,32 @@ function abrirNovo() {
 }
 
 async function salvarStatus() {
+  const ordemAtual = Number(statusEditando.value.ordem)
+
+  // Validação: Se a ordem for diferente de 0, checa duplicidade no frontend
+  if (ordemAtual !== 0) {
+    const ordemDuplicada = listaStatus.value.some(status => {
+      // Ignora a si mesmo na edição
+      const isMesmoId = statusEditando.value.id && status.id === statusEditando.value.id
+      return !isMesmoId && Number(status.ordem) === ordemAtual
+    })
+
+    if (ordemDuplicada) {
+      $q.notify({
+        type: 'warning',
+        message: 'Já existe um status com esse número de ordem. Utilize 0 ou um número livre.'
+      })
+      return // Interrompe o envio
+    }
+  }
+
   salvando.value = true
   try {
     const payload = {
       descricao: statusEditando.value.descricao,
       cor: statusEditando.value.cor,
       padrao: Boolean(statusEditando.value.padrao),
-      ordem: Number(statusEditando.value.ordem)
+      ordem: ordemAtual
     }
 
     if (statusEditando.value.id) {
@@ -322,6 +344,50 @@ function formatarData(dataISO) {
   return new Date(dataISO).toLocaleString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
+  })
+}
+
+function confirmarExclusao(statusItem) {
+  $q.dialog({
+    title: 'Confirmar Exclusão',
+    message: `Tem certeza que deseja excluir o status <strong>${statusItem.descricao}</strong>?<br><span class="text-caption text-grey-6">Esta ação não poderá ser desfeita.</span>`,
+    html: true,
+    cancel: {
+      label: 'Cancelar',
+      color: 'grey-6',
+      flat: true,
+      noCaps: true
+    },
+    ok: {
+      label: 'Sim, Excluir',
+      color: 'negative',
+      unevaluated: true,
+      noCaps: true,
+      class: 'radius-8'
+    },
+    persistent: true,
+    dark: isDark.value
+  }).onOk(async () => {
+    loading.value = true
+    try {
+      // Faz a requisição DELETE para a rota configurada no backend
+      await api.delete(`/status/${statusItem.id}`, {
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+      
+      $q.notify({ type: 'positive', message: 'Status excluído com sucesso.' })
+      await carregarStatus()
+      
+    } catch (error) {
+      console.error(error)
+      // Captura a mensagem de erro amigável vinda do backend (ex: erro de chave estrangeira)
+      $q.notify({
+        type: 'negative',
+        message: error.response?.data?.message || 'Erro ao excluir o status. Verifique se ele não está em uso.'
+      })
+    } finally {
+      loading.value = false
+    }
   })
 }
 

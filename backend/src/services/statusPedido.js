@@ -1,7 +1,6 @@
 const db = require('../config');
 
 async function postStatus(dados) {
-    // Adicionado 'ordem' na desestruturação
     const { descricao, cor, padrao, ordem } = dados;
 
     try {
@@ -13,14 +12,24 @@ async function postStatus(dados) {
             return { success: false, message: 'Cor inválida. Use o formato hexadecimal #RRGGBB.' };
         }
 
-        // Se esse vai ser o padrão, tira o padrão do atual
+        // Validação de Ordem Duplicada (exceto 0)
+        if (ordem !== undefined && ordem !== null && Number(ordem) !== 0) {
+            const ordemCheck = await db.query(
+                'SELECT id FROM status_pedido WHERE ordem = $1',
+                [ordem]
+            );
+
+            if (ordemCheck.rows.length > 0) {
+                return { success: false, message: 'Já existe um status cadastrado com esta ordem.' };
+            }
+        }
+
         if (padrao) {
             await db.query(
                 `UPDATE status_pedido SET padrao = false WHERE padrao = true`
             );
         }
 
-        // Incluído o campo 'ordem' no INSERT
         const result = await db.query(
             `INSERT INTO status_pedido (descricao, cor, padrao, ordem)
              VALUES ($1, $2, $3, $4)
@@ -71,7 +80,6 @@ async function getStatusById(id) {
 }
 
 async function putStatus(id, dados) {
-    // Adicionado 'ordem' na desestruturação
     const { descricao, cor, padrao, ordem } = dados;
 
     try {
@@ -88,7 +96,18 @@ async function putStatus(id, dados) {
             return { success: false, message: 'Cor inválida. Use o formato hexadecimal #RRGGBB.' };
         }
 
-        // Se esse vai ser o padrão, tira o padrão do atual (exceto ele mesmo)
+        // Validação de Ordem Duplicada ignorando o próprio ID (exceto 0)
+        if (ordem !== undefined && ordem !== null && Number(ordem) !== 0) {
+            const ordemCheck = await db.query(
+                'SELECT id FROM status_pedido WHERE ordem = $1 AND id <> $2',
+                [ordem, id]
+            );
+            
+            if (ordemCheck.rows.length > 0) {
+                return { success: false, message: 'Já existe um outro status cadastrado com esta ordem.' };
+            }
+        }
+
         if (padrao) {
             await db.query(
                 `UPDATE status_pedido SET padrao = false WHERE padrao = true AND id <> $1`,
@@ -96,7 +115,6 @@ async function putStatus(id, dados) {
             );
         }
 
-        // Incluído o campo 'ordem' no UPDATE completo
         const result = await db.query(
             `UPDATE status_pedido
              SET descricao = $1,
@@ -128,7 +146,18 @@ async function patchStatus(id, dados) {
             return { success: false, message: 'Cor inválida. Use o formato hexadecimal #RRGGBB.' };
         }
 
-        // Se esse vai ser o padrão, tira o padrão do atual (exceto ele mesmo)
+        // Validação de Ordem Duplicada na atualização parcial (exceto 0)
+        if (dados.ordem !== undefined && dados.ordem !== null && Number(dados.ordem) !== 0) {
+            const ordemCheck = await db.query(
+                'SELECT id FROM status_pedido WHERE ordem = $1 AND id <> $2',
+                [dados.ordem, id]
+            );
+            
+            if (ordemCheck.rows.length > 0) {
+                return { success: false, message: 'Já existe um outro status cadastrado com esta ordem.' };
+            }
+        }
+
         if (dados.padrao) {
             await db.query(
                 `UPDATE status_pedido SET padrao = false WHERE padrao = true AND id <> $1`,
@@ -140,7 +169,6 @@ async function patchStatus(id, dados) {
         const values = [];
         let idx = 1;
 
-        // Como esse loop mapeia as chaves dinamicamente, se a 'ordem' for enviada, ela já se auto-inclui aqui perfeitamente!
         for (const [key, value] of Object.entries(dados)) {
             fields.push(`${key} = $${idx}`);
             values.push(value);
