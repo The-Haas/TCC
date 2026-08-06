@@ -114,7 +114,7 @@
                                         order.nome_projeto }}</strong>
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                    }}</span>
+                                }}</span>
                             </div>
 
                             <div class="order-col-forecast">
@@ -325,8 +325,11 @@
                                         {{ projeto.nome || 'Projeto sem nome' }}
                                         <span class="text-grey-6 text-weight-medium q-ml-xs">#{{ projeto.id }}</span>
                                     </span>
-                                    <span class="text-caption text-grey-6" style="font-size: 11px;">Cli: {{
-                                        projeto.nome_cliente || 'Não inf.' }}</span>
+                                    <span class="text-caption text-grey-6" style="font-size: 11px;">
+                                        Cli: {{ projeto.nome_cliente || 'Não inf.' }}
+                                        <span v-if="projeto.id_cliente" class="text-weight-bold">#{{ projeto.id_cliente
+                                            }}</span>
+                                    </span>
                                 </div>
 
                                 <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
@@ -563,6 +566,7 @@ const representantesFiltrados = computed(() => {
                 id: p.id,
                 nome: p.nome_projeto || p.projeto || 'Projeto sem nome',
                 nome_cliente: p.nome_cliente || p.cliente || 'Não inf.',
+                id_cliente: p.id_cliente,
                 status: p.status,
                 cor: p.cor || '#1976D2',
                 valor: p.valor
