@@ -81,16 +81,16 @@
                         <div class="col-12 col-sm-2 flex column justify-center">
                             <div class="row items-center q-gutter-x-sm">
                                 <span class="text-weight-bold text-subtitle1 text-primary">{{ order.nome_projeto
-                                    }}</span>
+                                }}</span>
                                 <span class="text-grey-6 text-weight-bold" style="font-size: 13px;">#{{ order.id
-                                    }}</span>
+                                }}</span>
                             </div>
                             <span class="text-caption text-grey-6">Pedido: {{ formatDate(order.data_pedido) }}</span>
 
                             <!-- Exibe quem enviou o projeto ao sistema -->
                             <span v-if="order.enviado_por" class="text-caption text-grey-5" style="font-size: 11px;">
                                 Enviado por: <span class="text-weight-medium text-capitalize">{{ order.enviado_por
-                                    }}</span>
+                                }}</span>
                             </span>
                         </div>
 
@@ -271,14 +271,25 @@
                     <div v-if="resultadosUpload.length === 0">
                         <!-- SELEÇÃO DE LOJISTA (NOVO) -->
                         <div class="q-mb-lg">
-                            <q-select v-model="lojistaSelecionado" :options="listaLojistas" option-value="id"
-                                :option-label="(item) => item.nome_fantasia || item.nome || item.razao_social || `Lojista #${item.id}`"
-                                label="Selecione o Lojista *" outlined dense emit-value map-options
-                                :loading="loadingLojistas" :dark="isDark" hide-bottom-space>
-                                <template v-slot:prepend>
-                                    <q-icon name="storefront" />
-                                </template>
-                            </q-select>
+                            <!-- SELEÇÃO DE LOJISTA COM PESQUISA -->
+                            <div class="q-mb-lg">
+                                <q-select v-model="lojistaSelecionado" :options="opcoesLojistas" option-value="id"
+                                    :option-label="(item) => item.nome_fantasia || item.nome || item.razao_social || `Lojista #${item.id}`"
+                                    label="Selecione o Lojista *" outlined dense emit-value map-options
+                                    :loading="loadingLojistas" :dark="isDark" hide-bottom-space use-input
+                                    input-debounce="300" @filter="filtrarLojistas">
+                                    <template v-slot:prepend>
+                                        <q-icon name="storefront" />
+                                    </template>
+                                    <template v-slot:no-option>
+                                        <q-item>
+                                            <q-item-section class="text-grey">
+                                                Nenhum lojista encontrado
+                                            </q-item-section>
+                                        </q-item>
+                                    </template>
+                                </q-select>
+                            </div>
                         </div>
 
                         <!-- ÁREA DE UPLOAD -->
@@ -573,21 +584,40 @@ const resultadosUpload = ref([])
 const listaLojistas = ref([])
 const lojistaSelecionado = ref(null)
 const loadingLojistas = ref(false)
+const opcoesLojistas = ref([]) // NOVA: Lista reativa para exibir na tela após filtro
 
 async function carregarLojistas() {
     loadingLojistas.value = true
     try {
-        // ATENÇÃO: Ajuste a rota '/lojistas' caso o seu backend utilize outro endpoint
         const response = await api.get('/lojistas', {
             headers: { Authorization: `Bearer ${authStore.token}` }
         })
         listaLojistas.value = response.data.data || response.data || []
+        opcoesLojistas.value = listaLojistas.value // NOVA: Inicializa as opções com todos os lojistas
     } catch (error) {
         console.error('Erro ao carregar lojistas', error)
         $q.notify({ type: 'warning', message: 'Não foi possível carregar a lista de lojistas.' })
     } finally {
         loadingLojistas.value = false
     }
+}
+
+// NOVA FUNÇÃO: Lógica que faz a pesquisa no select
+function filtrarLojistas(val, update) {
+    if (val === '') {
+        update(() => {
+            opcoesLojistas.value = listaLojistas.value
+        })
+        return
+    }
+
+    update(() => {
+        const needle = val.toLowerCase()
+        opcoesLojistas.value = listaLojistas.value.filter(v => {
+            const nomeStr = (v.nome_fantasia || v.nome || v.razao_social || `Lojista #${v.id}`).toLowerCase()
+            return nomeStr.includes(needle)
+        })
+    })
 }
 
 function abrirModalUpload() {
