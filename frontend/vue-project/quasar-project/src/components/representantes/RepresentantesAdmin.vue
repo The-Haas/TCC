@@ -62,7 +62,6 @@
           </template>
 
           <!-- Célula: Ações -->
-          <!-- Célula: Ações -->
           <template v-slot:body-cell-acoes="props">
             <q-td :props="props" class="text-right">
               <!-- Botão de Editar -->
@@ -115,7 +114,7 @@
         </q-card-section>
 
         <q-card-section class="q-px-xl q-py-lg scroll layout-body">
-          <q-form @submit.prevent="salvarRepresentante" class="row q-col-gutter-lg">
+          <q-form @submit.prevent="salvarRepresentante" ref="formRepresentante" class="row q-col-gutter-lg">
 
             <!-- Dados de Contato / Identificação -->
             <div class="col-12">
@@ -126,30 +125,35 @@
                   <!-- NOME -->
                   <div class="col-12">
                     <q-input v-model="representanteEditando.nome" label="Nome do Representante *" outlined dense
-                      :dark="isDark" :rules="[val => !!val || 'Campo obrigatório']" hide-bottom-space
-                      class="premium-field" />
+                      :dark="isDark" 
+                      :rules="[val => !!val || 'Campo obrigatório', val => val.trim().length >= 3 || 'O nome é muito curto']" 
+                      hide-bottom-space class="premium-field" />
                   </div>
 
                   <!-- TELEFONE -->
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="representanteEditando.telefone" label="Telefone (Apenas números)" outlined dense
+                    <q-input v-model="representanteEditando.telefone" label="Telefone (Apenas números) *" outlined dense
                       :dark="isDark" maxlength="11"
                       @update:model-value="val => representanteEditando.telefone = val ? val.replace(/\D/g, '') : ''"
+                      :rules="[val => !!val || 'Telefone é obrigatório', validarTelefone]"
                       hide-bottom-space class="premium-field" />
                   </div>
 
                   <!-- E-MAIL -->
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="representanteEditando.email" label="E-mail" outlined dense :dark="isDark"
-                      type="email" hide-bottom-space class="premium-field" />
+                    <q-input v-model="representanteEditando.email" label="E-mail *" outlined dense :dark="isDark"
+                      type="email" :rules="[val => !!val || 'E-mail é obrigatório', validarEmail]" 
+                      hide-bottom-space class="premium-field" />
                   </div>
 
                   <!-- Senha (Aparece apenas na criação de um novo representante) -->
                   <div class="col-12" v-if="!representanteEditando.id">
                     <q-input v-model="representanteEditando.senha" label="Senha de Acesso *" outlined dense
                       :dark="isDark" :type="ocultarSenha ? 'password' : 'text'"
-                      :rules="[val => !!val || 'A senha é obrigatória para novos cadastros']" hide-bottom-space
-                      class="premium-field">
+                      :rules="[
+                        val => !!val || 'A senha é obrigatória para novos cadastros',
+                        validarSenhaForte
+                      ]" hide-bottom-space class="premium-field">
                       <template v-slot:append>
                         <q-icon :name="ocultarSenha ? 'visibility_off' : 'visibility'"
                           class="cursor-pointer text-grey-5" @click="ocultarSenha = !ocultarSenha" />
@@ -197,6 +201,9 @@ const $q = useQuasar()
 const authStore = useAuthStore()
 const isDark = computed(() => $q.dark.isActive)
 
+// Referência do formulário
+const formRepresentante = ref(null)
+
 // Estados
 const loading = ref(true)
 const representantes = ref([])
@@ -213,6 +220,32 @@ const modalEdicao = ref(false)
 const salvando = ref(false)
 const representanteEditando = ref({})
 const ocultarSenha = ref(true)
+
+// --- FUNÇÕES DE VALIDAÇÃO ---
+const validarEmail = (email) => {
+  if (!email) return true 
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email) || 'Formato de e-mail inválido'
+}
+
+const validarTelefone = (tel) => {
+  if (!tel) return true
+  const limpo = String(tel).replace(/\D/g, '')
+  return (limpo.length >= 10 && limpo.length <= 11) || 'Telefone deve ter DDD + 8 ou 9 dígitos'
+}
+
+const validarSenhaForte = (senha) => {
+  if (!senha) return true 
+  
+  if (senha.length < 8) return 'A senha deve ter no mínimo 8 caracteres'
+  if (!/[A-Z]/.test(senha)) return 'Deve conter pelo menos uma letra maiúscula'
+  if (!/[a-z]/.test(senha)) return 'Deve conter pelo menos uma letra minúscula'
+  if (!/[0-9]/.test(senha)) return 'Deve conter pelo menos um número'
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(senha)) return 'Deve conter pelo menos um caractere especial'
+  
+  return true
+}
+// ----------------------------
 
 // Cálculo Dinâmico das Páginas
 const numeroDePaginas = computed(() => {
@@ -274,6 +307,17 @@ function abrirNovo() {
 }
 
 async function salvarRepresentante() {
+  // Trava para validar os campos antes do envio
+  const isFormValid = await formRepresentante.value.validate()
+  if (!isFormValid) {
+    $q.notify({
+      type: 'warning',
+      message: 'Existem campos inválidos. Por favor, verifique os dados preenchidos.',
+      position: 'top-right'
+    })
+    return
+  }
+
   salvando.value = true
   try {
     const payload = {

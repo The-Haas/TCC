@@ -48,7 +48,7 @@ function filtrarListagemClientes(req, res, next) {
  * Admin          → passa sempre
  * Representante  → bloqueado
  * Cliente        → somente GET do próprio :id
- * Lojista        → qualquer método, mas só se o cliente tiver pedido vinculado a ele
+ * Lojista        → passa sempre (permitido editar cliente sem pedido vinculado)
  */
 async function verificarAcessoClientePorId(req, res, next) {
   const { tipo, id: userId } = req.user;
@@ -83,22 +83,9 @@ async function verificarAcessoClientePorId(req, res, next) {
   }
 
   if (tipo === "lojista") {
-    try {
-      const result = await db.query(
-        `SELECT 1 FROM pedidos WHERE id_cliente = $1 AND id_lojista = $2 LIMIT 1`,
-        [clienteId, userId]
-      );
-      if (result.rows.length === 0) {
-        return res.status(403).json({
-          success: false,
-          message: "Acesso negado: este cliente não possui pedidos vinculados ao seu cadastro",
-        });
-      }
-      return next();
-    } catch (err) {
-      console.error("Erro ao verificar vínculo cliente-lojista:", err);
-      return res.status(500).json({ success: false, message: "Erro interno ao verificar permissão" });
-    }
+    // Como os lojistas agora podem editar clientes mesmo sem pedidos vinculados, 
+    // a trava que consultava a tabela 'pedidos' foi removida, liberando o acesso direto.
+    return next();
   }
 
   return res.status(403).json({ success: false, message: "Acesso negado" });

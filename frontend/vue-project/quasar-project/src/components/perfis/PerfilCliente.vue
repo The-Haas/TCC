@@ -1,30 +1,29 @@
 <template>
   <div class="full-width row justify-center q-px-sm q-pb-xl">
     <!-- Card Principal -->
-    <q-card 
-      class="shadow-10 relative-position full-width" 
+    <q-card class="shadow-10 relative-position full-width"
       style="max-width: 800px; border-radius: 28px; margin-top: 60px;"
-      :class="$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-grey-9'"
-    >
-      
+      :class="$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-grey-9'">
+
       <!-- Avatar Flutuante Premium -->
       <div class="absolute-top row justify-center" style="top: -55px; left: 0; right: 0; z-index: 2;">
-        <q-avatar size="110px" class="shadow-5" 
-          :style="{ 
-            background: $q.dark.isActive ? '#1d1d1d' : '#ffffff', 
-            border: '4px solid var(--q-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }">
-          <span class="text-primary text-weight-bolder" style="font-size: 40px; letter-spacing: -1px; margin: 0; padding: 0;">
+        <q-avatar size="110px" class="shadow-5" :style="{
+          background: $q.dark.isActive ? '#1d1d1d' : '#ffffff',
+          border: '4px solid var(--q-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }">
+          <span class="text-primary text-weight-bolder"
+            style="font-size: 40px; letter-spacing: -1px; margin: 0; padding: 0;">
             {{ iniciaisAvatar }}
           </span>
         </q-avatar>
       </div>
 
       <!-- Loading Overlay -->
-      <q-inner-loading :showing="loadingData" label="Carregando seu perfil..." label-class="text-primary" label-style="font-size: 1.1em; font-weight: bold;" style="border-radius: 28px; z-index: 10;" />
+      <q-inner-loading :showing="loadingData" label="Carregando seu perfil..." label-class="text-primary"
+        label-style="font-size: 1.1em; font-weight: bold;" style="border-radius: 28px; z-index: 10;" />
 
       <!-- Cabeçalho -->
       <q-card-section class="text-center q-pt-xl q-pb-md" style="margin-top: 20px;">
@@ -35,116 +34,100 @@
       </q-card-section>
 
       <q-card-section class="q-px-md q-px-sm-xl q-pb-lg">
-        <q-form @submit.prevent="salvar">
-          
+        <q-form @submit.prevent="salvar" ref="formPerfil">
+
           <!-- ABAS ESTILO BOTÃO -->
           <div class="row justify-center q-mb-lg">
-            <q-tabs
-              v-model="tab"
-              class="text-grey-7"
-              :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-2'"
-              active-color="white"
-              active-bg-color="primary"
-              indicator-color="transparent"
-              align="justify"
-              narrow-indicator
-              :inline-label="!$q.screen.lt.sm"
-              dense
-              style="border-radius: 12px; padding: 4px; max-width: 500px; width: 100%;"
-            >
-              <q-tab name="pessoais" icon="person" label="Pessoal" style="border-radius: 8px;" class="q-px-xs q-py-xs" />
-              <q-tab name="endereco" icon="location_on" label="Endereço" style="border-radius: 8px;" class="q-px-xs q-py-xs" />
-              <q-tab name="seguranca" icon="shield" label="Segurança" style="border-radius: 8px;" class="q-px-xs q-py-xs" />
+            <q-tabs v-model="tab" class="text-grey-7" :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-2'"
+              active-color="white" active-bg-color="primary" indicator-color="transparent" align="justify"
+              narrow-indicator :inline-label="!$q.screen.lt.sm" dense
+              style="border-radius: 12px; padding: 4px; max-width: 500px; width: 100%;">
+              <q-tab name="pessoais" icon="person" label="Pessoal" style="border-radius: 8px;"
+                class="q-px-xs q-py-xs" />
+              <q-tab name="endereco" icon="location_on" label="Endereço" style="border-radius: 8px;"
+                class="q-px-xs q-py-xs" />
+              <q-tab name="seguranca" icon="shield" label="Segurança" style="border-radius: 8px;"
+                class="q-px-xs q-py-xs" />
             </q-tabs>
           </div>
 
           <!-- CONTEÚDO DAS ABAS -->
-          <q-tab-panels 
-            v-model="tab" 
-            animated 
-            swipeable 
-            class="bg-transparent"
-          >
-            
+          <q-tab-panels v-model="tab" animated swipeable class="bg-transparent">
+
             <!-- ABA 1: DADOS PESSOAIS -->
             <q-tab-panel name="pessoais" class="q-px-none q-py-none">
               <div class="row q-col-gutter-md">
                 <div class="col-12">
-                  <q-input v-model="form.nome" label="Nome Completo *" outlined color="primary" 
-                    :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.nome" label="Nome Completo *" outlined color="primary"
+                    :rules="[val => !!val || 'Obrigatório', val => val.trim().includes(' ') || 'Informe o nome e sobrenome']"
+                    hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input v-model="form.email" label="E-mail *" outlined type="email" color="primary" 
-                    :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.email" label="E-mail *" outlined type="email" color="primary"
+                    :rules="[val => !!val || 'Obrigatório', validarEmail]" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input v-model="form.telefone" label="Telefone *" outlined mask="(##) #####-####" unmasked-value color="primary" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.telefone" label="Telefone *" outlined mask="(##) #####-####" unmasked-value
+                    color="primary" :rules="[val => !!val || 'Obrigatório', validarTelefone]" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input v-model="form.razao_social" label="Razão Social" outlined color="primary" hide-bottom-space />
+                  <q-input v-model="form.razao_social" label="Razão Social" outlined color="primary"
+                    hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input 
-                    v-model="form.cpf_cnpj" 
-                    label="CPF / CNPJ *" 
-                    outlined 
-                    color="primary" 
+                  <q-input v-model="form.cpf_cnpj" label="CPF / CNPJ *" outlined color="primary"
                     @update:model-value="val => form.cpf_cnpj = formatarCpfCnpj(val)"
-                    :rules="[val => !!val || 'Obrigatório', validarDocumento]"
-                    hide-bottom-space 
-                  />
+                    :rules="[val => !!val || 'Obrigatório', validarDocumento]" hide-bottom-space />
                 </div>
               </div>
             </q-tab-panel>
 
             <!-- ABA 2: ENDEREÇO -->
             <q-tab-panel name="endereco" class="q-px-none q-py-none">
-              <!-- Endereço Principal (Campos atualizados para Obrigatório) -->
               <div class="row q-col-gutter-md">
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="form.cep" label="CEP *" outlined mask="#####-###" unmasked-value color="primary" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <!-- Busca de CEP mantida, mas não é mais obrigatório -->
+                  <q-input v-model="form.cep" label="CEP" outlined mask="#####-###" unmasked-value color="primary" :loading="loadingCep" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-8">
-                  <q-input v-model="form.endereco" label="Logradouro (Rua/Av) *" outlined color="primary" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.endereco" label="Logradouro (Rua/Av)" outlined color="primary"
+                    hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="form.numero" label="Número *" outlined color="primary" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.numero" label="Número" outlined color="primary" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-8">
-                  <q-input v-model="form.bairro" label="Bairro *" outlined color="primary" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.bairro" label="Bairro" outlined color="primary" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-9">
-                  <q-input v-model="form.cidade" label="Cidade *" outlined color="primary" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.cidade" label="Cidade" outlined color="primary" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-3">
-                  <q-input v-model="form.uf" label="UF *" outlined mask="AA" color="primary" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <!-- UF valida se o estado existe através da função validarUF -->
+                  <q-input v-model="form.uf" label="UF" outlined mask="AA" color="primary" :rules="[validarUF]"
+                    hide-bottom-space />
                 </div>
               </div>
 
-              <!-- Destaque: Endereço de Entrega Alternativo -->
-              <div class="q-mt-lg q-pa-md" 
-                :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-primary'" 
-                :style="$q.dark.isActive ? 'border: 1px solid #333;' : 'background-color: rgba(255, 123, 0, 0.05) !important; border: 1px dashed var(--q-primary);'"
+              <!-- Destaque: Endereço de Entrega Alternativo-->
+              <!-- ... -->
+              <div class="q-mt-lg q-pa-md" :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-primary'"
+                :style="$q.dark.isActive ? 'border: 1px solid #333;' : 'background-color: rgba(25, 118, 210, 0.05) !important; border: 1px dashed var(--q-primary);'"
                 style="border-radius: 16px;">
-                
+
                 <div class="row items-center q-mb-sm text-primary text-weight-bold">
                   <q-icon name="local_shipping" size="24px" class="q-mr-sm" />
                   Local de Entrega
                 </div>
-                
+
                 <div class="text-caption q-mb-md" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
-                  Seus pedidos serão enviados para o endereço principal acima. Caso queira que a entrega seja feita em um local diferente, informe abaixo.
+                  Seus pedidos serão enviados para o endereço principal acima. Caso queira que a entrega seja feita em
+                  um local diferente, informe abaixo.
                 </div>
-                
-                <q-input 
-                  v-model="form.endereco_entrega" 
-                  label="Endereço de Entrega Completo (Opcional)" 
-                  outlined 
-                  color="primary" 
-                  :bg-color="$q.dark.isActive ? 'dark' : 'white'"
-                  placeholder="Ex: Rua X, Galpão 2, Bairro Y - Cidade/UF"
-                  hide-bottom-space 
-                />
+
+                <q-input v-model="form.endereco_entrega" label="Endereço de Entrega Completo (Opcional)" outlined
+                  color="primary" :bg-color="$q.dark.isActive ? 'dark' : 'white'"
+                  placeholder="Ex: Rua X, Galpão 2, Bairro Y - Cidade/UF" hide-bottom-space />
               </div>
             </q-tab-panel>
 
@@ -156,51 +139,29 @@
                 <div class="text-body2 text-grey q-mb-lg">
                   Para manter sua senha atual, deixe os campos abaixo vazios.
                 </div>
-                
+
                 <!-- Nova Senha -->
-                <q-input 
-                  v-model="form.senha" 
-                  label="Nova Senha" 
-                  outlined 
-                  :type="isPwd ? 'password' : 'text'" 
-                  color="primary" 
-                  class="q-mb-md"
-                  placeholder="••••••••"
-                  :rules="[val => !val || val.length >= 8 || 'Mínimo de 8 caracteres']"
-                  hide-bottom-space
-                >
+                <q-input v-model="form.senha" label="Nova Senha" outlined :type="isPwd ? 'password' : 'text'"
+                  color="primary" class="q-mb-md" placeholder="••••••••" :rules="[validarForcaSenha]" hide-bottom-space>
                   <template v-slot:prepend>
                     <q-icon name="key" />
                   </template>
                   <template v-slot:append>
-                    <q-icon 
-                      :name="isPwd ? 'visibility_off' : 'visibility'" 
-                      class="cursor-pointer" 
-                      @click="isPwd = !isPwd" 
-                    />
+                    <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                      @click="isPwd = !isPwd" />
                   </template>
                 </q-input>
 
                 <!-- Confirmar Nova Senha -->
-                <q-input 
-                  v-model="confirmarSenha" 
-                  label="Confirmar Nova Senha" 
-                  outlined 
-                  :type="isPwdConfirm ? 'password' : 'text'" 
-                  color="primary"
-                  placeholder="••••••••"
-                  :rules="[val => val === form.senha || 'As senhas não coincidem']"
-                  hide-bottom-space
-                >
+                <q-input v-model="confirmarSenha" label="Confirmar Nova Senha" outlined
+                  :type="isPwdConfirm ? 'password' : 'text'" color="primary" placeholder="••••••••"
+                  :rules="[val => !form.senha || val === form.senha || 'As senhas não coincidem']" hide-bottom-space>
                   <template v-slot:prepend>
                     <q-icon name="lock" />
                   </template>
                   <template v-slot:append>
-                    <q-icon 
-                      :name="isPwdConfirm ? 'visibility_off' : 'visibility'" 
-                      class="cursor-pointer" 
-                      @click="isPwdConfirm = !isPwdConfirm" 
-                    />
+                    <q-icon :name="isPwdConfirm ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                      @click="isPwdConfirm = !isPwdConfirm" />
                   </template>
                 </q-input>
               </div>
@@ -213,10 +174,12 @@
           <!-- BOTÕES AÇÃO -->
           <div class="row q-col-gutter-sm justify-between items-center" :class="$q.screen.lt.sm ? 'column' : ''">
             <div :class="$q.screen.lt.sm ? 'col-12 order-last q-mt-sm' : 'col-auto'">
-              <q-btn label="Cancelar e Voltar" color="grey-6" flat to="/dashboard" rounded no-caps class="full-width" size="16px" />
+              <q-btn label="Cancelar e Voltar" color="grey-6" flat to="/dashboard" rounded no-caps class="full-width"
+                size="16px" />
             </div>
             <div :class="$q.screen.lt.sm ? 'col-12' : 'col-auto'">
-              <q-btn label="Salvar Alterações" color="primary" type="submit" :loading="loadingSubmit" unelevated rounded no-caps class="full-width text-weight-bold shadow-4" size="16px" />
+              <q-btn label="Salvar Alterações" color="primary" type="submit" :loading="loadingSubmit" unelevated rounded
+                no-caps class="full-width text-weight-bold shadow-4" size="16px" />
             </div>
           </div>
 
@@ -235,9 +198,11 @@ import { useAuthStore } from 'stores/auth'
 const $q = useQuasar()
 const authStore = useAuthStore()
 
+const formPerfil = ref(null) // Referência ao formulário para validação automática
 const loadingData = ref(true)
 const loadingSubmit = ref(false)
-const tab = ref('pessoais') 
+const loadingCep = ref(false)
+const tab = ref('pessoais')
 
 const isPwd = ref(true)
 const isPwdConfirm = ref(true)
@@ -251,27 +216,42 @@ const form = ref({
 const iniciaisAvatar = computed(() => {
   const nomeCompleto = form.value.nome || authStore.userName || ''
   if (!nomeCompleto) return 'C'
-  
+
   const partesNome = nomeCompleto.trim().split(/\s+/)
   if (partesNome.length === 1) {
     return partesNome[0].charAt(0).toUpperCase()
   }
-  
+
   const primeiraLetra = partesNome[0].charAt(0)
   const ultimaLetra = partesNome[partesNome.length - 1].charAt(0)
   return (primeiraLetra + ultimaLetra).toUpperCase()
 })
 
+// --- INÍCIO DAS VALIDAÇÕES ---
+
+const validarEmail = (email) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email) || 'Formato de e-mail inválido'
+}
+
+const validarTelefone = (tel) => {
+  // Como usamos unmasked-value, o valor chega apenas como números (ex: 11999999999)
+  if (!tel) return true
+  const limpo = tel.replace(/\D/g, '')
+  return (limpo.length >= 10 && limpo.length <= 11) || 'Telefone deve ter DDD + 8 ou 9 dígitos'
+}
+
+// Regras de CPF/CNPJ existentes
 const formatarCpfCnpj = (val) => {
   if (!val) return ''
   let v = val.replace(/\D/g, '')
-  if (v.length > 14) v = v.slice(0, 14) 
-  
-  if (v.length <= 11) { 
+  if (v.length > 14) v = v.slice(0, 14)
+
+  if (v.length <= 11) {
     v = v.replace(/(\d{3})(\d)/, '$1.$2')
     v = v.replace(/(\d{3})(\d)/, '$1.$2')
     v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
-  } else { 
+  } else {
     v = v.replace(/^(\d{2})(\d)/, '$1.$2')
     v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
     v = v.replace(/\.(\d{3})(\d)/, '.$1/$2')
@@ -284,15 +264,15 @@ const validarCPF = (strCPF) => {
   let soma = 0
   let resto
   if (strCPF === "00000000000" || strCPF.length !== 11) return false
-  for (let i = 1; i <= 9; i++) soma = soma + parseInt(strCPF.substring(i-1, i)) * (11 - i)
+  for (let i = 1; i <= 9; i++) soma = soma + parseInt(strCPF.substring(i - 1, i)) * (11 - i)
   resto = (soma * 10) % 11
   if ((resto === 10) || (resto === 11)) resto = 0
-  if (resto !== parseInt(strCPF.substring(9, 10)) ) return false
+  if (resto !== parseInt(strCPF.substring(9, 10))) return false
   soma = 0
-  for (let i = 1; i <= 10; i++) soma = soma + parseInt(strCPF.substring(i-1, i)) * (12 - i)
+  for (let i = 1; i <= 10; i++) soma = soma + parseInt(strCPF.substring(i - 1, i)) * (12 - i)
   resto = (soma * 10) % 11
   if ((resto === 10) || (resto === 11)) resto = 0
-  if (resto !== parseInt(strCPF.substring(10, 11) ) ) return false
+  if (resto !== parseInt(strCPF.substring(10, 11))) return false
   return true
 }
 
@@ -323,7 +303,7 @@ const validarCNPJ = (cnpj) => {
 }
 
 const validarDocumento = (val) => {
-  if (!val) return true 
+  if (!val) return true
   const limpo = val.replace(/\D/g, '')
   if (limpo.length <= 11) {
     return validarCPF(limpo) || 'CPF inválido'
@@ -331,19 +311,20 @@ const validarDocumento = (val) => {
     return validarCNPJ(limpo) || 'CNPJ inválido'
   }
 }
+// --- FIM DAS VALIDAÇÕES ---
 
 const carregar = async () => {
   try {
     loadingData.value = true
     const response = await api.get(`/clientes/${authStore.userId}`)
     const dadosRecuperados = response.data.cliente || response.data
-    
+
     Object.keys(form.value).forEach(key => {
       if (dadosRecuperados[key] !== undefined && dadosRecuperados[key] !== null) {
         form.value[key] = String(dadosRecuperados[key])
       }
     })
-    
+
     if (form.value.cpf_cnpj) {
       form.value.cpf_cnpj = formatarCpfCnpj(form.value.cpf_cnpj)
     }
@@ -359,53 +340,38 @@ const carregar = async () => {
 }
 
 const salvar = async () => {
-  // 1. Validação Manual: Dados Pessoais
-  if (!form.value.nome || !form.value.email || !form.value.telefone || !form.value.cpf_cnpj) {
-    tab.value = 'pessoais'
-    $q.notify({ type: 'warning', message: 'Por favor, preencha todos os campos obrigatórios de Dados Pessoais.', position: 'top-right' })
+  // Chama a validação nativa do formulário (q-form)
+  const success = await formPerfil.value.validate()
+
+  if (!success) {
+    $q.notify({
+      type: 'warning',
+      message: 'Existem campos inválidos ou não preenchidos. Por favor, verifique as abas.',
+      position: 'top-right'
+    })
+    // Opcional: tentar adivinhar a aba que tem erro, mas a notificação já ajuda o usuário
     return
   }
 
-  const docValid = validarDocumento(form.value.cpf_cnpj)
-  if (docValid !== true) {
-    tab.value = 'pessoais'
-    $q.notify({ type: 'negative', message: docValid || 'Documento inválido.', position: 'top-right' })
-    return
-  }
-
-  // 2. Validação Manual: Todos os campos obrigatórios de endereço
-  if (!form.value.cep || !form.value.endereco || !form.value.numero || !form.value.bairro || !form.value.cidade || !form.value.uf) {
-    tab.value = 'endereco'
-    $q.notify({ type: 'warning', message: 'Por favor, preencha todos os campos obrigatórios do Endereço.', position: 'top-right' })
-    return
-  }
-
-  // 3. Validação Manual: Senhas
-  if (form.value.senha && form.value.senha !== confirmarSenha.value) {
-    tab.value = 'seguranca'
-    $q.notify({ type: 'negative', message: 'As senhas não coincidem.', position: 'top-right' })
-    return
-  }
-
-  // 4. Abre o modal premium de confirmação
+  // Abre o modal premium de confirmação
   $q.dialog({
     title: 'Salvar alterações',
     message: 'Deseja realmente atualizar as informações do seu perfil?',
     class: $q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-grey-9',
     style: 'border-radius: 16px; border-top: 4px solid var(--q-primary); box-shadow: 0 10px 30px rgba(0,0,0,0.1);',
-    cancel: { 
-      label: 'Cancelar', 
-      color: 'grey-6', 
+    cancel: {
+      label: 'Cancelar',
+      color: 'grey-6',
       flat: true,
       noCaps: true,
       class: 'text-weight-medium q-px-md'
     },
-    ok: { 
-      label: 'Confirmar e Salvar', 
-      color: 'primary', 
+    ok: {
+      label: 'Confirmar e Salvar',
+      color: 'primary',
       unelevated: true,
       noCaps: true,
-      icon: 'save', 
+      icon: 'save',
       class: 'text-weight-bold q-px-md'
     },
     persistent: true
@@ -413,7 +379,7 @@ const salvar = async () => {
     try {
       loadingSubmit.value = true
       const payload = { ...form.value }
-      
+
       if (payload.cpf_cnpj) {
         payload.cpf_cnpj = payload.cpf_cnpj.replace(/\D/g, '')
       }
@@ -424,14 +390,14 @@ const salvar = async () => {
 
       await api.patch(`/clientes/${authStore.userId}`, payload)
       authStore.userName = form.value.nome
-      
-      $q.notify({ 
-        type: 'positive', 
-        message: 'Perfil atualizado com sucesso!', 
+
+      $q.notify({
+        type: 'positive',
+        message: 'Perfil atualizado com sucesso!',
         position: 'top-right',
         icon: 'check_circle'
       })
-      
+
       form.value.senha = ''
       confirmarSenha.value = ''
     } catch (error) {
@@ -441,6 +407,44 @@ const salvar = async () => {
       loadingSubmit.value = false
     }
   })
+}
+
+const validarForcaSenha = (senha) => {
+  // Se estiver vazio, passa (pois o usuário pode não querer alterar a senha)
+  if (!senha) return true
+
+  // Regex: 
+  // (?=.*[a-z]) -> Pelo menos 1 minúscula
+  // (?=.*[A-Z]) -> Pelo menos 1 maiúscula
+  // (?=.*\d)    -> Pelo menos 1 número
+  // (?=.*[\W_]) -> Pelo menos 1 caractere especial (símbolo)
+  // .{8,}       -> Mínimo de 8 caracteres no total
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/
+
+  if (!regex.test(senha)) {
+    return 'A senha deve conter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e símbolos.'
+  }
+
+  return true
+}
+
+const validarUF = (uf) => {
+  // Se o usuário não digitar nada, passa a validação (já que endereço não é obrigatório)
+  if (!uf) return true
+
+  // Lista oficial de UFs do Brasil
+  const ufsValidas = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',
+    'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
+    'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+  ]
+
+  // Converte para maiúsculo e checa se existe na lista
+  if (!ufsValidas.includes(uf.toUpperCase())) {
+    return 'Estado (UF) inválido'
+  }
+
+  return true
 }
 
 onMounted(() => {

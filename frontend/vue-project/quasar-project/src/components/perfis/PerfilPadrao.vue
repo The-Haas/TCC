@@ -35,7 +35,7 @@
       </q-card-section>
 
       <q-card-section class="q-px-md q-px-sm-xl q-pb-lg">
-        <q-form @submit.prevent="salvar">
+        <q-form @submit.prevent="salvar" ref="formPerfil">
           
           <!-- ABAS ESTILO BOTÃO -->
           <div class="row justify-center q-mb-lg">
@@ -69,15 +69,16 @@
             <q-tab-panel name="pessoais" class="q-px-none q-py-none">
               <div class="row q-col-gutter-md">
                 <div class="col-12">
-                  <q-input v-model="form.nome" label="Nome *" outlined dense color="primary" 
-                    :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                  <q-input v-model="form.nome" label="Nome Completo *" outlined dense color="primary" 
+                    :rules="[val => !!val || 'Obrigatório', val => val.trim().includes(' ') || 'Informe o nome e sobrenome']" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-6">
                   <q-input v-model="form.email" label="E-mail *" outlined dense type="email" color="primary" 
-                    :rules="[val => !!val || 'Obrigatório']" hide-bottom-space />
+                    :rules="[val => !!val || 'Obrigatório', validarEmail]" hide-bottom-space />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input v-model="form.telefone" label="Telefone" outlined dense mask="(##) #####-####" unmasked-value color="primary" hide-bottom-space />
+                  <q-input v-model="form.telefone" label="Telefone" outlined dense mask="(##) #####-####" unmasked-value color="primary" 
+                    :rules="[validarTelefone]" hide-bottom-space />
                 </div>
 
                 <!-- DADOS VINCULADOS (Somente Leitura) -->
@@ -120,7 +121,7 @@
                   color="primary" 
                   class="q-mb-md"
                   placeholder="••••••••"
-                  :rules="[val => !val || val.length >= 6 || 'Mínimo de 6 caracteres']"
+                  :rules="[validarForcaSenha]"
                   hide-bottom-space
                 >
                   <template v-slot:prepend>
@@ -144,7 +145,7 @@
                   :type="isPwdConfirm ? 'password' : 'text'" 
                   color="primary"
                   placeholder="••••••••"
-                  :rules="[val => val === form.senha || 'As senhas não coincidem']"
+                  :rules="[val => !form.senha || val === form.senha || 'As senhas não coincidem']"
                   hide-bottom-space
                 >
                   <template v-slot:prepend>
@@ -190,6 +191,7 @@ import { useAuthStore } from 'stores/auth'
 const $q = useQuasar()
 const authStore = useAuthStore()
 
+const formPerfil = ref(null) // Adicionado ref para o formulário
 const loadingData = ref(true)
 const loadingSubmit = ref(false)
 const tab = ref('pessoais') 
@@ -208,7 +210,7 @@ const form = ref({
   updated_at: null
 })
 
-// Endpoint dinâmico como no seu código original
+// Endpoint dinâmico
 const getEndpoint = () => {
   const tipo = authStore.userTipo
   if (tipo === 'admin') return 'admins'
@@ -238,6 +240,28 @@ function formatarData(dataISO) {
   })
 }
 
+// --- FUNÇÕES DE VALIDAÇÃO ---
+const validarEmail = (email) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email) || 'Formato de e-mail inválido'
+}
+
+const validarTelefone = (tel) => {
+  if (!tel) return true // Não é obrigatório
+  const limpo = tel.replace(/\D/g, '')
+  return (limpo.length >= 10 && limpo.length <= 11) || 'Telefone deve ter DDD + 8 ou 9 dígitos'
+}
+
+const validarForcaSenha = (senha) => {
+  if (!senha) return true 
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/
+  if (!regex.test(senha)) {
+    return 'A senha deve conter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e símbolos.'
+  }
+  return true
+}
+// ----------------------------
+
 const carregar = async () => {
   try {
     loadingData.value = true
@@ -261,15 +285,15 @@ const carregar = async () => {
 }
 
 const salvar = async () => {
-  if (!form.value.nome || !form.value.email) {
-    tab.value = 'pessoais'
-    $q.notify({ type: 'warning', message: 'Preencha os campos obrigatórios (Nome e E-mail).', position: 'top-right' })
-    return
-  }
-
-  if (form.value.senha && form.value.senha !== confirmarSenha.value) {
-    tab.value = 'seguranca'
-    $q.notify({ type: 'negative', message: 'As senhas não coincidem.', position: 'top-right' })
+  // Dispara a validação nativa de todos os campos
+  const success = await formPerfil.value.validate()
+  
+  if (!success) {
+    $q.notify({ 
+      type: 'warning', 
+      message: 'Existem campos inválidos. Por favor, verifique as abas.', 
+      position: 'top-right' 
+    })
     return
   }
 
@@ -289,7 +313,6 @@ const salvar = async () => {
     try {
       loadingSubmit.value = true
       
-      // Monta o payload SÓ com o que pode ser atualizado (nome, email, telefone, senha)
       const payload = {
         nome: form.value.nome,
         email: form.value.email,
@@ -300,7 +323,6 @@ const salvar = async () => {
         payload.senha = form.value.senha
       }
 
-      // AGORA SIM, USANDO PATCH!
       await api.patch(`/${getEndpoint()}/${authStore.userId}`, payload)
       
       authStore.userName = form.value.nome
@@ -315,7 +337,6 @@ const salvar = async () => {
       form.value.senha = ''
       confirmarSenha.value = ''
       
-      // Atualiza os dados novamente para pegar o novo "updated_at" do banco
       await carregar()
       
     } catch (error) {

@@ -73,9 +73,7 @@
           </template>
 
           <!-- Célula: Ações -->
-          <!-- Célula: Ações -->
           <template v-slot:body-cell-acoes="props" v-if="podeEditar || true">
-            <!-- Mantenha seu v-if original dependendo do arquivo -->
             <q-td :props="props" class="text-right">
               <!-- Botão de Editar -->
               <q-btn flat round dense icon="edit" color="primary" size="sm" class="action-btn"
@@ -126,7 +124,7 @@
         </q-card-section>
 
         <q-card-section class="q-px-xl q-py-lg scroll layout-body">
-          <q-form @submit.prevent="salvarLojista" class="row q-col-gutter-lg">
+          <q-form @submit.prevent="salvarLojista" ref="formLojista" class="row q-col-gutter-lg">
 
             <!-- Dados de Contato / Identificação -->
             <div class="col-12">
@@ -137,21 +135,24 @@
                   <!-- NOME -->
                   <div class="col-12">
                     <q-input v-model="lojistaEditando.nome" label="Nome do Lojista *" outlined dense :dark="isDark"
-                      :rules="[val => !!val || 'Campo obrigatório']" hide-bottom-space class="premium-field" />
+                      :rules="[val => !!val || 'Campo obrigatório', val => val.trim().length >= 3 || 'O nome é muito curto']"
+                      hide-bottom-space class="premium-field" />
                   </div>
 
                   <!-- TELEFONE -->
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="lojistaEditando.telefone" label="Telefone (Apenas números)" outlined dense
+                    <q-input v-model="lojistaEditando.telefone" label="Telefone (Apenas números) *" outlined dense
                       :dark="isDark" maxlength="11"
                       @update:model-value="val => lojistaEditando.telefone = val ? val.replace(/\D/g, '') : ''"
-                      hide-bottom-space class="premium-field" />
+                      :rules="[val => !!val || 'Telefone é obrigatório', validarTelefone]" hide-bottom-space
+                      class="premium-field" />
                   </div>
 
                   <!-- E-MAIL -->
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="lojistaEditando.email" label="E-mail" outlined dense :dark="isDark" type="email"
-                      hide-bottom-space class="premium-field" />
+                    <q-input v-model="lojistaEditando.email" label="E-mail *" outlined dense :dark="isDark" type="email"
+                      :rules="[val => !!val || 'E-mail é obrigatório', validarEmail]" hide-bottom-space
+                      class="premium-field" />
                   </div>
 
                   <!-- REPRESENTANTE RESPONSÁVEL -->
@@ -170,9 +171,10 @@
                   <!-- Senha (Aparece apenas na criação de um novo lojista) -->
                   <div class="col-12 col-sm-6" v-if="!lojistaEditando.id">
                     <q-input v-model="lojistaEditando.senha" label="Senha de Acesso *" outlined dense :dark="isDark"
-                      :type="ocultarSenha ? 'password' : 'text'"
-                      :rules="[val => !!val || 'A senha é obrigatória para novos cadastros']" hide-bottom-space
-                      class="premium-field">
+                      :type="ocultarSenha ? 'password' : 'text'" :rules="[
+                        val => !!val || 'A senha é obrigatória para novos cadastros',
+                        validarSenhaForte
+                      ]" hide-bottom-space class="premium-field">
                       <template v-slot:append>
                         <q-icon :name="ocultarSenha ? 'visibility_off' : 'visibility'"
                           class="cursor-pointer text-grey-5" @click="ocultarSenha = !ocultarSenha" />
@@ -220,6 +222,9 @@ const $q = useQuasar()
 const authStore = useAuthStore()
 const isDark = computed(() => $q.dark.isActive)
 
+// Referência do formulário para disparar validação completa
+const formLojista = ref(null)
+
 // Estados de Lojistas
 const loading = ref(true)
 const lojistas = ref([])
@@ -258,7 +263,6 @@ const numeroDePaginas = computed(() => {
   return limit === 0 ? 1 : Math.ceil(total / limit) || 1
 })
 
-// Adicionada a Coluna Representante
 const colunasVisiveis = [
   { name: 'id', field: 'id', label: 'ID', align: 'left', sortable: true, style: 'width: 70px' },
   { name: 'nome', field: 'nome', label: 'Lojista', align: 'left', sortable: true },
@@ -282,11 +286,9 @@ async function carregarLojistas() {
   }
 }
 
-// Nova função para popular o Select de representantes
 async function carregarRepresentantes() {
   loadingRepresentantes.value = true
   try {
-    // ATENÇÃO: Ajuste a rota para a correta da sua API que retorna os representantes
     const response = await api.get('/representantes', {
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
@@ -328,9 +330,19 @@ function abrirNovo() {
 }
 
 async function salvarLojista() {
+  // Trava para validar todos os campos via Quasar antes do envio
+  const isFormValid = await formLojista.value.validate()
+  if (!isFormValid) {
+    $q.notify({
+      type: 'warning',
+      message: 'Existem campos inválidos. Por favor, verifique os dados preenchidos.',
+      position: 'top-right'
+    })
+    return
+  }
+
   salvando.value = true
   try {
-    // Payload atualizado para incluir o Vínculo com o Representante
     const payload = {
       nome: lojistaEditando.value.nome,
       email: lojistaEditando.value.email,
@@ -339,13 +351,11 @@ async function salvarLojista() {
     }
 
     if (lojistaEditando.value.id) {
-      // PATCH - ATUALIZAÇÃO
       await api.patch(`/lojistas/${lojistaEditando.value.id}`, payload, {
         headers: { Authorization: `Bearer ${authStore.token}` }
       })
       $q.notify({ type: 'positive', message: 'Lojista atualizado com sucesso.' })
     } else {
-      // POST - CRIAÇÃO
       payload.senha = lojistaEditando.value.senha
 
       await api.post('/lojistas', payload, {
@@ -400,24 +410,48 @@ function confirmarExclusao(lojista) {
       await api.delete(`/lojistas/${lojista.id}`, {
         headers: { Authorization: `Bearer ${authStore.token}` }
       })
-      
+
       $q.notify({ type: 'positive', message: 'Lojista removido com sucesso!' })
-      
-      // Recarrega a tabela após excluir
+
       await carregarLojistas()
     } catch (error) {
       console.error('Erro ao excluir:', error)
-      $q.notify({ 
-        type: 'negative', 
-        message: error.response?.data?.message || 'Erro ao excluir o lojista. Verifique se ele possui pedidos vinculados.' 
+      $q.notify({
+        type: 'negative',
+        message: error.response?.data?.message || 'Erro ao excluir o lojista. Verifique se ele possui pedidos vinculados.'
       })
     }
   })
 }
 
+// --- FUNÇÕES DE VALIDAÇÃO ---
+const validarEmail = (email) => {
+  if (!email) return true 
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email) || 'Formato de e-mail inválido'
+}
+
+const validarTelefone = (tel) => {
+  if (!tel) return true
+  const limpo = String(tel).replace(/\D/g, '')
+  return (limpo.length >= 10 && limpo.length <= 11) || 'Telefone deve ter DDD + 8 ou 9 dígitos'
+}
+
+const validarSenhaForte = (senha) => {
+  if (!senha) return true // Se estiver vazio, a regra de campo obrigatório já segura
+  
+  if (senha.length < 8) return 'A senha deve ter no mínimo 8 caracteres'
+  if (!/[A-Z]/.test(senha)) return 'Deve conter pelo menos uma letra maiúscula'
+  if (!/[a-z]/.test(senha)) return 'Deve conter pelo menos uma letra minúscula'
+  if (!/[0-9]/.test(senha)) return 'Deve conter pelo menos um número'
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(senha)) return 'Deve conter pelo menos um caractere especial'
+  
+  return true
+}
+// ----------------------------
+
 onMounted(() => {
   carregarLojistas()
-  // É bom já carregar a lista de representantes no início para não atrasar a abertura do modal depois
   carregarRepresentantes()
 })
 </script>

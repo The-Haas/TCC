@@ -154,7 +154,7 @@
         </q-card-section>
 
         <q-card-section class="q-px-xl q-py-lg scroll layout-body" style="max-height: 75vh;">
-          <q-form @submit.prevent="salvarCliente" class="row q-col-gutter-lg">
+          <q-form @submit.prevent="salvarCliente" ref="formCliente" class="row q-col-gutter-lg">
             
             <!-- Identificação -->
             <div class="col-12">
@@ -162,10 +162,27 @@
                 <div class="form-section-title q-mb-md">Dados de Identificação</div>
                 <div class="row q-col-gutter-md">
                   <div class="col-12 col-md-6">
-                    <q-input v-model="clienteEditando.nome" label="Nome Completo *" outlined dense :dark="isDark" :rules="[val => !!val || 'Obrigatório']" hide-bottom-space class="premium-field" />
+                    <q-input 
+                      v-model="clienteEditando.nome" 
+                      label="Nome Completo *" 
+                      outlined 
+                      dense 
+                      :dark="isDark" 
+                      :rules="[val => !!val || 'Obrigatório', val => val.trim().includes(' ') || 'Informe o nome e sobrenome']" 
+                      hide-bottom-space 
+                      class="premium-field" 
+                    />
                   </div>
                   <div class="col-12 col-md-6">
-                    <q-input v-model="clienteEditando.razao_social" label="Razão Social" outlined dense :dark="isDark" hide-bottom-space class="premium-field" />
+                    <q-input 
+                      v-model="clienteEditando.razao_social" 
+                      label="Razão Social" 
+                      outlined 
+                      dense 
+                      :dark="isDark" 
+                      hide-bottom-space 
+                      class="premium-field" 
+                    />
                   </div>
                   
                   <div class="col-12 col-md-4">
@@ -203,13 +220,24 @@
                       :dark="isDark" 
                       maxlength="11"
                       @update:model-value="val => clienteEditando.telefone = val ? val.replace(/\D/g, '') : ''"
+                      :rules="[validarTelefone]"
                       hide-bottom-space 
                       class="premium-field" 
                     />
                   </div>
                   
                   <div class="col-12 col-md-4">
-                    <q-input v-model="clienteEditando.email" label="E-mail" outlined dense :dark="isDark" type="email" hide-bottom-space class="premium-field" />
+                    <q-input 
+                      v-model="clienteEditando.email" 
+                      label="E-mail" 
+                      outlined 
+                      dense 
+                      :dark="isDark" 
+                      type="email" 
+                      :rules="[validarEmail]"
+                      hide-bottom-space 
+                      class="premium-field" 
+                    />
                   </div>
                 </div>
               </div>
@@ -299,6 +327,9 @@ const $q = useQuasar()
 const authStore = useAuthStore()
 const isDark = computed(() => $q.dark.isActive)
 
+// Referência do formulário adicionada
+const formCliente = ref(null) 
+
 const loading = ref(true)
 const clientes = ref([])
 const busca = ref('')
@@ -313,6 +344,20 @@ const paginacao = ref({
 const modalEdicao = ref(false)
 const salvando = ref(false)
 const clienteEditando = ref({})
+
+// --- FUNÇÕES DE VALIDAÇÃO ---
+const validarEmail = (email) => {
+  if (!email) return true // Pode ser vazio caso o cliente não possua
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email) || 'Formato de e-mail inválido'
+}
+
+const validarTelefone = (tel) => {
+  if (!tel) return true // Pode ser vazio
+  const limpo = String(tel).replace(/\D/g, '')
+  return (limpo.length >= 10 && limpo.length <= 11) || 'Telefone deve ter DDD + 8 ou 9 dígitos'
+}
+// ----------------------------
 
 // Cálculo Dinâmico das Páginas para o rodapé externo
 const numeroDePaginas = computed(() => {
@@ -372,6 +417,18 @@ function abrirEdicao(cliente) {
 }
 
 async function salvarCliente() {
+  // Dispara a validação de todos os campos antes de continuar
+  const success = await formCliente.value.validate()
+  
+  if (!success) {
+    $q.notify({ 
+      type: 'warning', 
+      message: 'Existem campos inválidos. Por favor, verifique os dados.', 
+      position: 'top-right' 
+    })
+    return
+  }
+
   salvando.value = true
   try {
     const id = clienteEditando.value.cliente_id

@@ -87,7 +87,8 @@
           <!-- Célula: Ações -->
           <template v-slot:body-cell-acoes="props">
             <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="edit" color="primary" size="sm" class="action-btn" />
+              <q-btn flat round dense icon="edit" color="primary" size="sm" class="action-btn q-mr-sm" @click.stop="abrirEdicao(props.row)" />
+              <q-btn flat round dense icon="delete" color="negative" size="sm" class="action-btn" @click.stop="confirmarDelecao(props.row)" />
             </q-td>
           </template>
         </q-table>
@@ -143,7 +144,7 @@
         </q-card-section>
 
         <q-card-section class="q-px-xl q-py-lg scroll layout-body">
-          <q-form @submit.prevent="salvarAdmin" class="row q-col-gutter-lg">
+          <q-form @submit.prevent="salvarAdmin" ref="formAdmin" class="row q-col-gutter-lg">
             
             <!-- Dados de Contato / Identificação -->
             <div class="col-12">
@@ -159,7 +160,7 @@
                       outlined 
                       dense 
                       :dark="isDark" 
-                      :rules="[val => !!val || 'Campo obrigatório']" 
+                      :rules="[val => !!val || 'Campo obrigatório', val => val.trim().includes(' ') || 'Informe o nome e sobrenome']" 
                       hide-bottom-space 
                       class="premium-field" 
                     />
@@ -175,6 +176,7 @@
                       :dark="isDark" 
                       maxlength="11"
                       @update:model-value="val => adminEditando.telefone = val ? val.replace(/\D/g, '') : ''"
+                      :rules="[validarTelefone]"
                       hide-bottom-space 
                       class="premium-field" 
                     />
@@ -189,7 +191,7 @@
                       dense 
                       :dark="isDark" 
                       type="email" 
-                      :rules="[val => !!val || 'Campo obrigatório']"
+                      :rules="[val => !!val || 'Campo obrigatório', validarEmail]"
                       hide-bottom-space 
                       class="premium-field" 
                     />
@@ -204,7 +206,7 @@
                       dense 
                       :dark="isDark" 
                       :type="ocultarSenha ? 'password' : 'text'"
-                      :rules="[val => !!val || 'A senha é obrigatória para novos cadastros']" 
+                      :rules="[val => !!val || 'A senha é obrigatória para novos cadastros', validarForcaSenha]" 
                       hide-bottom-space 
                       class="premium-field" 
                     >
@@ -255,6 +257,7 @@ const authStore = useAuthStore()
 const isDark = computed(() => $q.dark.isActive)
 
 // Estados
+const formAdmin = ref(null) 
 const loading = ref(true)
 const admins = ref([])
 const busca = ref('')
@@ -270,6 +273,28 @@ const modalEdicao = ref(false)
 const salvando = ref(false)
 const adminEditando = ref({})
 const ocultarSenha = ref(true)
+
+// --- FUNÇÕES DE VALIDAÇÃO ---
+const validarEmail = (email) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email) || 'Formato de e-mail inválido'
+}
+
+const validarTelefone = (tel) => {
+  if (!tel) return true 
+  const limpo = String(tel).replace(/\D/g, '')
+  return (limpo.length >= 10 && limpo.length <= 11) || 'Telefone deve ter DDD + 8 ou 9 dígitos'
+}
+
+const validarForcaSenha = (senha) => {
+  if (!senha) return true 
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/
+  if (!regex.test(senha)) {
+    return 'Mínimo 8 caracteres, com maiúsculas, minúsculas, números e símbolos.'
+  }
+  return true
+}
+// ----------------------------
 
 // Cálculo Dinâmico das Páginas
 const numeroDePaginas = computed(() => {
@@ -288,11 +313,12 @@ const numeroDePaginas = computed(() => {
   return limit === 0 ? 1 : Math.ceil(total / limit) || 1
 })
 
+// Ajustei a largura (style) da última coluna para acomodar dois botões
 const colunasVisiveis = [
   { name: 'id', field: 'admin_id', label: 'ID', align: 'left', sortable: true, style: 'width: 70px' },
   { name: 'nome', field: 'nome', label: 'Administrador', align: 'left', sortable: true },
   { name: 'contato', field: 'telefone', label: 'Contato', align: 'left' },
-  { name: 'acoes', field: 'acoes', label: '', align: 'right', style: 'width: 60px' }
+  { name: 'acoes', field: 'acoes', label: '', align: 'right', style: 'width: 100px' }
 ]
 
 async function carregarAdmins() {
@@ -330,7 +356,56 @@ function abrirNovo() {
   modalEdicao.value = true
 }
 
+// --- DELEÇÃO DE ADMIN ---
+function confirmarDelecao(admin) {
+  $q.dialog({
+    title: 'Confirmar Exclusão',
+    message: `Tem certeza que deseja excluir permanentemente o administrador <strong>${admin.nome}</strong>?`,
+    html: true,
+    cancel: {
+      label: 'Cancelar',
+      color: 'grey-6',
+      flat: true,
+      noCaps: true
+    },
+    ok: {
+      label: 'Excluir Administrador',
+      color: 'negative',
+      unevaluated: true,
+      noCaps: true,
+      class: 'radius-8'
+    },
+    persistent: true
+  }).onOk(async () => {
+    try {
+      loading.value = true
+      await api.delete(`/admins/${admin.admin_id}`, {
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+      $q.notify({ type: 'positive', message: 'Administrador removido com sucesso.' })
+      await carregarAdmins()
+    } catch (error) {
+      console.error(error)
+      $q.notify({ type: 'negative', message: error.response?.data?.message || 'Erro ao excluir o administrador.' })
+    } finally {
+      loading.value = false
+    }
+  })
+}
+// ------------------------
+
 async function salvarAdmin() {
+  const success = await formAdmin.value.validate()
+  
+  if (!success) {
+    $q.notify({ 
+      type: 'warning', 
+      message: 'Existem campos inválidos. Por favor, verifique os dados.', 
+      position: 'top-right' 
+    })
+    return
+  }
+
   salvando.value = true
   try {
     const payload = {
