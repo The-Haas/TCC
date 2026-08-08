@@ -11,8 +11,15 @@ async function getDashboardCliente(req, res) {
 }
 
 async function getDashboardLojista(req, res) {
-    // Busca o dashboard passando o id do lojista (req.user.id)
-    const resultado = await dashboardService.getDashboardLojista(req.user.id);
+    // Pegamos os filtros que o frontend vai mandar pela URL
+    const { dataInicio, dataFim, agrupamento } = req.query;
+
+    // Passamos os filtros como um objeto para o Service
+    const resultado = await dashboardService.getDashboardLojista(req.user.id, {
+        dataInicio, 
+        dataFim, 
+        agrupamento
+    });
 
     if (resultado.success) {
         res.status(200).json(resultado.dashboard);
@@ -23,5 +30,5 @@ async function getDashboardLojista(req, res) {
 
 module.exports = {
     getDashboardCliente,
-    getDashboardLojista // <-- Nova função exportada
+    getDashboardLojista
 };

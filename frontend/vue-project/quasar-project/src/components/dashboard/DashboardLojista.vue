@@ -51,6 +51,95 @@
             </div>
         </div>
 
+
+        <!-- ============================================== -->
+        <!-- BARRA DE FILTROS -->
+        <!-- ============================================== -->
+        <div class="block q-mb-xl filter-bar" :class="isDark ? 'block--dark' : 'block--light'">
+            <div class="row q-col-gutter-md items-center">
+                
+                <div class="col-12 col-md-3">
+                    <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options
+                        label="Agrupamento (Gráfico de Área)" outlined dense :dark="isDark" color="primary" bg-color="transparent" />
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-input v-model="filtros.dataInicio" mask="##/##/####" label="Data Inicial" outlined dense :dark="isDark">
+                        <template v-slot:append>
+                            <q-icon name="event" class="cursor-pointer">
+                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                    <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark" color="primary">
+                                        <div class="row items-center justify-end">
+                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
+                                        </div>
+                                    </q-date>
+                                </q-popup-proxy>
+                            </q-icon>
+                        </template>
+                    </q-input>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-input v-model="filtros.dataFim" mask="##/##/####" label="Data Final" outlined dense :dark="isDark">
+                        <template v-slot:append>
+                            <q-icon name="event" class="cursor-pointer">
+                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                    <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary">
+                                        <div class="row items-center justify-end">
+                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
+                                        </div>
+                                    </q-date>
+                                </q-popup-proxy>
+                            </q-icon>
+                        </template>
+                    </q-input>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" 
+                           unelevated class="full-width" style="height: 40px; font-weight: bold;" :loading="loading" />
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- SESSÃO DE GRÁFICOS -->
+        <!-- ============================================== -->
+        <div class="charts-wrap q-mb-xl">
+            <!-- Gráfico de Evolução (Área) -->
+            <div class="block q-mb-md" :class="isDark ? 'block--dark' : 'block--light'">
+                <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                    <q-icon name="trending_up" color="primary" class="q-mr-sm" size="20px" />
+                    Evolução Financeira
+                </div>
+                <apexchart type="area" height="320" :options="chartAreaOptions" :series="chartAreaSeries" />
+            </div>
+
+            <div class="row q-col-gutter-md">
+                <!-- Gráfico de Pizza (Status) -->
+                <div class="col-12 col-md-5">
+                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                            <q-icon name="donut_large" color="primary" class="q-mr-sm" size="20px" />
+                            Status dos Projetos
+                        </div>
+                        <apexchart type="donut" height="320" :options="chartPieOptions" :series="chartPieSeries" />
+                    </div>
+                </div>
+
+                <!-- Gráfico de Barras (Top Clientes) -->
+                <div class="col-12 col-md-7">
+                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                            <q-icon name="emoji_events" color="orange" class="q-mr-sm" size="20px" />
+                            Maiores Clientes
+                        </div>
+                        <apexchart type="bar" height="300" :options="chartBarOptions" :series="chartBarSeries" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="main-grid">
             <!-- Lista de Projetos Recentes -->
             <div class="block" :class="isDark ? 'block--dark' : 'block--light'">
@@ -402,6 +491,24 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth'
 import { api } from 'boot/axios'
+import VueApexCharts from 'vue3-apexcharts'
+const apexchart = VueApexCharts
+
+// Variáveis de Filtro
+const filtros = ref({
+    agrupamento: 'mes',
+    dataInicio: '', 
+    dataFim: ''
+})
+
+const opcoesAgrupamento = [
+    { label: 'Semanal', value: 'semana' },
+    { label: 'Mensal', value: 'mes' },
+    { label: 'Anual', value: 'anual' }
+]
+
+// Onde vamos guardar os dados retornados pelo backend para os gráficos
+const dadosGraficos = ref({ area: [], pizza: [], barras: [] })
 
 const $q = useQuasar()
 const authStore = useAuthStore()
@@ -439,12 +546,26 @@ const pedidoTimelineAberto = ref(null)
 const modalClientes = ref(false)
 const modalRepresentante = ref(false)
 
+// Converte DD/MM/YYYY para YYYY-MM-DD para mandar pro Banco
+function formatDataToAPI(dataBR) {
+    if (!dataBR) return ''
+    const [d, m, y] = dataBR.split('/')
+    if (y && m && d) return `${y}-${m}-${d}`
+    return ''
+}
+
 async function carregarDados() {
     loading.value = true
     loadError.value = ''
     try {
+        // Prepara os filtros para a URL
+        const queryParams = new URLSearchParams()
+        queryParams.append('agrupamento', filtros.value.agrupamento)
+        if (filtros.value.dataInicio) queryParams.append('dataInicio', formatDataToAPI(filtros.value.dataInicio))
+        if (filtros.value.dataFim) queryParams.append('dataFim', formatDataToAPI(filtros.value.dataFim))
+
         const [resDashboard, resStatus] = await Promise.all([
-            api.get('/dashboard/lojista', {
+            api.get(`/dashboard/lojista?${queryParams.toString()}`, {
                 headers: { Authorization: `Bearer ${authStore.token}` }
             }),
             api.get('/status', {
@@ -454,13 +575,18 @@ async function carregarDados() {
 
         totalPedidos.value = resDashboard.data.total_pedidos || 0
         meusPedidos.value = resDashboard.data.pedidos || []
+        
+        // Puxando os dados dos gráficos do backend
+        if (resDashboard.data.graficos) {
+            dadosGraficos.value = resDashboard.data.graficos
+        }
 
         listaEtapasDoBanco.value = (resStatus.data || []).filter(step => step.ordem !== 0)
         totalEtapas.value = listaEtapasDoBanco.value.length || 6
 
     } catch (err) {
         console.error('Erro na requisição da dashboard lojista:', err)
-        loadError.value = 'Erro ao conectar com o servidor.'
+        loadError.value = 'Erro ao conectar com o servidor ou aplicar filtros.'
     } finally {
         loading.value = false
     }
@@ -538,6 +664,152 @@ function formatarTelefone(tel) {
     }
     return tel
 }
+
+// ==========================================
+// CONFIGURAÇÃO DOS GRÁFICOS (APEXCHARTS)
+// ==========================================
+const defaultThemeConfig = computed(() => ({
+    mode: isDark.value ? 'dark' : 'light',
+    palette: 'palette1'
+}))
+
+// 1. Gráfico de Área (Evolução de Vendas)
+const chartAreaSeries = computed(() => [{
+    name: 'Valor em Vendas (R$)',
+    data: dadosGraficos.value.area.map(item => Number(item.valor_total).toFixed(2))
+}])
+
+const chartAreaOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { 
+        type: 'area',
+        background: 'transparent', 
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        fontFamily: 'inherit',
+        dropShadow: {
+            enabled: true,
+            top: 4,
+            left: 0,
+            blur: 4,
+            color: '#1976D2',
+            opacity: 0.15 // Cria uma sombra suave abaixo da linha principal
+        }
+    },
+    colors: ['#1976D2'],
+    stroke: { 
+        curve: 'smooth', 
+        width: 4 // <-- Linha mais grossa e marcante (era 3)
+    },
+    fill: { 
+        type: 'gradient', 
+        gradient: { 
+            shadeIntensity: 1, 
+            opacityFrom: 0.65, // <-- Preenchimento superior mais encorpado e vivo (era 0.4)
+            opacityTo: 0.15,   // <-- Transição final mais suave no fundo (era 0.05)
+            stops: [0, 90, 100]
+        } 
+    },
+    xaxis: { 
+        categories: dadosGraficos.value.area.map(item => item.periodo),
+        labels: {
+            hideOverlappingLabels: false,
+            rotate: -45,
+            style: { fontSize: '11px' }
+        }
+    },
+    yaxis: { labels: { formatter: val => formatMoney(val) } },
+    dataLabels: { enabled: false }
+}))
+
+// 2. Gráfico de Pizza (Status)
+const chartPieSeries = computed(() => dadosGraficos.value.pizza.map(item => item.quantidade))
+
+const chartPieOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { background: 'transparent', fontFamily: 'inherit' },
+    labels: dadosGraficos.value.pizza.map(item => item.status),
+    colors: dadosGraficos.value.pizza.map(item => item.cor),
+    stroke: { width: 0 },
+    dataLabels: { enabled: false }, // Mantém sem escrita em cima das fatias
+    plotOptions: {
+        pie: {
+            donut: {
+                size: '70%', // <-- Aumentado de 70% para 80% para dar mais espaço no centro
+                labels: {
+                    show: true,
+                    name: {
+                        show: true,
+                        fontSize: '1px',
+                        fontWeight: '600',
+                        color: isDark.value ? '#9CA3AF' : '#6B7280',
+                        offsetY: -5,
+                        formatter: function (val) {
+                            // Se o texto tiver mais de 14 caracteres, quebra em duas linhas
+                            if (val && val.length > 14) {
+                                const palavras = val.split(' ')
+                                const meio = Math.ceil(palavras.length / 2)
+                                return [palavras.slice(0, meio).join(' '), palavras.slice(meio).join(' ')]
+                            }
+                            return val
+                        }
+                    },
+                    value: {
+                        show: true,
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        color: isDark.value ? '#FFFFFF' : '#111827',
+                        offsetY: 5,
+                        formatter: val => `${val}`
+                    },
+                    total: {
+                        show: true,
+                        label: 'Total Pedidos',
+                        fontSize: '12px',
+                        color: isDark.value ? '#9CA3AF' : '#6B7280',
+                        formatter: (w) => {
+                            return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                        }
+                    }
+                }
+            }
+        }
+    },
+    legend: { position: 'bottom' },
+    tooltip: {
+        y: { formatter: val => `${val} pedido(s)` }
+    }
+}))
+
+const chartBarSeries = computed(() => [{
+    name: 'Total Comprado',
+    data: (dadosGraficos.value.barras || []).map(item => Number(item.valor_total || 0).toFixed(2))
+}])
+
+const chartBarOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'inherit' },
+    plotOptions: { 
+        bar: { 
+            horizontal: false, // <-- Barras em pé (Vertical)
+            borderRadius: 6, 
+            columnWidth: '45%' // Largura da barra em pé
+        } 
+    },
+    colors: ['#21BA45'],
+    dataLabels: { enabled: false },
+    xaxis: { 
+        categories: (dadosGraficos.value.barras || []).map(item => item.nome_cliente || item.nome || 'Cliente'),
+        labels: {
+            rotate: -45, // Rotaciona levemente os nomes dos clientes para caberem sem encavalar
+            style: { fontSize: '11px' }
+        }
+    },
+    yaxis: {
+        labels: { formatter: val => formatMoney(val) } // Formata os valores R$ no eixo vertical
+    },
+    tooltip: { y: { formatter: val => formatMoney(val) } }
+}))
 
 const statCards = computed(() => {
     const map = {}

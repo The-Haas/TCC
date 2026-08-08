@@ -402,7 +402,7 @@ const pedidosOrdenados = computed(() =>
   [...meusPedidos.value].sort((a, b) => (b.id || 0) - (a.id || 0))
 )
 
-const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 2))
+const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3))
 
 const lojistasFiltrados = computed(() => {
   const mapa = new Map()
