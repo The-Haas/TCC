@@ -784,20 +784,36 @@ const representantesFiltrados = computed(() => {
 
 const statCards = computed(() => {
     const map = {}
+
+    // 1. Processa e soma os valores agrupando por status
     meusPedidos.value.forEach(p => {
         const key = p.status || 'Pendente'
         if (!map[key]) {
-            map[key] = { label: key, color: p.cor || '#888888', value: 0, totalValor: 0, icon: getStatusIcon(key) }
+            // Busca o status correspondente no banco para obter a ordem cadastrada
+            const statusBanco = todosOsStatusDoBanco.value.find(
+                s => String(s.descricao).trim().toLowerCase() === String(key).trim().toLowerCase()
+            )
+            
+            map[key] = { 
+                label: key, 
+                color: p.cor || '#888888', 
+                value: 0, 
+                totalValor: 0, 
+                icon: getStatusIcon(key),
+                // Se encontrar no banco usa a ordem dele; caso contrário joga para o fim (999)
+                ordem: statusBanco ? Number(statusBanco.ordem) : 999 
+            }
         }
         map[key].value++
         map[key].totalValor += Number(p.valor || 0)
     })
 
     if (Object.keys(map).length === 0) {
-        return [{ label: 'Vendas', color: '#888888', value: 0, totalValor: 0, icon: 'inventory_2' }]
+        return [{ label: 'Vendas', color: '#888888', value: 0, totalValor: 0, icon: 'inventory_2', ordem: 0 }]
     }
 
-    return Object.values(map).sort((a, b) => b.totalValor - a.totalValor)
+    // 2. Ordena os cards estritamente pela ordem numérica (0, 1, 2, 3...)
+    return Object.values(map).sort((a, b) => a.ordem - b.ordem)
 })
 
 function getStatusIcon(status) {

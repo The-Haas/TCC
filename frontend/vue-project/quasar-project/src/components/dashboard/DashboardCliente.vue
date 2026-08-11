@@ -367,6 +367,7 @@ const totalEtapas = ref(6)
 const listaEtapasDoBanco = ref([])
 const pedidoTimelineAberto = ref(null)
 const modalLojistas = ref(false)
+const todosOsStatusDoBanco = ref([])
 
 async function carregarDados() {
   loading.value = true
@@ -384,8 +385,11 @@ async function carregarDados() {
     totalPedidos.value = resDashboard.data.total_pedidos || 0
     meusPedidos.value = resDashboard.data.pedidos || []
 
-    // Filtra para remover status com ordem zero da linha do tempo
-    listaEtapasDoBanco.value = (resStatus.data || []).filter(step => step.ordem !== 0)
+    // Guardamos todos os status do banco mantendo a ordem original cadastrada
+    todosOsStatusDoBanco.value = resStatus.data || []
+
+    // Filtra para remover status com ordem zero exclusivamente da linha do tempo (timeline)
+    listaEtapasDoBanco.value = todosOsStatusDoBanco.value.filter(step => step.ordem !== 0)
     totalEtapas.value = listaEtapasDoBanco.value.length || 6
 
   } catch (err) {
@@ -460,15 +464,23 @@ function formatarTelefone(tel) {
 
 const statCards = computed(() => {
   const map = {}
+
   meusPedidos.value.forEach(p => {
     const key = p.status || 'Pendente'
     if (!map[key]) {
+      // Busca o status correspondente direto na lista do banco de dados
+      const statusBanco = todosOsStatusDoBanco.value.find(
+        s => String(s.descricao).trim().toLowerCase() === String(key).trim().toLowerCase()
+      )
+
       map[key] = {
         label: key,
         color: p.cor || '#888888',
         value: 0,
         totalValor: 0,
-        icon: getStatusIcon(key)
+        icon: getStatusIcon(key),
+        // Utiliza a ordem exata cadastrada no banco de dados
+        ordem: statusBanco ? Number(statusBanco.ordem) : 0
       }
     }
     map[key].value++
@@ -476,10 +488,11 @@ const statCards = computed(() => {
   })
 
   if (Object.keys(map).length === 0) {
-    return [{ label: 'Projetos', color: '#888888', value: 0, totalValor: 0, icon: 'inventory_2' }]
+    return [{ label: 'Projetos', color: '#888888', value: 0, totalValor: 0, icon: 'inventory_2', ordem: 0 }]
   }
 
-  return Object.values(map)
+  // Ordena os cards estritamente pela ordem numérica cadastrada
+  return Object.values(map).sort((a, b) => a.ordem - b.ordem)
 })
 
 function getStatusIcon(status) {

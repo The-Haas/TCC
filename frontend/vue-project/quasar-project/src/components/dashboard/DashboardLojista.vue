@@ -542,6 +542,7 @@ const totalPedidos = ref(0)
 const totalEtapas = ref(6)
 const listaEtapasDoBanco = ref([])
 const pedidoTimelineAberto = ref(null)
+const todosOsStatusDoBanco = ref([])
 
 const modalClientes = ref(false)
 const modalRepresentante = ref(false)
@@ -558,7 +559,6 @@ async function carregarDados() {
     loading.value = true
     loadError.value = ''
     try {
-        // Prepara os filtros para a URL
         const queryParams = new URLSearchParams()
         queryParams.append('agrupamento', filtros.value.agrupamento)
         if (filtros.value.dataInicio) queryParams.append('dataInicio', formatDataToAPI(filtros.value.dataInicio))
@@ -576,12 +576,16 @@ async function carregarDados() {
         totalPedidos.value = resDashboard.data.total_pedidos || 0
         meusPedidos.value = resDashboard.data.pedidos || []
         
-        // Puxando os dados dos gráficos do backend
         if (resDashboard.data.graficos) {
             dadosGraficos.value = resDashboard.data.graficos
         }
 
-        listaEtapasDoBanco.value = (resStatus.data || []).filter(step => step.ordem !== 0)
+        // --- MUDANÇA AQUI ---
+        // Guardamos todos os status do banco intactos (incluindo o Recusado)
+        todosOsStatusDoBanco.value = resStatus.data || []
+
+        // Mantemos o filtro só para a linha do tempo (timeline)
+        listaEtapasDoBanco.value = todosOsStatusDoBanco.value.filter(step => step.ordem !== 0)
         totalEtapas.value = listaEtapasDoBanco.value.length || 6
 
     } catch (err) {
@@ -819,15 +823,23 @@ const chartBarOptions = computed(() => ({
 
 const statCards = computed(() => {
     const map = {}
+
     meusPedidos.value.forEach(p => {
         const key = p.status || 'Pendente'
         if (!map[key]) {
+            // Busca o status diretamente da lista completa do banco
+            const statusBanco = todosOsStatusDoBanco.value.find(
+                s => String(s.descricao).trim().toLowerCase() === String(key).trim().toLowerCase()
+            )
+
             map[key] = {
                 label: key,
                 color: p.cor || '#888888',
                 value: 0,
                 totalValor: 0,
-                icon: getStatusIcon(key)
+                icon: getStatusIcon(key),
+                // Pega a ordem real do banco de dados
+                ordem: statusBanco ? Number(statusBanco.ordem) : 0
             }
         }
         map[key].value++
@@ -835,10 +847,11 @@ const statCards = computed(() => {
     })
 
     if (Object.keys(map).length === 0) {
-        return [{ label: 'Vendas', color: '#888888', value: 0, totalValor: 0, icon: 'inventory_2' }]
+        return [{ label: 'Vendas', color: '#888888', value: 0, totalValor: 0, icon: 'inventory_2', ordem: 0 }]
     }
 
-    return Object.values(map)
+    // Ordena estritamente de acordo com a ordem do banco de dados
+    return Object.values(map).sort((a, b) => a.ordem - b.ordem)
 })
 
 function getStatusIcon(status) {
