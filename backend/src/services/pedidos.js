@@ -1,5 +1,6 @@
 const db = require('../config');
 const xml2js = require('xml2js');
+const { dispararNotificacaoPedido } = require('./emailNotificacoes'); // Ajuste o caminho se necessário
 
 const parser = new xml2js.Parser({ explicitArray: false });
 
@@ -185,7 +186,7 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
               : []
           });
         });
-      }); 
+      });
     });
 
     for (const item of itensProjeto) {
@@ -205,8 +206,26 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
         );
       }
     }
-    return { 
-      success: true, 
+
+    // Dispara em segundo plano (SEM AWAIT) para responder rápido ao cliente
+    dispararNotificacaoPedido({
+      idPedido,
+      usuarioAutor: user,
+      evento: 'CRIACAO',
+      dadosExtras: { nome_projeto: nomeProjeto, status_nome: statusPadrao.descricao }
+    });
+
+    return {
+      success: true,
+      idPedido,
+      id_status: statusPadrao.id,
+      ordem_status: statusPadrao.ordem,
+      status: statusPadrao.descricao,
+      cor: statusPadrao.cor
+    };
+
+    return {
+      success: true,
       idPedido,
       id_status: statusPadrao.id,
       ordem_status: statusPadrao.ordem,
@@ -325,7 +344,7 @@ async function getPedidoById(id) {
 // ==============================
 // PUT — atualizar pedido completo (admin only)
 // ==============================
-async function putPedido(id, dados) {
+async function putPedido(id, dados, user) {
   const { nome_projeto, valor, id_cliente, id_lojista, id_status, data_previsao_pedido } = dados;
 
   const lojista = (await db.query(`SELECT id FROM lojistas WHERE id = $1`, [id_lojista])).rows[0];
@@ -334,7 +353,8 @@ async function putPedido(id, dados) {
   const cliente = (await db.query(`SELECT id FROM clientes WHERE id = $1`, [id_cliente])).rows[0];
   if (!cliente) throw new Error("Cliente não encontrado");
 
-  const status = (await db.query(`SELECT id FROM status_pedido WHERE id = $1`, [id_status])).rows[0];
+  // 👇 Buscamos também ordem e descrição para identificar o evento de e-mail
+  const status = (await db.query(`SELECT id, ordem, descricao FROM status_pedido WHERE id = $1`, [id_status])).rows[0];
   if (!status) throw new Error("Status não encontrado");
 
   const { rows } = await db.query(
@@ -350,13 +370,36 @@ async function putPedido(id, dados) {
     [nome_projeto, valor, id_cliente, id_lojista, id_status, data_previsao_pedido || null, id]
   );
 
-  return rows[0] || null;
+  const pedidoAtualizado = rows[0] || null;
+
+  // 👇 DISPARO DE E-MAIL EM SEGUNDO PLANO (SEM AWAIT)
+  if (pedidoAtualizado) {
+    let evento = 'STATUS_ALTERADO';
+
+    if (status.ordem === 0) {
+      evento = 'RECUSADO';
+    } else if (status.ordem === 99 || status.descricao.toLowerCase().includes('conclu')) {
+      evento = 'CONCLUIDO';
+    }
+
+    dispararNotificacaoPedido({
+      idPedido: id,
+      usuarioAutor: user,
+      evento,
+      dadosExtras: {
+        nome_projeto: pedidoAtualizado.nome_projeto,
+        status_nome: status.descricao
+      }
+    });
+  }
+
+  return pedidoAtualizado;
 }
 
 // ==============================
 // PATCH — atualizar pedido parcial (admin only)
 // ==============================
-async function patchPedido(id, dados) {
+async function patchPedido(id, dados, user) {
   const camposPermitidos = ["nome_projeto", "valor", "id_cliente", "id_lojista", "id_status", "data_previsao_pedido"];
 
   if (dados.id_lojista !== undefined) {
@@ -369,9 +412,11 @@ async function patchPedido(id, dados) {
     if (!cliente) throw new Error("Cliente não encontrado");
   }
 
+  // 👇 Buscamos dados do status para determinar o modelo do e-mail
+  let statusInfo = null;
   if (dados.id_status !== undefined) {
-    const status = (await db.query(`SELECT id FROM status_pedido WHERE id = $1`, [dados.id_status])).rows[0];
-    if (!status) throw new Error("Status não encontrado");
+    statusInfo = (await db.query(`SELECT id, ordem, descricao FROM status_pedido WHERE id = $1`, [dados.id_status])).rows[0];
+    if (!statusInfo) throw new Error("Status não encontrado");
   }
 
   const updates = [];
@@ -395,7 +440,30 @@ async function patchPedido(id, dados) {
     values
   );
 
-  return rows[0] || null;
+  const pedidoAtualizado = rows[0] || null;
+
+  // 👇 DISPARO DE E-MAIL EM SEGUNDO PLANO (Apenas se o status tiver sido alterado)
+  if (pedidoAtualizado && statusInfo) {
+    let evento = 'STATUS_ALTERADO';
+
+    if (statusInfo.ordem === 0) {
+      evento = 'RECUSADO';
+    } else if (statusInfo.ordem === 99 || statusInfo.descricao.toLowerCase().includes('conclu')) {
+      evento = 'CONCLUIDO';
+    }
+
+    dispararNotificacaoPedido({
+      idPedido: id,
+      usuarioAutor: user,
+      evento,
+      dadosExtras: {
+        nome_projeto: pedidoAtualizado.nome_projeto,
+        status_nome: statusInfo.descricao
+      }
+    });
+  }
+
+  return pedidoAtualizado;
 }
 
 // ==============================
@@ -407,7 +475,7 @@ async function deletePedido(id, user) {
     SELECT p.id_lojista, sp.ordem 
     FROM pedidos p 
     LEFT JOIN status_pedido sp ON sp.id = p.id_status 
-    WHERE p.id = $1`, 
+    WHERE p.id = $1`,
     [id]
   )).rows[0];
 
