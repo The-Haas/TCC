@@ -48,6 +48,94 @@
             </div>
         </div>
 
+        <!-- ============================================== -->
+        <!-- BARRA DE FILTROS -->
+        <!-- ============================================== -->
+        <div class="block q-mb-xl filter-bar" :class="isDark ? 'block--dark' : 'block--light'">
+            <div class="row q-col-gutter-md items-center">
+                
+                <div class="col-12 col-md-3">
+                    <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options
+                        label="Agrupamento (Gráfico de Área)" outlined dense :dark="isDark" color="primary" bg-color="transparent" />
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-input v-model="filtros.dataInicio" mask="##/##/####" label="Data Inicial" outlined dense :dark="isDark">
+                        <template v-slot:append>
+                            <q-icon name="event" class="cursor-pointer">
+                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                    <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark" color="primary">
+                                        <div class="row items-center justify-end">
+                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
+                                        </div>
+                                    </q-date>
+                                </q-popup-proxy>
+                            </q-icon>
+                        </template>
+                    </q-input>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-input v-model="filtros.dataFim" mask="##/##/####" label="Data Final" outlined dense :dark="isDark">
+                        <template v-slot:append>
+                            <q-icon name="event" class="cursor-pointer">
+                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                    <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary">
+                                        <div class="row items-center justify-end">
+                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
+                                        </div>
+                                    </q-date>
+                                </q-popup-proxy>
+                            </q-icon>
+                        </template>
+                    </q-input>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" 
+                           unelevated class="full-width" style="height: 40px; font-weight: bold;" :loading="loading" />
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- SESSÃO DE GRÁFICOS -->
+        <!-- ============================================== -->
+        <div class="charts-wrap q-mb-xl">
+            <!-- Gráfico de Evolução (Área) -->
+            <div class="block q-mb-md" :class="isDark ? 'block--dark' : 'block--light'">
+                <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                    <q-icon name="trending_up" color="primary" class="q-mr-sm" size="20px" />
+                    Evolução Financeira
+                </div>
+                <apexchart type="area" height="320" :options="chartAreaOptions" :series="chartAreaSeries" />
+            </div>
+
+            <div class="row q-col-gutter-md">
+                <!-- Gráfico de Pizza (Status) -->
+                <div class="col-12 col-md-5">
+                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                            <q-icon name="donut_large" color="primary" class="q-mr-sm" size="20px" />
+                            Status dos Projetos
+                        </div>
+                        <apexchart type="donut" height="320" :options="chartPieOptions" :series="chartPieSeries" />
+                    </div>
+                </div>
+
+                <!-- Gráfico de Barras (Top Lojas) -->
+                <div class="col-12 col-md-7">
+                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                            <q-icon name="storefront" color="orange" class="q-mr-sm" size="20px" />
+                            Maiores Lojistas
+                        </div>
+                        <apexchart type="bar" height="300" :options="chartBarOptions" :series="chartBarSeries" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="main-grid">
             <!-- Lista de Projetos Recentes -->
             <div class="block" :class="isDark ? 'block--dark' : 'block--light'">
@@ -258,7 +346,6 @@
                 </div>
 
                 <template v-else>
-                    <!-- Alterado :key para usar o id único do lojista -->
                     <q-card v-for="lojista in lojistasFiltrados" :key="lojista.id" flat bordered class="q-mb-md"
                         :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
                         style="border-radius: 12px; overflow: hidden;">
@@ -349,6 +436,24 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth'
 import { api } from 'boot/axios'
+import VueApexCharts from 'vue3-apexcharts'
+const apexchart = VueApexCharts
+
+// Variáveis de Filtro
+const filtros = ref({
+    agrupamento: 'mes',
+    dataInicio: '', 
+    dataFim: ''
+})
+
+const opcoesAgrupamento = [
+    { label: 'Semanal', value: 'semana' },
+    { label: 'Mensal', value: 'mes' },
+    { label: 'Anual', value: 'anual' }
+]
+
+// Onde vamos guardar os dados retornados pelo backend para os gráficos
+const dadosGraficos = ref({ area: [], pizza: [], barras: [] })
 
 const $q = useQuasar()
 const authStore = useAuthStore()
@@ -389,6 +494,14 @@ const todosOsStatusDoBanco = ref([]) // Status (incluindo recusados)
 const listaEtapasDoBanco = ref([])   // Apenas ordem > 0 para a linha do tempo
 const todosOsLojistas = ref([])      // Lista oficial de lojistas vinda da rota /lojistas
 
+// Converte DD/MM/YYYY para YYYY-MM-DD para mandar pro Banco
+function formatDataToAPI(dataBR) {
+    if (!dataBR) return ''
+    const [d, m, y] = dataBR.split('/')
+    if (y && m && d) return `${y}-${m}-${d}`
+    return ''
+}
+
 // 2. FUNÇÃO PARA BUSCAR AS ETAPAS NO BANCO
 async function carregarEtapasDoBanco() {
     try {
@@ -427,7 +540,7 @@ function mapearStatusDinamico(statusStr) {
     return { ordem: 0, color: '#e74c3c' }
 }
 
-// 4. CARREGAMENTO DOS DADOS (INTEGRADO COM A NOVA ROTA /LOJISTAS)
+// 4. CARREGAMENTO DOS DADOS (INTEGRADO COM FILTROS E GRÁFICOS)
 async function carregarDados() {
     loading.value = true
     loadError.value = ''
@@ -435,16 +548,28 @@ async function carregarDados() {
         // Primeiro garante os status carregados para mapear as cores corretamente
         await carregarEtapasDoBanco()
 
-        // Puxa pedidos e lojistas ao mesmo tempo para carregar mais rápido
+        // Prepara os filtros para a URL
+        const queryParams = new URLSearchParams()
+        queryParams.append('agrupamento', filtros.value.agrupamento)
+        if (filtros.value.dataInicio) queryParams.append('dataInicio', formatDataToAPI(filtros.value.dataInicio))
+        if (filtros.value.dataFim) queryParams.append('dataFim', formatDataToAPI(filtros.value.dataFim))
+
+        // Puxa o endpoint da dashboard com gráficos e o dos lojistas
         const [resDashboard, resLojistas] = await Promise.all([
-            api.get('/pedidos', { headers: { Authorization: `Bearer ${authStore.token}` } }),
+            api.get(`/dashboard/representante?${queryParams.toString()}`, { headers: { Authorization: `Bearer ${authStore.token}` } }),
             api.get('/lojistas', { headers: { Authorization: `Bearer ${authStore.token}` } })
         ])
 
         todosOsLojistas.value = resLojistas.data || []
 
-        const rawData = resDashboard.data.data || []
-        totalPedidos.value = rawData.length
+        // O backend pode responder em `pedidos` ou `data` dependendo do mapeamento da API 
+        const rawData = resDashboard.data.pedidos || resDashboard.data.data || []
+        totalPedidos.value = resDashboard.data.total_pedidos || rawData.length
+
+        // Puxando os dados dos gráficos do backend
+        if (resDashboard.data.graficos) {
+            dadosGraficos.value = resDashboard.data.graficos
+        }
 
         meusPedidos.value = rawData.map(p => {
             const infoStatus = mapearStatusDinamico(p.status)
@@ -563,6 +688,157 @@ const lojistasFiltrados = computed(() => {
     })
     return Array.from(mapa.values())
 })
+
+// ==========================================
+// CONFIGURAÇÃO DOS GRÁFICOS (APEXCHARTS)
+// ==========================================
+const defaultThemeConfig = computed(() => ({
+    mode: isDark.value ? 'dark' : 'light',
+    palette: 'palette1'
+}))
+
+// 1. Gráfico de Área (Evolução de Vendas)
+const chartAreaSeries = computed(() => [{
+    name: 'Valor em Vendas (R$)',
+    data: dadosGraficos.value.area.map(item => Number(item.valor_total).toFixed(2))
+}])
+
+const chartAreaOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { 
+        type: 'area',
+        background: 'transparent', 
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        fontFamily: 'inherit',
+        dropShadow: {
+            enabled: true,
+            top: 4,
+            left: 0,
+            blur: 4,
+            color: '#1976D2',
+            opacity: 0.15
+        }
+    },
+    colors: ['#1976D2'],
+    stroke: { 
+        curve: 'smooth', 
+        width: 4
+    },
+    fill: { 
+        type: 'gradient', 
+        gradient: { 
+            shadeIntensity: 1, 
+            opacityFrom: 0.65, 
+            opacityTo: 0.15,
+            stops: [0, 90, 100]
+        } 
+    },
+    xaxis: { 
+        categories: dadosGraficos.value.area.map(item => item.periodo),
+        labels: {
+            hideOverlappingLabels: false,
+            rotate: -45,
+            style: { fontSize: '11px' }
+        }
+    },
+    yaxis: { labels: { formatter: val => formatMoney(val) } },
+    dataLabels: { enabled: false }
+}))
+
+// 2. Gráfico de Pizza (Status)
+const chartPieSeries = computed(() => dadosGraficos.value.pizza.map(item => item.quantidade))
+
+const chartPieOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { background: 'transparent', fontFamily: 'inherit' },
+    labels: dadosGraficos.value.pizza.map(item => item.status),
+    colors: dadosGraficos.value.pizza.map(item => item.cor),
+    stroke: { width: 0 },
+    dataLabels: { enabled: false },
+    plotOptions: {
+        pie: {
+            donut: {
+                size: '70%', 
+                labels: {
+                    show: true,
+                    name: {
+                        show: true,
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: isDark.value ? '#9CA3AF' : '#6B7280',
+                        offsetY: -5,
+                        formatter: function (val) {
+                            if (val && val.length > 14) {
+                                const palavras = val.split(' ')
+                                const meio = Math.ceil(palavras.length / 2)
+                                return [palavras.slice(0, meio).join(' '), palavras.slice(meio).join(' ')]
+                            }
+                            return val
+                        }
+                    },
+                    value: {
+                        show: true,
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        color: isDark.value ? '#FFFFFF' : '#111827',
+                        offsetY: 5,
+                        formatter: val => `${val}`
+                    },
+                    total: {
+                        show: true,
+                        label: 'Total Pedidos',
+                        fontSize: '12px',
+                        color: isDark.value ? '#9CA3AF' : '#6B7280',
+                        formatter: (w) => {
+                            return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                        }
+                    }
+                }
+            }
+        }
+    },
+    legend: { 
+        position: 'bottom',
+        formatter: function(seriesName, opts) {
+            const val = opts.w.globals.series[opts.seriesIndex]
+            const total = opts.w.globals.series.reduce((a, b) => a + b, 0)
+            const percent = total > 0 ? ((val / total) * 100).toFixed(1).replace('.0', '') : 0
+            return `${seriesName} (${percent}%)`
+        }
+    }
+}))
+
+// 3. Gráfico de Barras (Top Lojas)
+const chartBarSeries = computed(() => [{
+    name: 'Total Comprado',
+    data: (dadosGraficos.value.barras || []).map(item => Number(item.valor_total || 0).toFixed(2))
+}])
+
+const chartBarOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'inherit' },
+    plotOptions: { 
+        bar: { 
+            horizontal: false, 
+            borderRadius: 6, 
+            columnWidth: '45%'
+        } 
+    },
+    colors: ['#21BA45'],
+    dataLabels: { enabled: false },
+    xaxis: { 
+        categories: (dadosGraficos.value.barras || []).map(item => item.nome_lojista || item.nome_cliente || item.nome || 'Loja'),
+        labels: {
+            rotate: -45, 
+            style: { fontSize: '11px' }
+        }
+    },
+    yaxis: {
+        labels: { formatter: val => formatMoney(val) } 
+    },
+    tooltip: { y: { formatter: val => formatMoney(val) } }
+}))
 
 // Estatísticas dos cards do topo
 const statCards = computed(() => {

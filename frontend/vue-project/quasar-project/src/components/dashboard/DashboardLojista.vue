@@ -725,6 +725,7 @@ const chartAreaOptions = computed(() => ({
 // 2. Gráfico de Pizza (Status)
 const chartPieSeries = computed(() => dadosGraficos.value.pizza.map(item => item.quantidade))
 
+// 2. Gráfico de Pizza (Status)
 const chartPieOptions = computed(() => ({
     theme: defaultThemeConfig.value,
     chart: { background: 'transparent', fontFamily: 'inherit' },
@@ -735,17 +736,16 @@ const chartPieOptions = computed(() => ({
     plotOptions: {
         pie: {
             donut: {
-                size: '70%', // <-- Aumentado de 70% para 80% para dar mais espaço no centro
+                size: '70%', 
                 labels: {
                     show: true,
                     name: {
                         show: true,
-                        fontSize: '1px',
+                        fontSize: '12px', // Ajustado para não ficar muito pequeno
                         fontWeight: '600',
                         color: isDark.value ? '#9CA3AF' : '#6B7280',
                         offsetY: -5,
                         formatter: function (val) {
-                            // Se o texto tiver mais de 14 caracteres, quebra em duas linhas
                             if (val && val.length > 14) {
                                 const palavras = val.split(' ')
                                 const meio = Math.ceil(palavras.length / 2)
@@ -775,9 +775,15 @@ const chartPieOptions = computed(() => ({
             }
         }
     },
-    legend: { position: 'bottom' },
-    tooltip: {
-        y: { formatter: val => `${val} pedido(s)` }
+    // MOSTRA A PORCENTAGEM NA LEGENDA (Ex: Em Produção - 40%)
+    legend: { 
+        position: 'bottom',
+        formatter: function(seriesName, opts) {
+            const val = opts.w.globals.series[opts.seriesIndex]
+            const total = opts.w.globals.series.reduce((a, b) => a + b, 0)
+            const percent = total > 0 ? ((val / total) * 100).toFixed(1).replace('.0', '') : 0
+            return `${seriesName} (${percent}%)`
+        }
     }
 }))
 

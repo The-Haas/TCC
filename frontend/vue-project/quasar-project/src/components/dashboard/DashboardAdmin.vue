@@ -7,7 +7,7 @@
                     {{ greeting }}, <span class="greeting-name">{{ firstName }}</span>.
                 </h1>
                 <p class="greeting-sub" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                    {{ dateStr }} — Acompanhe as vendas gerais, representantes e projetos em andamento.
+                    {{ dateStr }} — Acompanhe as vendas gerais, representantes, lojistas e projetos em andamento.
                 </p>
             </div>
         </div>
@@ -48,6 +48,105 @@
             </div>
         </div>
 
+        <!-- ============================================== -->
+        <!-- BARRA DE FILTROS -->
+        <!-- ============================================== -->
+        <div class="block q-mb-xl filter-bar" :class="isDark ? 'block--dark' : 'block--light'">
+            <div class="row q-col-gutter-md items-center">
+                
+                <div class="col-12 col-md-3">
+                    <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options
+                        label="Agrupamento (Gráfico de Área)" outlined dense :dark="isDark" color="primary" bg-color="transparent" />
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-input v-model="filtros.dataInicio" mask="##/##/####" label="Data Inicial" outlined dense :dark="isDark">
+                        <template v-slot:append>
+                            <q-icon name="event" class="cursor-pointer">
+                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                    <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark" color="primary">
+                                        <div class="row items-center justify-end">
+                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
+                                        </div>
+                                    </q-date>
+                                </q-popup-proxy>
+                            </q-icon>
+                        </template>
+                    </q-input>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-input v-model="filtros.dataFim" mask="##/##/####" label="Data Final" outlined dense :dark="isDark">
+                        <template v-slot:append>
+                            <q-icon name="event" class="cursor-pointer">
+                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                    <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary">
+                                        <div class="row items-center justify-end">
+                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
+                                        </div>
+                                    </q-date>
+                                </q-popup-proxy>
+                            </q-icon>
+                        </template>
+                    </q-input>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" 
+                           unelevated class="full-width" style="height: 40px; font-weight: bold;" :loading="loading" />
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- SESSÃO DE GRÁFICOS -->
+        <!-- ============================================== -->
+        <div class="charts-wrap q-mb-xl">
+            <!-- Gráfico de Evolução (Área) -->
+            <div class="block q-mb-md" :class="isDark ? 'block--dark' : 'block--light'">
+                <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                    <q-icon name="trending_up" color="primary" class="q-mr-sm" size="20px" />
+                    Evolução Financeira
+                </div>
+                <apexchart type="area" height="320" :options="chartAreaOptions" :series="chartAreaSeries" />
+            </div>
+
+            <div class="row q-col-gutter-md">
+                <!-- Gráfico de Pizza (Status) -->
+                <div class="col-12 col-md-4">
+                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                            <q-icon name="donut_large" color="primary" class="q-mr-sm" size="20px" />
+                            Status dos Projetos
+                        </div>
+                        <apexchart type="donut" height="320" :options="chartPieOptions" :series="chartPieSeries" />
+                    </div>
+                </div>
+
+                <!-- Gráfico de Barras (Top Representantes) -->
+                <div class="col-12 col-md-4">
+                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                            <q-icon name="emoji_events" color="orange" class="q-mr-sm" size="20px" />
+                            Maiores Representantes
+                        </div>
+                        <apexchart type="bar" height="320" :options="chartBarOptions" :series="chartBarSeries" />
+                    </div>
+                </div>
+
+                <!-- Gráfico de Barras (Top Lojistas) -->
+                <div class="col-12 col-md-4">
+                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                            <q-icon name="storefront" color="purple" class="q-mr-sm" size="20px" />
+                            Maiores Lojistas
+                        </div>
+                        <apexchart type="bar" height="320" :options="chartBarLojistasOptions" :series="chartBarLojistasSeries" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="main-grid">
             <!-- Lista de Projetos Recentes -->
             <div class="block" :class="isDark ? 'block--dark' : 'block--light'">
@@ -70,7 +169,7 @@
                         :class="isDark ? 'order-card--dark' : 'order-card--light'">
                         <div class="order-row q-pa-md">
                             <div class="order-col-info">
-                                <!-- NOVO: Badge de ID do Pedido -->
+                                <!-- Badge de ID do Pedido -->
                                 <div class="q-mb-xs">
                                     <span class="text-caption text-weight-bold"
                                         :class="isDark ? 'bg-grey-9 text-grey-3' : 'bg-blue-1 text-primary'"
@@ -92,7 +191,7 @@
                                     </span>
                                 </span>
 
-                                <!-- NOVO: Representante vinculado ao Pedido -->
+                                <!-- Representante vinculado ao Pedido -->
                                 <span class="flex items-center" style="font-size: 11.5px; margin-top: -2px;"
                                     :class="isDark ? 'text-grey-5' : 'text-grey-6'">
                                     <q-icon name="badge" size="13px" class="q-mr-xs" />
@@ -151,7 +250,6 @@
                                     Progresso do pedido
                                 </span>
 
-                                <!-- Porcentagem idêntica à tela de Pedidos -->
                                 <span class="text-weight-bold"
                                     :style="{ color: order.ordem_status === 0 ? order.cor : (order.ordem_status === totalEtapas ? '#21BA45' : 'var(--q-primary)'), fontSize: '13px' }">
                                     {{ order.ordem_status === 0 ? '0%' : `${Math.round((order.ordem_status /
@@ -159,7 +257,6 @@
                                 </span>
                             </div>
 
-                            <!-- Barra de Progresso idêntica à tela de Pedidos -->
                             <q-linear-progress
                                 :value="order.ordem_status === 0 ? 0 : (order.ordem_status / (totalEtapas || 1))"
                                 :color="order.ordem_status === 0 ? 'negative' : (order.ordem_status === totalEtapas ? 'positive' : 'primary')"
@@ -245,6 +342,7 @@
 
     <!-- Modal de Representantes (Admin) -->
     <q-dialog v-model="modalRepresentantes">
+        <!-- Código mantido igual ao anterior para o Modal -->
         <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;"
             :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
             <q-card-section class="row items-center q-pb-none">
@@ -263,12 +361,9 @@
                     <q-card v-for="representante in representantesFiltrados" :key="representante.id" flat bordered
                         class="q-mb-md" :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
                         style="border-radius: 12px; overflow: hidden;">
-
-                        <!-- Dados do Representante -->
                         <q-card-section class="row items-center q-pb-sm">
                             <q-avatar color="primary" text-color="white" icon="assignment_ind" size="42px"
                                 class="q-mr-md" />
-
                             <div class="col">
                                 <div class="text-weight-bold flex items-center" style="font-size: 15px;">
                                     {{ representante.nome }}
@@ -277,7 +372,6 @@
                                         #{{ representante.id }}
                                     </span>
                                 </div>
-
                                 <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
                                     {{ representante.email }}
                                 </div>
@@ -287,8 +381,6 @@
                                     {{ formatarTelefone(representante.telefone) }}
                                 </div>
                             </div>
-
-                            <!-- Botões de ação com o REPRESENTANTE -->
                             <div class="col-auto row q-gutter-xs">
                                 <q-btn v-if="representante.telefone" round flat dense color="green" icon="chat"
                                     size="14px" @click="abrirWhatsApp(representante.telefone, representante.nome)">
@@ -303,7 +395,6 @@
 
                         <q-separator :dark="isDark" />
 
-                        <!-- Listagem dos Projetos do Representante -->
                         <q-card-section class="q-pt-sm q-pb-sm" :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
                             <div class="text-caption text-weight-bold q-mb-xs"
                                 :class="isDark ? 'text-grey-5' : 'text-grey-7'">
@@ -318,7 +409,6 @@
                                 class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
                                 :class="isDark ? 'bg-dark' : 'bg-white'"
                                 style="border: 1px solid rgba(128,128,128,0.15);">
-
                                 <div class="col-7 flex column">
                                     <span class="text-weight-bold text-primary"
                                         style="font-size: 13px; line-height: 1.2;">
@@ -331,7 +421,6 @@
                                             }}</span>
                                     </span>
                                 </div>
-
                                 <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
                                     <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'"
                                         style="font-size: 12px;">
@@ -357,6 +446,25 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth'
 import { api } from 'boot/axios'
+import VueApexCharts from 'vue3-apexcharts'
+
+const apexchart = VueApexCharts
+
+// Variáveis de Filtro
+const filtros = ref({
+    agrupamento: 'mes',
+    dataInicio: '', 
+    dataFim: ''
+})
+
+const opcoesAgrupamento = [
+    { label: 'Semanal', value: 'semana' },
+    { label: 'Mensal', value: 'mes' },
+    { label: 'Anual', value: 'anual' }
+]
+
+// Ojeto alterado para aceitar todos os dados do JSON corretamente
+const dadosGraficos = ref({ area: [], pizza: [], barras_representantes: [], barras_lojistas: [] })
 
 const $q = useQuasar()
 const authStore = useAuthStore()
@@ -389,16 +497,21 @@ const meusPedidos = ref([])
 const totalPedidos = ref(0)
 const pedidoTimelineAberto = ref(null)
 
-const modalRepresentantes = ref(false) // Alterado para modalRepresentantes
+const modalRepresentantes = ref(false)
 
-// 1. DECLARAÇÃO DAS VARIÁVEIS DE STATUS E RECURSOS
 const totalEtapas = ref(0)
 const todosOsStatusDoBanco = ref([])
 const listaEtapasDoBanco = ref([])
 const todosOsLojistas = ref([])
-const todosOsRepresentantes = ref([]) // Nova lista para alimentar o modal do Admin
+const todosOsRepresentantes = ref([])
 
-// 2. FUNÇÃO PARA BUSCAR AS ETAPAS NO BANCO
+function formatDataToAPI(dataBR) {
+    if (!dataBR) return ''
+    const [d, m, y] = dataBR.split('/')
+    if (y && m && d) return `${y}-${m}-${d}`
+    return ''
+}
+
 async function carregarEtapasDoBanco() {
     try {
         const resStatus = await api.get('/status', {
@@ -418,7 +531,6 @@ async function carregarEtapasDoBanco() {
     }
 }
 
-// 3. FUNÇÃO DINÂMICA DE STATUS
 function mapearStatusDinamico(statusStr) {
     const s = String(statusStr || '').trim().toLowerCase()
 
@@ -436,30 +548,35 @@ function mapearStatusDinamico(statusStr) {
     return { ordem: 0, color: '#e74c3c' }
 }
 
-// 4. CARREGAMENTO DOS DADOS (AGORA PUXANDO REPRESENTANTES TAMBÉM)
 async function carregarDados() {
     loading.value = true
     loadError.value = ''
     try {
         await carregarEtapasDoBanco()
 
-        // Puxa pedidos, lojistas e representantes
+        const queryParams = new URLSearchParams()
+        queryParams.append('agrupamento', filtros.value.agrupamento)
+        if (filtros.value.dataInicio) queryParams.append('dataInicio', formatDataToAPI(filtros.value.dataInicio))
+        if (filtros.value.dataFim) queryParams.append('dataFim', formatDataToAPI(filtros.value.dataFim))
+
         const [resDashboard, resLojistas, resRepresentantes] = await Promise.all([
-            api.get('/pedidos', { headers: { Authorization: `Bearer ${authStore.token}` } }),
+            api.get(`/dashboard/admin?${queryParams.toString()}`, { headers: { Authorization: `Bearer ${authStore.token}` } }),
             api.get('/lojistas', { headers: { Authorization: `Bearer ${authStore.token}` } }),
-            api.get('/representantes', { headers: { Authorization: `Bearer ${authStore.token}` } }) // Rota de admin
+            api.get('/representantes', { headers: { Authorization: `Bearer ${authStore.token}` } })
         ])
 
         todosOsLojistas.value = resLojistas.data || []
         todosOsRepresentantes.value = resRepresentantes.data.data || resRepresentantes.data || []
 
-        const rawData = resDashboard.data.data || resDashboard.data || []
-        totalPedidos.value = rawData.length
+        const rawData = resDashboard.data.pedidos || resDashboard.data.data || []
+        totalPedidos.value = resDashboard.data.total_pedidos || rawData.length
+
+        if (resDashboard.data.graficos) {
+            dadosGraficos.value = resDashboard.data.graficos
+        }
 
         meusPedidos.value = rawData.map(p => {
             const infoStatus = mapearStatusDinamico(p.status)
-
-            // Mapeando os lojistas para a lista principal da timeline
             const lojistaOficial = todosOsLojistas.value.find(l => l.id === p.id_lojista)
 
             return {
@@ -468,7 +585,6 @@ async function carregarDados() {
                 nome_cliente: p.nome_cliente || p.cliente,
                 ordem_status: infoStatus.ordem,
                 cor: infoStatus.cor,
-                // NOVIDADE AQUI: Busca o representante diretamente do lojista, caso o pedido não traga
                 id_representante: p.id_representante || p.representante_id || lojistaOficial?.id_representante
             }
         })
@@ -481,15 +597,10 @@ async function carregarDados() {
     }
 }
 
-// 5. FUNÇÕES DE CONTATO DIRETO (WHATSAPP E EMAIL)
 function abrirWhatsApp(telefone, nome) {
     if (!telefone) {
         $q.notify({
-            type: 'warning',
-            message: `O WhatsApp de "${nome}" não está cadastrado no banco de dados.`,
-            icon: 'warning',
-            position: 'top-right',
-            timeout: 3000
+            type: 'warning', message: `O WhatsApp de "${nome}" não está cadastrado.`, icon: 'warning', position: 'top-right', timeout: 3000
         })
         return
     }
@@ -501,11 +612,7 @@ function abrirWhatsApp(telefone, nome) {
 function abrirEmail(email, nome) {
     if (!email || email === 'Contato via sistema' || email === 'Não informado') {
         $q.notify({
-            type: 'warning',
-            message: `O e-mail de "${nome}" não está cadastrado no banco de dados.`,
-            icon: 'warning',
-            position: 'top-right',
-            timeout: 3000
+            type: 'warning', message: `O e-mail de "${nome}" não está cadastrado.`, icon: 'warning', position: 'top-right', timeout: 3000
         })
         return
     }
@@ -520,7 +627,6 @@ function formatarTelefone(tel) {
     return tel
 }
 
-// Executa o carregamento inicial dos dados
 onMounted(carregarDados)
 
 const pedidosOrdenados = computed(() =>
@@ -529,66 +635,159 @@ const pedidosOrdenados = computed(() =>
 
 const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3))
 
-// Agrupando Representantes e inserindo seus respectivos projetos
+// ==========================================
+// CONFIGURAÇÃO DOS GRÁFICOS (APEXCHARTS)
+// ==========================================
+const defaultThemeConfig = computed(() => ({
+    mode: isDark.value ? 'dark' : 'light',
+    palette: 'palette1'
+}))
+
+// 1. Gráfico de Área (Evolução de Vendas)
+const chartAreaSeries = computed(() => [{
+    name: 'Valor em Vendas (R$)',
+    data: (dadosGraficos.value.area || []).map(item => Number(item.valor_total).toFixed(2))
+}])
+
+const chartAreaOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { 
+        type: 'area', background: 'transparent', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'inherit',
+        dropShadow: { enabled: true, top: 4, left: 0, blur: 4, color: '#1976D2', opacity: 0.15 }
+    },
+    colors: ['#1976D2'],
+    stroke: { curve: 'smooth', width: 4 },
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.65, opacityTo: 0.15, stops: [0, 90, 100] } },
+    xaxis: { 
+        categories: (dadosGraficos.value.area || []).map(item => item.periodo),
+        labels: { hideOverlappingLabels: false, rotate: -45, style: { fontSize: '11px' } }
+    },
+    yaxis: { labels: { formatter: val => formatMoney(val) } },
+    dataLabels: { enabled: false }
+}))
+
+// 2. Gráfico de Pizza (Status)
+const chartPieSeries = computed(() => (dadosGraficos.value.pizza || []).map(item => item.quantidade))
+
+const chartPieOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { background: 'transparent', fontFamily: 'inherit' },
+    labels: (dadosGraficos.value.pizza || []).map(item => item.status),
+    colors: (dadosGraficos.value.pizza || []).map(item => item.cor),
+    stroke: { width: 0 },
+    dataLabels: { enabled: false },
+    plotOptions: {
+        pie: {
+            donut: {
+                size: '70%', 
+                labels: {
+                    show: true,
+                    name: {
+                        show: true, fontSize: '12px', fontWeight: '600', color: isDark.value ? '#9CA3AF' : '#6B7280', offsetY: -5,
+                        formatter: function (val) {
+                            if (val && val.length > 14) {
+                                const palavras = val.split(' ')
+                                const meio = Math.ceil(palavras.length / 2)
+                                return [palavras.slice(0, meio).join(' '), palavras.slice(meio).join(' ')]
+                            }
+                            return val
+                        }
+                    },
+                    value: {
+                        show: true, fontSize: '16px', fontWeight: 'bold', color: isDark.value ? '#FFFFFF' : '#111827', offsetY: 5,
+                        formatter: val => `${val}`
+                    },
+                    total: {
+                        show: true, label: 'Total Pedidos', fontSize: '12px', color: isDark.value ? '#9CA3AF' : '#6B7280',
+                        formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                    }
+                }
+            }
+        }
+    },
+    legend: { 
+        position: 'bottom',
+        formatter: function(seriesName, opts) {
+            const val = opts.w.globals.series[opts.seriesIndex]
+            const total = opts.w.globals.series.reduce((a, b) => a + b, 0)
+            const percent = total > 0 ? ((val / total) * 100).toFixed(1).replace('.0', '') : 0
+            return `${seriesName} (${percent}%)`
+        }
+    }
+}))
+
+// 3. Gráfico de Barras (Maiores Representantes)
+// CORREÇÃO: Buscando de dadosGraficos.value.barras_representantes
+const chartBarSeries = computed(() => [{
+    name: 'Total Vendido',
+    data: (dadosGraficos.value.barras_representantes || []).map(item => Number(item.valor_total || 0).toFixed(2))
+}])
+
+const chartBarOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'inherit' },
+    plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
+    colors: ['#21BA45'],
+    dataLabels: { enabled: false },
+    xaxis: { 
+        categories: (dadosGraficos.value.barras_representantes || []).map(item => item.nome_representante || item.nome || 'Representante'),
+        labels: { rotate: -45, style: { fontSize: '11px' } }
+    },
+    yaxis: { labels: { formatter: val => formatMoney(val) } },
+    tooltip: { y: { formatter: val => formatMoney(val) } }
+}))
+
+// 4. NOVO Gráfico de Barras (Maiores Lojistas)
+const chartBarLojistasSeries = computed(() => [{
+    name: 'Total Vendido',
+    data: (dadosGraficos.value.barras_lojistas || []).map(item => Number(item.valor_total || 0).toFixed(2))
+}])
+
+const chartBarLojistasOptions = computed(() => ({
+    theme: defaultThemeConfig.value,
+    chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'inherit' },
+    plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
+    colors: ['#9C27B0'], // Cor roxa para diferenciar
+    dataLabels: { enabled: false },
+    xaxis: { 
+        categories: (dadosGraficos.value.barras_lojistas || []).map(item => item.nome || 'Lojista'),
+        labels: { rotate: -45, style: { fontSize: '11px' } }
+    },
+    yaxis: { labels: { formatter: val => formatMoney(val) } },
+    tooltip: { y: { formatter: val => formatMoney(val) } }
+}))
+
 const representantesFiltrados = computed(() => {
     const mapa = new Map()
-
-    // Alimenta o mapa com a lista oficial de representantes garantindo que o ID seja String
     todosOsRepresentantes.value.forEach(r => {
         mapa.set(String(r.id), {
-            id: r.id,
-            nome: r.nome,
-            email: r.email || 'Não informado',
-            telefone: r.telefone || null,
-            projetos: []
+            id: r.id, nome: r.nome, email: r.email || 'Não informado', telefone: r.telefone || null, projetos: []
         })
     })
 
-    // Distribui os projetos de meusPedidos para os respectivos representantes
     meusPedidos.value.forEach(p => {
         const idRep = p.id_representante || p.representante_id
-
         if (idRep) {
-            const key = String(idRep) // Transforma em String para garantir o "Match"
-
+            const key = String(idRep)
             if (!mapa.has(key)) {
-                // Fallback caso venha um ID que não estava na listagem principal
                 mapa.set(key, {
-                    id: key,
-                    nome: p.nome_representante || 'Representante Sem Nome',
-                    email: p.email_representante || 'Não informado',
-                    telefone: p.telefone_representante || null,
-                    projetos: []
+                    id: key, nome: p.nome_representante || 'Representante Sem Nome', email: p.email_representante || 'Não informado', telefone: p.telefone_representante || null, projetos: []
                 })
             }
-
             mapa.get(key).projetos.push({
-                id: p.id,
-                nome: p.nome_projeto || p.projeto || 'Projeto sem nome',
-                nome_cliente: p.nome_cliente || p.cliente || 'Não inf.',
-                id_cliente: p.id_cliente,
-                status: p.status,
-                cor: p.cor || '#1976D2',
-                valor: p.valor
+                id: p.id, nome: p.nome_projeto || p.projeto || 'Projeto sem nome', nome_cliente: p.nome_cliente || p.cliente || 'Não inf.', id_cliente: p.id_cliente, status: p.status, cor: p.cor || '#1976D2', valor: p.valor
             })
         }
     })
     return Array.from(mapa.values())
 })
 
-// Estatísticas dos cards do topo
 const statCards = computed(() => {
     const map = {}
     meusPedidos.value.forEach(p => {
         const key = p.status || 'Pendente'
         if (!map[key]) {
-            map[key] = {
-                label: key,
-                color: p.cor || '#888888',
-                value: 0,
-                totalValor: 0,
-                icon: getStatusIcon(key)
-            }
+            map[key] = { label: key, color: p.cor || '#888888', value: 0, totalValor: 0, icon: getStatusIcon(key) }
         }
         map[key].value++
         map[key].totalValor += Number(p.valor || 0)
