@@ -11,7 +11,9 @@ async function postRepresentante(dados) {
              UNION
              SELECT 'x' FROM clientes WHERE email = $1
              UNION
-             SELECT 'x' FROM lojistas WHERE email = $1`,
+             SELECT 'x' FROM lojistas WHERE email = $1
+             UNION
+             SELECT 'x' FROM admins WHERE email = $1`,
             [email]
         );
 
@@ -108,7 +110,9 @@ async function putRepresentante(id, dados) {
              UNION
              SELECT 'x' FROM clientes WHERE email = $1
              UNION
-             SELECT 'x' FROM lojistas WHERE email = $1`,
+             SELECT 'x' FROM lojistas WHERE email = $1
+             UNION
+             SELECT 'x' FROM admins WHERE email = $1`,
             [email, id]
         );
 
@@ -151,7 +155,9 @@ async function patchRepresentante(id, dados) {
                  UNION
                  SELECT 'x' FROM clientes WHERE email = $1
                  UNION
-                 SELECT 'x' FROM lojistas WHERE email = $1`,
+                 SELECT 'x' FROM lojistas WHERE email = $1
+                 UNION
+                 SELECT 'x' FROM admins WHERE email = $1`,
                 [dados.email, id]
             );
             if (emailCheck.rows.length > 0) {
@@ -205,9 +211,9 @@ async function deleteRepresentante(id) {
 
         // Se encontrou algum lojista, bloqueia a exclusão
         if (lojistasCheck.rows.length > 0) {
-            return { 
-                success: false, 
-                message: 'Não é possível excluir: este representante possui lojistas vinculados a ele.' 
+            return {
+                success: false,
+                message: 'Não é possível excluir: este representante possui lojistas vinculados a ele.'
             };
         }
 

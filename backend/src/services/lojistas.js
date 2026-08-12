@@ -5,13 +5,15 @@ async function postLojista(dados) {
     const { nome, email, telefone, senha, id_representante } = dados;
 
     try {
-        // Verifica se o email já existe em lojistas, representantes ou clientes
+        // Verifica se o email já existe em lojistas, representantes, clientes ou admins
         const emailCheck = await db.query(
             `SELECT 'x' FROM lojistas WHERE email = $1
              UNION
              SELECT 'x' FROM representantes WHERE email = $1
              UNION
-             SELECT 'x' FROM clientes WHERE email = $1`,
+             SELECT 'x' FROM clientes WHERE email = $1
+             UNION
+             SELECT 'x' FROM admins WHERE email = $1`,
             [email]
         );
 
@@ -135,13 +137,15 @@ async function putLojista(id, dados) {
             return { success: false, message: 'Representante não encontrado.' };
         }
 
-        // 4. Valida email nas 3 tabelas, excluindo o próprio lojista
+        // 4. Valida email nas 4 tabelas, excluindo o próprio lojista
         const emailCheck = await db.query(
             `SELECT 'x' FROM lojistas WHERE email = $1 AND id <> $2
              UNION
              SELECT 'x' FROM representantes WHERE email = $1
              UNION
-             SELECT 'x' FROM clientes WHERE email = $1`,
+             SELECT 'x' FROM clientes WHERE email = $1
+             UNION
+             SELECT 'x' FROM admins WHERE email = $1`,
             [email, id]
         );
         if (emailCheck.rows.length > 0) {
@@ -183,7 +187,9 @@ async function patchLojista(id, dados) {
                  UNION
                  SELECT 'x' FROM representantes WHERE email = $1
                  UNION
-                 SELECT 'x' FROM clientes WHERE email = $1`,
+                 SELECT 'x' FROM clientes WHERE email = $1
+                 UNION
+                 SELECT 'x' FROM admins WHERE email = $1`,
                 [dados.email, id]
             );
             if (emailCheck.rows.length > 0) {
@@ -243,9 +249,9 @@ async function deleteLojista(id) {
         );
 
         if (pedidosCheck.rows.length > 0) {
-            return { 
-                success: false, 
-                message: 'Não é possível excluir: este lojista possui pedidos vinculados.' 
+            return {
+                success: false,
+                message: 'Não é possível excluir: este lojista possui pedidos vinculados.'
             };
         }
 

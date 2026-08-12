@@ -45,6 +45,26 @@ async function postImportaxml(xmlString, user, idLojistaBody) {
       endereco_entrega: escape(getDataById("endentrega")),
     };
 
+// =================================================================
+    // NOVO BLOCO: VALIDAÇÃO DE CONFLITO DE E-MAIL (MODIFICADO)
+    // =================================================================
+    if (clienteXML.email) {
+      const emailConflict = await db.query(
+        `SELECT email FROM admins WHERE email = $1
+         UNION
+         SELECT email FROM representantes WHERE email = $1
+         UNION
+         SELECT email FROM lojistas WHERE email = $1`,
+        [clienteXML.email]
+      );
+
+      // Se encontrar o e-mail em outra tabela do sistema, anulamos no XML
+      // Isso permite que o cliente e o projeto sejam salvos normalmente, mas sem causar conflito de login.
+      if (emailConflict.rows.length > 0) {
+        clienteXML.email = null;
+      }
+    }
+
     let clienteBD = null;
 
     if (clienteXML.cpf_cnpj && clienteXML.email) {

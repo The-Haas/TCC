@@ -24,7 +24,9 @@ async function postCliente(dados) {
              UNION
              SELECT 'x' FROM lojistas WHERE email = $1
              UNION
-             SELECT 'x' FROM representantes WHERE email = $1`,
+             SELECT 'x' FROM representantes WHERE email = $1
+             UNION
+             SELECT 'x' FROM admins WHERE email = $1`,
             [email]
         );
 
@@ -194,7 +196,9 @@ async function putCliente(id, dados) {
              UNION
              SELECT 'x' FROM representantes WHERE email = $1
              UNION
-             SELECT 'x' FROM lojistas WHERE email = $1`,
+             SELECT 'x' FROM lojistas WHERE email = $1
+             UNION
+             SELECT 'x' FROM admins WHERE email = $1`,
             [email, id]
         );
         if (emailCheck.rows.length > 0) {
@@ -267,7 +271,9 @@ async function patchCliente(id, dados) {
                  UNION
                  SELECT 'x' FROM representantes WHERE email = $1
                  UNION
-                 SELECT 'x' FROM lojistas WHERE email = $1`,
+                 SELECT 'x' FROM lojistas WHERE email = $1
+                 UNION
+                 SELECT 'x' FROM admins WHERE email = $1`,
                 [dados.email, id]
             );
             if (emailCheck.rows.length > 0) {
