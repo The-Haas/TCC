@@ -12,11 +12,21 @@
       </div>
     </div>
 
-    <!-- Filtros -->
-    <q-card class="filter-card q-mb-lg" :class="isDark ? 'filter-card--dark' : 'filter-card--light'" flat bordered>
+    <!-- Filtros e Totalizadores -->
+    <q-card class="filter-card q-mb-lg shadow-2" :class="isDark ? 'bg-dark' : 'bg-white'"
+      style="border-radius: 12px; border: 1px solid rgba(128,128,128,0.2);">
+
+      <!-- Cabeçalho dos Filtros -->
+      <q-card-section class="q-pb-none flex items-center justify-between">
+        <div class="text-subtitle2 text-weight-bold text-primary flex items-center">
+          <q-icon name="tune" size="20px" class="q-mr-sm" /> Filtros de Busca
+        </div>
+      </q-card-section>
+
+      <!-- Inputs de Filtro -->
       <q-card-section class="row q-col-gutter-md items-center">
         <div class="col-12 col-md-4">
-          <q-input v-model="filtros.busca" dense outlined :dark="isDark"
+          <q-input v-model="filtros.busca" dense outlined rounded :dark="isDark"
             placeholder="Pesquisar por nome, ID ou lojista..." clearable>
             <template v-slot:prepend>
               <q-icon name="search" color="grey-6" />
@@ -25,25 +35,98 @@
         </div>
 
         <div class="col-12 col-sm-6 col-md-3">
-          <q-select v-model="filtros.status" dense outlined :dark="isDark" :options="opcoesStatus"
-            label="Filtrar por Status" clearable emit-value map-options />
+          <q-select v-model="filtros.status" dense outlined rounded :dark="isDark" :options="opcoesStatus"
+            label="Filtrar por Status" clearable emit-value map-options>
+            <template v-slot:prepend>
+              <q-icon name="category" color="grey-6" />
+            </template>
+          </q-select>
         </div>
 
         <div class="col-12 col-sm-6 col-md-5 row q-col-gutter-sm">
           <div class="col-6">
-            <q-input v-model="filtros.dataInicio" dense outlined :dark="isDark" type="date" label="De">
+            <q-input v-model="filtros.dataInicio" dense outlined rounded :dark="isDark" type="date"
+              label="Data Inicial">
               <template v-slot:prepend v-if="!filtros.dataInicio">
-                <q-icon name="event" size="16px" />
+                <q-icon name="event" size="18px" color="grey-6" />
               </template>
             </q-input>
           </div>
           <div class="col-6">
-            <q-input v-model="filtros.dataFim" dense outlined :dark="isDark" type="date" label="Até">
+            <q-input v-model="filtros.dataFim" dense outlined rounded :dark="isDark" type="date" label="Data Final">
               <template v-slot:prepend v-if="!filtros.dataFim">
-                <q-icon name="event" size="16px" />
+                <q-icon name="event" size="18px" color="grey-6" />
               </template>
             </q-input>
           </div>
+        </div>
+      </q-card-section>
+
+      <q-separator :dark="isDark" />
+
+      <!-- Totalizadores Dinâmicos Redesenhados (Soft UI Alinhado) -->
+      <q-card-section class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
+        <div class="row items-stretch">
+
+          <!-- Bloco 1: Totais Gerais -->
+          <div class="col-12 col-md-auto row q-gutter-x-xl items-center q-pr-lg q-py-xs"
+            :style="$q.screen.gt.sm ? (isDark ? 'border-right: 1px solid rgba(255,255,255,0.1);' : 'border-right: 1px solid rgba(0,0,0,0.1);') : ''">
+
+            <!-- Total Filtrado -->
+            <div class="flex column">
+              <span class="text-overline text-grey-5" style="line-height: 1.2;">Total Filtrado</span>
+              <span class="text-h5 text-weight-bolder text-primary" style="line-height: 1;">
+                {{ estatisticasGerais.totalProjetos }}
+              </span>
+            </div>
+
+            <!-- Volume Financeiro -->
+            <div class="flex column">
+              <span class="text-overline text-grey-5" style="line-height: 1.2;">Volume Financeiro</span>
+              <span class="text-h5 text-weight-bolder" :class="isDark ? 'text-white' : 'text-grey-9'"
+                style="line-height: 1;">
+                {{ formatMoney(estatisticasGerais.valorTotal) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Separador Horizontal (Visível apenas no celular para quebrar as linhas) -->
+          <div class="col-12 lt-md q-py-sm">
+            <q-separator :dark="isDark" />
+          </div>
+
+          <!-- Bloco 2: Totais por Status (Estilo Soft Badge) -->
+          <div class="col-12 col-md row q-gutter-sm items-center q-py-xs" :class="$q.screen.gt.sm ? 'q-pl-lg' : ''">
+            <div v-for="stat in estatisticasPorStatus" :key="stat.status"
+              class="flex items-center q-px-sm q-py-xs rounded-borders transition-fade" :style="{
+                backgroundColor: isDark ? stat.cor + '15' : stat.cor + '10',
+                border: `1px solid ${stat.cor}30`
+              }">
+
+              <!-- Dot (Ponto de cor) -->
+              <div class="q-mr-sm"
+                :style="{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: stat.cor, boxShadow: `0 0 4px ${stat.cor}` }">
+              </div>
+
+              <!-- Nome do Status -->
+              <span class="text-caption text-weight-bold q-mr-sm" :class="isDark ? 'text-grey-2' : 'text-grey-9'">
+                {{ stat.status }}
+              </span>
+
+              <!-- Badge de Quantidade -->
+              <q-badge :style="{ backgroundColor: stat.cor, color: '#fff' }" class="text-weight-bolder q-mr-sm q-px-xs">
+                {{ stat.quantidade }}
+              </q-badge>
+
+              <!-- Valor Financeiro do Status -->
+              <span class="text-caption text-weight-bold"
+                :style="{ color: stat.cor, filter: isDark ? 'brightness(1.3)' : 'brightness(0.8)' }">
+                {{ formatMoney(stat.valor) }}
+              </span>
+
+            </div>
+          </div>
+
         </div>
       </q-card-section>
     </q-card>
@@ -422,6 +505,30 @@ function aoMudarItensPorPagina() {
 
 watch(() => pedidosFiltrados.value.length, () => {
   paginaAtual.value = 1
+})
+
+// --- ESTATÍSTICAS DINÂMICAS PARA OS FILTROS ---
+const estatisticasGerais = computed(() => {
+    const totalProjetos = pedidosFiltrados.value.length
+    const valorTotal = pedidosFiltrados.value.reduce((acc, pedido) => acc + Number(pedido.valor || 0), 0)
+    return { totalProjetos, valorTotal }
+})
+
+const estatisticasPorStatus = computed(() => {
+    const stats = {}
+    
+    pedidosFiltrados.value.forEach(pedido => {
+        const status = pedido.status || 'Sem Status'
+        const cor = getCorReal(pedido) // Aproveitando a função de cor já existente
+        
+        if (!stats[status]) {
+            stats[status] = { status, quantidade: 0, valor: 0, cor }
+        }
+        stats[status].quantidade += 1
+        stats[status].valor += Number(pedido.valor || 0)
+    })
+    
+    return Object.values(stats).sort((a, b) => b.quantidade - a.quantidade)
 })
 
 onMounted(carregarPedidos)

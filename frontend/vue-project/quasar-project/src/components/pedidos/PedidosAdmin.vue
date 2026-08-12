@@ -18,11 +18,22 @@
         </div>
 
         <!-- Filtros -->
-        <q-card class="filter-card q-mb-lg" :class="isDark ? 'filter-card--dark' : 'filter-card--light'" flat bordered>
+        <!-- Filtros e Totalizadores -->
+        <q-card class="filter-card q-mb-lg shadow-2" :class="isDark ? 'bg-dark' : 'bg-white'"
+            style="border-radius: 12px; border: 1px solid rgba(128,128,128,0.2);">
+
+            <!-- Cabeçalho dos Filtros -->
+            <q-card-section class="q-pb-none flex items-center justify-between">
+                <div class="text-subtitle2 text-weight-bold text-primary flex items-center">
+                    <q-icon name="tune" size="20px" class="q-mr-sm" /> Filtros de Busca
+                </div>
+            </q-card-section>
+
+            <!-- Inputs de Filtro -->
             <q-card-section class="row q-col-gutter-md items-center">
                 <div class="col-12 col-md-4">
-                    <q-input v-model="filtros.busca" dense outlined :dark="isDark"
-                        placeholder="Pesquisar por projeto, ID, lojista ou cliente..." clearable>
+                    <q-input v-model="filtros.busca" dense outlined rounded :dark="isDark"
+                        placeholder="Pesquisar por projeto, ID, lojista..." clearable>
                         <template v-slot:prepend>
                             <q-icon name="search" color="grey-6" />
                         </template>
@@ -30,25 +41,105 @@
                 </div>
 
                 <div class="col-12 col-sm-6 col-md-3">
-                    <q-select v-model="filtros.status" dense outlined :dark="isDark" :options="opcoesStatus"
-                        label="Filtrar por Status" clearable emit-value map-options />
+                    <q-select v-model="filtros.status" dense outlined rounded :dark="isDark" :options="opcoesStatus"
+                        label="Filtrar por Status" clearable emit-value map-options>
+                        <template v-slot:prepend>
+                            <q-icon name="category" color="grey-6" />
+                        </template>
+                    </q-select>
                 </div>
 
                 <div class="col-12 col-sm-6 col-md-5 row q-col-gutter-sm">
                     <div class="col-6">
-                        <q-input v-model="filtros.dataInicio" dense outlined :dark="isDark" type="date" label="De">
+                        <q-input v-model="filtros.dataInicio" dense outlined rounded :dark="isDark" type="date"
+                            label="Data Inicial">
                             <template v-slot:prepend v-if="!filtros.dataInicio">
-                                <q-icon name="event" size="16px" />
+                                <q-icon name="event" size="18px" color="grey-6" />
                             </template>
                         </q-input>
                     </div>
                     <div class="col-6">
-                        <q-input v-model="filtros.dataFim" dense outlined :dark="isDark" type="date" label="Até">
+                        <q-input v-model="filtros.dataFim" dense outlined rounded :dark="isDark" type="date"
+                            label="Data Final">
                             <template v-slot:prepend v-if="!filtros.dataFim">
-                                <q-icon name="event" size="16px" />
+                                <q-icon name="event" size="18px" color="grey-6" />
                             </template>
                         </q-input>
                     </div>
+                </div>
+            </q-card-section>
+
+            <q-separator :dark="isDark" />
+
+            <!-- Totalizadores Dinâmicos -->
+            <q-card-section class="q-pa-md" :class="isDark ? 'bg-dark-soft' : 'bg-grey-1'">
+                <!-- Trocamos items-center por items-stretch para que a altura seja distribuída por igual -->
+                <div class="row items-stretch">
+
+                    <!-- Bloco 1: Totais Gerais -->
+                    <!-- Adicionamos q-pr-lg e a borda via $q.screen para sumir no celular -->
+                    <div class="col-12 col-md-auto row q-gutter-x-xl items-center q-pr-lg q-py-xs"
+                        :style="$q.screen.gt.sm ? (isDark ? 'border-right: 1px solid rgba(255,255,255,0.1);' : 'border-right: 1px solid rgba(0,0,0,0.1);') : ''">
+
+                        <!-- Total Filtrado -->
+                        <div class="flex column">
+                            <span class="text-overline text-grey-5" style="line-height: 1.2;">Total Filtrado</span>
+                            <span class="text-h5 text-weight-bolder text-primary" style="line-height: 1;">
+                                {{ estatisticasGerais.totalProjetos }}
+                            </span>
+                        </div>
+
+                        <!-- Volume Financeiro -->
+                        <div class="flex column">
+                            <span class="text-overline text-grey-5" style="line-height: 1.2;">Volume Financeiro</span>
+                            <span class="text-h5 text-weight-bolder" :class="isDark ? 'text-white' : 'text-grey-9'"
+                                style="line-height: 1;">
+                                {{ formatMoney(estatisticasGerais.valorTotal) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Separador Horizontal (Visível apenas no celular para quebrar as linhas) -->
+                    <div class="col-12 lt-md q-py-sm">
+                        <q-separator :dark="isDark" />
+                    </div>
+
+                    <!-- Bloco 2: Totais por Status (Estilo Soft Badge) -->
+                    <!-- Adicionamos q-pl-lg para manter a simetria com a borda -->
+                    <div class="col-12 col-md row q-gutter-sm items-center q-py-xs"
+                        :class="$q.screen.gt.sm ? 'q-pl-lg' : ''">
+                        <div v-for="stat in estatisticasPorStatus" :key="stat.status"
+                            class="flex items-center q-px-sm q-py-xs rounded-borders transition-fade" :style="{
+                                backgroundColor: isDark ? stat.cor + '15' : stat.cor + '10',
+                                border: `1px solid ${stat.cor}30`
+                            }">
+
+                            <!-- Dot (Ponto de cor) -->
+                            <div class="q-mr-sm"
+                                :style="{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: stat.cor, boxShadow: `0 0 4px ${stat.cor}` }">
+                            </div>
+
+                            <!-- Nome do Status -->
+                            <span class="text-caption text-weight-bold q-mr-sm"
+                                :class="isDark ? 'text-grey-2' : 'text-grey-9'">
+                                {{ stat.status }}
+                            </span>
+
+                            <!-- Badge de Quantidade -->
+                            <q-badge :style="{ backgroundColor: stat.cor, color: '#fff' }"
+                                class="text-weight-bolder q-mr-sm q-px-xs">
+                                {{ stat.quantidade }}
+                            </q-badge>
+
+                            <!-- Valor Financeiro do Status -->
+                            <span class="text-caption text-weight-bold"
+                                :style="{ color: stat.cor, filter: isDark ? 'brightness(1.3)' : 'brightness(0.8)' }">
+                                {{ formatMoney(stat.valor) }}
+                            </span>
+
+                        </div>
+                    </div>
+
                 </div>
             </q-card-section>
         </q-card>
@@ -81,16 +172,16 @@
                         <div class="col-12 col-sm-2 flex column justify-center">
                             <div class="row items-center q-gutter-x-sm">
                                 <span class="text-weight-bold text-subtitle1 text-primary">{{ order.nome_projeto
-                                    }}</span>
+                                }}</span>
                                 <span class="text-grey-6 text-weight-bold" style="font-size: 13px;">#{{ order.id
-                                    }}</span>
+                                }}</span>
                             </div>
                             <span class="text-caption text-grey-6">Pedido: {{ formatDate(order.data_pedido) }}</span>
 
                             <!-- Exibe quem enviou o projeto ao sistema -->
                             <span v-if="order.enviado_por" class="text-caption text-grey-5" style="font-size: 11px;">
                                 Enviado por: <span class="text-weight-medium text-capitalize">{{ order.enviado_por
-                                    }}</span>
+                                }}</span>
                             </span>
                         </div>
 
@@ -106,7 +197,7 @@
                                 <span class="text-caption text-weight-bold"
                                     :style="{ color: getOrdemReal(order) === 0 ? getCorReal(order) : (getOrdemReal(order) === totalEtapas ? '#21BA45' : 'var(--q-primary)') }">
                                     {{ getOrdemReal(order) === 0 ? '0%' : `${Math.round((getOrdemReal(order) /
-                                    totalEtapas) * 100)}%` }}
+                                        totalEtapas) * 100)}%` }}
                                 </span>
                             </div>
                             <q-linear-progress
@@ -240,47 +331,43 @@
                         <!-- ========================================================= -->
                         <!-- NOVA SEÇÃO: LISTA DE ITENS E COMPONENTES (SLIM & DENSE)   -->
                         <!-- ========================================================= -->
-                        <div v-if="detalhes[order.id].itens && detalhes[order.id].itens.length > 0" class="q-mt-lg q-mb-md">
-                            
+                        <div v-if="detalhes[order.id].itens && detalhes[order.id].itens.length > 0"
+                            class="q-mt-lg q-mb-md">
+
                             <!-- ACORDEÃO PRINCIPAL -->
-                            <q-expansion-item
-                                dense
-                                icon="list_alt"
-                                label="Especificações e Itens do Projeto"
+                            <q-expansion-item dense icon="list_alt" label="Especificações e Itens do Projeto"
                                 :caption="`${detalhes[order.id].itens.length} itens registrados`"
-                                header-class="text-weight-bold q-pa-sm text-subtitle2"
-                                expand-icon-class="text-primary"
-                                class="rounded-borders"
-                                :class="isDark ? 'bg-dark' : 'bg-white'"
-                                style="border: 1px solid rgba(128,128,128,0.2);"
-                            >
+                                header-class="text-weight-bold q-pa-sm text-subtitle2" expand-icon-class="text-primary"
+                                class="rounded-borders" :class="isDark ? 'bg-dark' : 'bg-white'"
+                                style="border: 1px solid rgba(128,128,128,0.2);">
                                 <q-separator :dark="isDark" />
-                                
+
                                 <q-list separator dense>
                                     <template v-for="item in detalhes[order.id].itens" :key="item.id">
-                                    
+
                                         <!-- ITEM TIPO 1: Com Componentes (Expansível) -->
-                                        <q-expansion-item
-                                            v-if="item.componentes && item.componentes.length > 0"
-                                            :group="`itens_${order.id}`"
-                                            dense
-                                            header-class="q-py-sm"
-                                            expand-icon-class="text-primary"
-                                        >
+                                        <q-expansion-item v-if="item.componentes && item.componentes.length > 0"
+                                            :group="`itens_${order.id}`" dense header-class="q-py-sm"
+                                            expand-icon-class="text-primary">
                                             <template v-slot:header>
                                                 <!-- Reduzida a largura mínima do avatar para colar mais no texto -->
                                                 <q-item-section avatar style="min-width: 36px;">
-                                                    <q-icon name="kitchen" :color="isDark ? 'blue-4' : 'primary'" size="22px" />
+                                                    <q-icon name="kitchen" :color="isDark ? 'blue-4' : 'primary'"
+                                                        size="22px" />
                                                 </q-item-section>
                                                 <q-item-section>
-                                                    <q-item-label class="text-weight-bold" style="font-size: 13.5px;">{{ item.descricao_item }}</q-item-label>
-                                                    <q-item-label caption style="font-size: 11.5px;" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                                                    <q-item-label class="text-weight-bold" style="font-size: 13.5px;">{{
+                                                        item.descricao_item }}</q-item-label>
+                                                    <q-item-label caption style="font-size: 11.5px;"
+                                                        :class="isDark ? 'text-grey-5' : 'text-grey-6'">
                                                         Contém {{ item.componentes.length }} peças
                                                     </q-item-label>
                                                 </q-item-section>
                                                 <q-item-section side>
                                                     <!-- Badge mais compacta -->
-                                                    <q-badge color="primary" rounded class="text-weight-bold shadow-1 q-px-sm" style="font-size: 11.5px; padding-top: 3px; padding-bottom: 3px;">
+                                                    <q-badge color="primary" rounded
+                                                        class="text-weight-bold shadow-1 q-px-sm"
+                                                        style="font-size: 11.5px; padding-top: 3px; padding-bottom: 3px;">
                                                         Qtd: {{ item.quantidade_item }}
                                                     </q-badge>
                                                 </q-item-section>
@@ -288,14 +375,20 @@
 
                                             <!-- Lista de Peças Interna (Árvore Compacta) -->
                                             <div class="q-pl-xl q-pb-sm q-pr-sm">
-                                                <div class="q-pl-sm q-py-xs" style="border-left: 2px solid var(--q-primary); opacity: 0.9;">
+                                                <div class="q-pl-sm q-py-xs"
+                                                    style="border-left: 2px solid var(--q-primary); opacity: 0.9;">
                                                     <q-list dense>
                                                         <!-- min-height força a linha a ficar bem fina -->
-                                                        <q-item v-for="(comp, i) in item.componentes" :key="i" class="q-py-none" style="min-height: 22px;">
-                                                            <q-item-section avatar style="min-width: 18px; padding-right: 4px;">
-                                                                <q-icon name="circle" size="4px" :color="isDark ? 'grey-6' : 'grey-4'" />
+                                                        <q-item v-for="(comp, i) in item.componentes" :key="i"
+                                                            class="q-py-none" style="min-height: 22px;">
+                                                            <q-item-section avatar
+                                                                style="min-width: 18px; padding-right: 4px;">
+                                                                <q-icon name="circle" size="4px"
+                                                                    :color="isDark ? 'grey-6' : 'grey-4'" />
                                                             </q-item-section>
-                                                            <q-item-section :class="isDark ? 'text-grey-4' : 'text-grey-8'" style="font-size: 12px; line-height: 1.2;">
+                                                            <q-item-section
+                                                                :class="isDark ? 'text-grey-4' : 'text-grey-8'"
+                                                                style="font-size: 12px; line-height: 1.2;">
                                                                 {{ comp }}
                                                             </q-item-section>
                                                         </q-item>
@@ -307,19 +400,25 @@
                                         <!-- ITEM TIPO 2: Sem Componentes (Ferragens - Fixo) -->
                                         <q-item v-else dense class="q-py-sm">
                                             <q-item-section avatar style="min-width: 36px;">
-                                                <q-icon name="build" :color="isDark ? 'grey-5' : 'grey-6'" size="22px" />
+                                                <q-icon name="build" :color="isDark ? 'grey-5' : 'grey-6'"
+                                                    size="22px" />
                                             </q-item-section>
                                             <q-item-section>
-                                                <q-item-label class="text-weight-bold" style="font-size: 13.5px;">{{ item.descricao_item }}</q-item-label>
-                                                <q-item-label caption style="font-size: 11.5px;" :class="isDark ? 'text-grey-5' : 'text-grey-6'">Acessório / Material</q-item-label>
+                                                <q-item-label class="text-weight-bold" style="font-size: 13.5px;">{{
+                                                    item.descricao_item }}</q-item-label>
+                                                <q-item-label caption style="font-size: 11.5px;"
+                                                    :class="isDark ? 'text-grey-5' : 'text-grey-6'">Acessório /
+                                                    Material</q-item-label>
                                             </q-item-section>
                                             <q-item-section side>
-                                                <q-badge color="grey-7" rounded class="text-weight-bold shadow-1 q-px-sm" style="font-size: 11.5px; padding-top: 3px; padding-bottom: 3px;">
+                                                <q-badge color="grey-7" rounded
+                                                    class="text-weight-bold shadow-1 q-px-sm"
+                                                    style="font-size: 11.5px; padding-top: 3px; padding-bottom: 3px;">
                                                     Qtd: {{ item.quantidade_item }}
                                                 </q-badge>
                                             </q-item-section>
                                         </q-item>
-                                    
+
                                     </template>
                                 </q-list>
                             </q-expansion-item>
@@ -417,62 +516,53 @@
 
                     <div v-if="resultadosUpload.length === 0">
                         <div class="q-mb-lg">
-<!-- SELEÇÃO DE LOJISTA E REPRESENTANTE COM PESQUISA -->
-<div class="q-mb-lg">
-    <q-select 
-        v-model="lojistaSelecionado" 
-        :options="opcoesLojistas" 
-        option-value="id"
-        label="Selecione o Lojista ou Representante *" 
-        outlined 
-        dense 
-        emit-value 
-        map-options
-        :loading="loadingLojistas" 
-        :dark="isDark" 
-        hide-bottom-space
-        use-input
-        input-debounce="300"
-        @filter="filtrarLojistas"
-    >
-        <template v-slot:prepend>
-            <q-icon name="storefront" />
-        </template>
+                            <!-- SELEÇÃO DE LOJISTA E REPRESENTANTE COM PESQUISA -->
+                            <div class="q-mb-lg">
+                                <q-select v-model="lojistaSelecionado" :options="opcoesLojistas" option-value="id"
+                                    label="Selecione o Lojista ou Representante *" outlined dense emit-value map-options
+                                    :loading="loadingLojistas" :dark="isDark" hide-bottom-space use-input
+                                    input-debounce="300" @filter="filtrarLojistas">
+                                    <template v-slot:prepend>
+                                        <q-icon name="storefront" />
+                                    </template>
 
-        <!-- COMO CADA ITEM APARECE NA LISTA SUSPENSA -->
-        <template v-slot:option="scope">
-            <q-item v-bind="scope.itemProps">
-                <q-item-section>
-                    <q-item-label class="text-weight-bold">
-                        {{ scope.opt.nome_fantasia || scope.opt.nome || scope.opt.razao_social }}
-                    </q-item-label>
-                    <q-item-label caption class="text-grey-7">
-                        <q-icon name="person" size="14px" class="q-mr-xs" />
-                        Rep: {{ scope.opt.representante?.nome || scope.opt.nome_representante || 'Sem Representante' }}
-                    </q-item-label>
-                </q-item-section>
-            </q-item>
-        </template>
+                                    <!-- COMO CADA ITEM APARECE NA LISTA SUSPENSA -->
+                                    <template v-slot:option="scope">
+                                        <q-item v-bind="scope.itemProps">
+                                            <q-item-section>
+                                                <q-item-label class="text-weight-bold">
+                                                    {{ scope.opt.nome_fantasia || scope.opt.nome ||
+                                                    scope.opt.razao_social }}
+                                                </q-item-label>
+                                                <q-item-label caption class="text-grey-7">
+                                                    <q-icon name="person" size="14px" class="q-mr-xs" />
+                                                    Rep: {{ scope.opt.representante?.nome ||
+                                                    scope.opt.nome_representante || 'Sem Representante' }}
+                                                </q-item-label>
+                                            </q-item-section>
+                                        </q-item>
+                                    </template>
 
-        <!-- COMO O ITEM SELECIONADO FICARÁ EXIBIDO NO CAMPO -->
-        <template v-slot:selected-item="scope">
-            <span class="ellipsis" v-if="scope.opt">
-                {{ scope.opt.nome_fantasia || scope.opt.nome }} 
-                <span class="text-caption text-grey-7 q-ml-xs">
-                    (Rep: {{ scope.opt.representante?.nome || scope.opt.nome_representante || 'N/A' }})
-                </span>
-            </span>
-        </template>
+                                    <!-- COMO O ITEM SELECIONADO FICARÁ EXIBIDO NO CAMPO -->
+                                    <template v-slot:selected-item="scope">
+                                        <span class="ellipsis" v-if="scope.opt">
+                                            {{ scope.opt.nome_fantasia || scope.opt.nome }}
+                                            <span class="text-caption text-grey-7 q-ml-xs">
+                                                (Rep: {{ scope.opt.representante?.nome || scope.opt.nome_representante
+                                                || 'N/A' }})
+                                            </span>
+                                        </span>
+                                    </template>
 
-        <template v-slot:no-option>
-            <q-item>
-                <q-item-section class="text-grey">
-                    Nenhum lojista ou representante encontrado
-                </q-item-section>
-            </q-item>
-        </template>
-    </q-select>
-</div>
+                                    <template v-slot:no-option>
+                                        <q-item>
+                                            <q-item-section class="text-grey">
+                                                Nenhum lojista ou representante encontrado
+                                            </q-item-section>
+                                        </q-item>
+                                    </template>
+                                </q-select>
+                            </div>
                         </div>
 
                         <div class="upload-dropzone q-pa-xl text-center cursor-pointer"
@@ -528,7 +618,7 @@
                                     </div>
                                     <q-badge color="positive" class="text-weight-bold q-pa-sm text-subtitle2">#{{
                                         resultado.id
-                                        }}</q-badge>
+                                    }}</q-badge>
                                 </div>
                             </div>
                         </div>
@@ -936,7 +1026,7 @@ function filtrarLojistas(val, update) {
         opcoesLojistas.value = listaLojistas.value.filter(v => {
             // Nome do Lojista
             const nomeLojista = (v.nome_fantasia || v.nome || v.razao_social || '').toLowerCase()
-            
+
             // Nome do Representante (ajuste a propriedade conforme o retorno do seu Back-end)
             const nomeRepresentante = (v.representante?.nome || v.nome_representante || '').toLowerCase()
 
@@ -1015,6 +1105,34 @@ async function enviarArquivos() {
 
     carregarPedidos()
 }
+
+// --- ESTATÍSTICAS DINÂMICAS PARA OS FILTROS ---
+
+// Calcula o total geral e a soma de valores dos pedidos visíveis
+const estatisticasGerais = computed(() => {
+    const totalProjetos = pedidosFiltrados.value.length
+    const valorTotal = pedidosFiltrados.value.reduce((acc, pedido) => acc + Number(pedido.valor || 0), 0)
+    return { totalProjetos, valorTotal }
+})
+
+// Agrupa a quantidade e os valores por status dos pedidos visíveis
+const estatisticasPorStatus = computed(() => {
+    const stats = {}
+
+    pedidosFiltrados.value.forEach(pedido => {
+        const status = pedido.status || 'Sem Status'
+        const cor = getCorReal(pedido)
+
+        if (!stats[status]) {
+            stats[status] = { status, quantidade: 0, valor: 0, cor }
+        }
+        stats[status].quantidade += 1
+        stats[status].valor += Number(pedido.valor || 0)
+    })
+
+    // Retorna ordenado do que tem mais projetos para o que tem menos
+    return Object.values(stats).sort((a, b) => b.quantidade - a.quantidade)
+})
 
 onMounted(carregarPedidos)
 </script>
@@ -1250,5 +1368,15 @@ onMounted(carregarPedidos)
     100% {
         opacity: 1;
     }
+}
+
+/* Esconde a barra de rolagem na lista horizontal de status, mantendo o scroll funcional */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 </style>
