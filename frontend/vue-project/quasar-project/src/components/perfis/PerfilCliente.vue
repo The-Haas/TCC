@@ -8,7 +8,7 @@
       <!-- Avatar Flutuante Premium -->
       <div class="absolute-top row justify-center" style="top: -55px; left: 0; right: 0; z-index: 2;">
         <q-avatar size="110px" class="shadow-5" :style="{
-          background: $q.dark.isActive ? '#1d1d1d' : '#ffffff',
+          background: $q.dark.isActive ? '#0d1117' : '#ffffff',
           border: '4px solid var(--q-primary)',
           display: 'flex',
           alignItems: 'center',

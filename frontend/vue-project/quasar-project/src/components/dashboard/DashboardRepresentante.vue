@@ -1,14 +1,81 @@
 <template>
     <q-page class="page">
 
-        <div class="greeting-wrap">
-            <div>
-                <h1 class="greeting" :class="isDark ? 'text-white' : 'text-grey-9'">
-                    {{ greeting }}, <span class="greeting-name">{{ firstName }}</span>.
-                </h1>
-                <p class="greeting-sub" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                    {{ dateStr }} — Acompanhe, as lojas parceiras e os projetos em andamento.
-                </p>
+        <!-- Cabeçalho: Saudação + Filtros -->
+        <div class="row items-center justify-between q-mb-lg">
+            
+            <!-- Saudação (Esquerda) -->
+            <div class="col-12 col-lg-5">
+                <div class="greeting-wrap" style="margin-bottom: 0;">
+                    <div>
+                        <h1 class="greeting" :class="isDark ? 'text-white' : 'text-grey-9'">
+                            {{ greeting }}, <span class="greeting-name">{{ firstName }}</span>.
+                        </h1>
+                        <p class="greeting-sub" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                            {{ dateStr }} — Acompanhe, as lojas parceiras e os projetos em andamento.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros (Direita) -->
+            <div class="col-12 col-lg-7">
+                
+                <!-- Separador Mobile: Visível apenas em telas menores que 'lg' -->
+                <q-separator :dark="isDark" class="lt-lg q-my-md" />
+
+                <div class="row q-col-gutter-sm items-end justify-end">
+                    
+                    <!-- Agrupamento -->
+                    <div class="col-12 col-sm-3">
+                        <span class="text-caption text-weight-bold" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Agrupamento</span>
+                        <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options outlined
+                            dense :dark="isDark" color="primary" class="q-mt-xs" dropdown-icon="expand_more">
+                            <template v-slot:prepend>
+                                <q-icon name="bar_chart" size="20px" color="primary" />
+                            </template>
+                        </q-select>
+                    </div>
+
+                    <!-- Data Inicial -->
+                    <div class="col-12 col-sm-3">
+                        <span class="text-caption text-weight-bold" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Data Inicial</span>
+                        <q-input v-model="filtros.dataInicio" mask="##/##/####" outlined dense :dark="isDark"
+                            class="q-mt-xs" placeholder="DD/MM/AAAA">
+                            <template v-slot:append>
+                                <q-icon name="event" class="cursor-pointer" color="primary">
+                                    <q-popup-proxy ref="qDateProxyInicio" transition-show="scale" transition-hide="scale">
+                                        <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark"
+                                            color="primary" @update:model-value="() => $refs.qDateProxyInicio.hide()" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+                    </div>
+
+                    <!-- Data Final -->
+                    <div class="col-12 col-sm-3">
+                        <span class="text-caption text-weight-bold" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Data Final</span>
+                        <q-input v-model="filtros.dataFim" mask="##/##/####" outlined dense :dark="isDark"
+                            class="q-mt-xs" placeholder="DD/MM/AAAA">
+                            <template v-slot:append>
+                                <q-icon name="event" class="cursor-pointer" color="primary">
+                                    <q-popup-proxy ref="qDateProxyFim" transition-show="scale" transition-hide="scale">
+                                        <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary"
+                                            @update:model-value="() => $refs.qDateProxyFim.hide()" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+                    </div>
+
+                    <!-- Botão Atualizar -->
+                    <div class="col-12 col-sm-3">
+                        <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" unelevated
+                            class="full-width text-weight-bold" style="height: 40px; border-radius: 8px;"
+                            :loading="loading" />
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -45,56 +112,6 @@
                 </div>
 
                 <div class="stat-bar" :style="{ background: card.color }" />
-            </div>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- BARRA DE FILTROS -->
-        <!-- ============================================== -->
-        <div class="block q-mb-xl filter-bar" :class="isDark ? 'block--dark' : 'block--light'">
-            <div class="row q-col-gutter-md items-center">
-                
-                <div class="col-12 col-md-3">
-                    <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options
-                        label="Agrupamento (Gráfico de Área)" outlined dense :dark="isDark" color="primary" bg-color="transparent" />
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-input v-model="filtros.dataInicio" mask="##/##/####" label="Data Inicial" outlined dense :dark="isDark">
-                        <template v-slot:append>
-                            <q-icon name="event" class="cursor-pointer">
-                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                                    <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark" color="primary">
-                                        <div class="row items-center justify-end">
-                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
-                                        </div>
-                                    </q-date>
-                                </q-popup-proxy>
-                            </q-icon>
-                        </template>
-                    </q-input>
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-input v-model="filtros.dataFim" mask="##/##/####" label="Data Final" outlined dense :dark="isDark">
-                        <template v-slot:append>
-                            <q-icon name="event" class="cursor-pointer">
-                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                                    <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary">
-                                        <div class="row items-center justify-end">
-                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
-                                        </div>
-                                    </q-date>
-                                </q-popup-proxy>
-                            </q-icon>
-                        </template>
-                    </q-input>
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" 
-                           unelevated class="full-width" style="height: 40px; font-weight: bold;" :loading="loading" />
-                </div>
             </div>
         </div>
 

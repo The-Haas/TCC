@@ -83,6 +83,13 @@ async function login(email, senha) {
   // ==============================
   // VALIDAR SENHA
   // ==============================
+  
+  // 1. Verifica se a senha foi enviada na requisição e se o usuário tem senha no banco
+  if (!senha || !user.senha) {
+    throw new Error("Email ou Senha Inválido!");
+  }
+
+  // 2. Só então faz a comparação com o bcrypt
   const senhaValida = await bcrypt.compare(senha, user.senha);
 
   if (!senhaValida) {

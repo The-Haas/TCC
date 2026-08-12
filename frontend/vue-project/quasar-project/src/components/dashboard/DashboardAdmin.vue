@@ -1,19 +1,87 @@
 <template>
     <q-page class="page">
 
-        <div class="greeting-wrap">
-            <div>
+        <!-- ============================================== -->
+        <!-- CABEÇALHO E FILTROS (Alinhados) -->
+        <!-- ============================================== -->
+        <div class="row justify-between items-end q-mb-xl q-col-gutter-lg">
+            
+            <!-- Saudação (Esquerda) -->
+            <div class="col-12 col-lg-5" style="margin-bottom: 0;">
                 <h1 class="greeting" :class="isDark ? 'text-white' : 'text-grey-9'">
                     {{ greeting }}, <span class="greeting-name">{{ firstName }}</span>.
                 </h1>
                 <p class="greeting-sub" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                    {{ dateStr }} — Acompanhe as vendas gerais, representantes, lojistas e projetos em andamento.
+                    {{ dateStr }} — Acompanhe as vendas gerais, representantes, lojistas e projetos.
                 </p>
+            </div>
+
+<!-- Filtros (Direita) -->
+            <div class="col-12 col-lg-7">
+                
+                <!-- Separador Mobile: Visível apenas em telas menores que 'lg' -->
+                <q-separator :dark="isDark" class="lt-lg q-mb-md" />
+
+                <div class="row q-col-gutter-sm items-end justify-end">
+                    
+                    <!-- Agrupamento -->
+                    <div class="col-12 col-sm-3">
+                        <span class="filter-label" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Agrupamento</span>
+                        <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options outlined
+                            dense :dark="isDark" color="primary" class="q-mt-xs custom-bg-input"
+                            dropdown-icon="expand_more">
+                            <template v-slot:prepend>
+                                <q-icon name="bar_chart" size="20px" color="primary" />
+                            </template>
+                        </q-select>
+                    </div>
+
+                    <!-- Data Inicial -->
+                    <div class="col-12 col-sm-3">
+                        <span class="filter-label" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Data Inicial</span>
+                        <q-input v-model="filtros.dataInicio" mask="##/##/####" outlined dense :dark="isDark"
+                            class="q-mt-xs custom-bg-input" placeholder="DD/MM/AAAA">
+                            <template v-slot:append>
+                                <q-icon name="event" class="cursor-pointer" color="primary">
+                                    <q-popup-proxy ref="qDateProxyInicio" transition-show="scale" transition-hide="scale">
+                                        <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark"
+                                            color="primary" @update:model-value="() => $refs.qDateProxyInicio.hide()" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+                    </div>
+
+                    <!-- Data Final -->
+                    <div class="col-12 col-sm-3">
+                        <span class="filter-label" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Data Final</span>
+                        <q-input v-model="filtros.dataFim" mask="##/##/####" outlined dense :dark="isDark"
+                            class="q-mt-xs custom-bg-input" placeholder="DD/MM/AAAA">
+                            <template v-slot:append>
+                                <q-icon name="event" class="cursor-pointer" color="primary">
+                                    <q-popup-proxy ref="qDateProxyFim" transition-show="scale" transition-hide="scale">
+                                        <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary"
+                                            @update:model-value="() => $refs.qDateProxyFim.hide()" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+                    </div>
+
+                    <!-- Botão Atualizar -->
+                    <div class="col-12 col-sm-3">
+                        <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" unelevated
+                            class="full-width text-weight-bold shadow-btn" style="height: 40px; border-radius: 8px;"
+                            :loading="loading" />
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- ============================================== -->
         <!-- Cards dinâmicos de Resumo de Vendas -->
-        <div class="stats-row">
+        <!-- ============================================== -->
+        <div class="stats-row q-mb-xl">
             <div v-for="card in statCards" :key="card.label" class="stat-card"
                 :class="isDark ? 'stat-card--dark' : 'stat-card--light'">
                 <div class="stat-icon-wrap" :style="{ background: card.color + '15', color: card.color }">
@@ -49,56 +117,6 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- BARRA DE FILTROS -->
-        <!-- ============================================== -->
-        <div class="block q-mb-xl filter-bar" :class="isDark ? 'block--dark' : 'block--light'">
-            <div class="row q-col-gutter-md items-center">
-                
-                <div class="col-12 col-md-3">
-                    <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options
-                        label="Agrupamento (Gráfico de Área)" outlined dense :dark="isDark" color="primary" bg-color="transparent" />
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-input v-model="filtros.dataInicio" mask="##/##/####" label="Data Inicial" outlined dense :dark="isDark">
-                        <template v-slot:append>
-                            <q-icon name="event" class="cursor-pointer">
-                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                                    <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark" color="primary">
-                                        <div class="row items-center justify-end">
-                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
-                                        </div>
-                                    </q-date>
-                                </q-popup-proxy>
-                            </q-icon>
-                        </template>
-                    </q-input>
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-input v-model="filtros.dataFim" mask="##/##/####" label="Data Final" outlined dense :dark="isDark">
-                        <template v-slot:append>
-                            <q-icon name="event" class="cursor-pointer">
-                                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                                    <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary">
-                                        <div class="row items-center justify-end">
-                                            <q-btn v-close-popup label="Confirmar" color="primary" flat />
-                                        </div>
-                                    </q-date>
-                                </q-popup-proxy>
-                            </q-icon>
-                        </template>
-                    </q-input>
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" 
-                           unelevated class="full-width" style="height: 40px; font-weight: bold;" :loading="loading" />
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================== -->
         <!-- SESSÃO DE GRÁFICOS -->
         <!-- ============================================== -->
         <div class="charts-wrap q-mb-xl">
@@ -115,7 +133,8 @@
                 <!-- Gráfico de Pizza (Status) -->
                 <div class="col-12 col-md-4">
                     <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
-                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md"
+                            :class="isDark ? 'text-grey-3' : 'text-grey-8'">
                             <q-icon name="donut_large" color="primary" class="q-mr-sm" size="20px" />
                             Status dos Projetos
                         </div>
@@ -126,7 +145,8 @@
                 <!-- Gráfico de Barras (Top Representantes) -->
                 <div class="col-12 col-md-4">
                     <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
-                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md"
+                            :class="isDark ? 'text-grey-3' : 'text-grey-8'">
                             <q-icon name="emoji_events" color="orange" class="q-mr-sm" size="20px" />
                             Maiores Representantes
                         </div>
@@ -137,11 +157,13 @@
                 <!-- Gráfico de Barras (Top Lojistas) -->
                 <div class="col-12 col-md-4">
                     <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
-                        <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
+                        <div class="text-subtitle1 text-weight-bold q-mb-md"
+                            :class="isDark ? 'text-grey-3' : 'text-grey-8'">
                             <q-icon name="storefront" color="purple" class="q-mr-sm" size="20px" />
                             Maiores Lojistas
                         </div>
-                        <apexchart type="bar" height="320" :options="chartBarLojistasOptions" :series="chartBarLojistasSeries" />
+                        <apexchart type="bar" height="320" :options="chartBarLojistasOptions"
+                            :series="chartBarLojistasSeries" />
                     </div>
                 </div>
             </div>
@@ -213,7 +235,7 @@
                                         order.nome_projeto }}</strong>
                                 </span>
                                 <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                }}</span>
+                                    }}</span>
                             </div>
 
                             <div class="order-col-forecast">
@@ -418,7 +440,7 @@
                                     <span class="text-caption text-grey-6" style="font-size: 11px;">
                                         Cli: {{ projeto.nome_cliente || 'Não inf.' }}
                                         <span v-if="projeto.id_cliente" class="text-weight-bold">#{{ projeto.id_cliente
-                                            }}</span>
+                                        }}</span>
                                     </span>
                                 </div>
                                 <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
@@ -453,7 +475,7 @@ const apexchart = VueApexCharts
 // Variáveis de Filtro
 const filtros = ref({
     agrupamento: 'mes',
-    dataInicio: '', 
+    dataInicio: '',
     dataFim: ''
 })
 
@@ -651,14 +673,14 @@ const chartAreaSeries = computed(() => [{
 
 const chartAreaOptions = computed(() => ({
     theme: defaultThemeConfig.value,
-    chart: { 
+    chart: {
         type: 'area', background: 'transparent', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'inherit',
         dropShadow: { enabled: true, top: 4, left: 0, blur: 4, color: '#1976D2', opacity: 0.15 }
     },
     colors: ['#1976D2'],
     stroke: { curve: 'smooth', width: 4 },
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.65, opacityTo: 0.15, stops: [0, 90, 100] } },
-    xaxis: { 
+    xaxis: {
         categories: (dadosGraficos.value.area || []).map(item => item.periodo),
         labels: { hideOverlappingLabels: false, rotate: -45, style: { fontSize: '11px' } }
     },
@@ -679,7 +701,7 @@ const chartPieOptions = computed(() => ({
     plotOptions: {
         pie: {
             donut: {
-                size: '70%', 
+                size: '70%',
                 labels: {
                     show: true,
                     name: {
@@ -705,9 +727,9 @@ const chartPieOptions = computed(() => ({
             }
         }
     },
-    legend: { 
+    legend: {
         position: 'bottom',
-        formatter: function(seriesName, opts) {
+        formatter: function (seriesName, opts) {
             const val = opts.w.globals.series[opts.seriesIndex]
             const total = opts.w.globals.series.reduce((a, b) => a + b, 0)
             const percent = total > 0 ? ((val / total) * 100).toFixed(1).replace('.0', '') : 0
@@ -729,7 +751,7 @@ const chartBarOptions = computed(() => ({
     plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
     colors: ['#21BA45'],
     dataLabels: { enabled: false },
-    xaxis: { 
+    xaxis: {
         categories: (dadosGraficos.value.barras_representantes || []).map(item => item.nome_representante || item.nome || 'Representante'),
         labels: { rotate: -45, style: { fontSize: '11px' } }
     },
@@ -749,7 +771,7 @@ const chartBarLojistasOptions = computed(() => ({
     plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
     colors: ['#9C27B0'], // Cor roxa para diferenciar
     dataLabels: { enabled: false },
-    xaxis: { 
+    xaxis: {
         categories: (dadosGraficos.value.barras_lojistas || []).map(item => item.nome || 'Lojista'),
         labels: { rotate: -45, style: { fontSize: '11px' } }
     },
@@ -793,15 +815,15 @@ const statCards = computed(() => {
             const statusBanco = todosOsStatusDoBanco.value.find(
                 s => String(s.descricao).trim().toLowerCase() === String(key).trim().toLowerCase()
             )
-            
-            map[key] = { 
-                label: key, 
-                color: p.cor || '#888888', 
-                value: 0, 
-                totalValor: 0, 
+
+            map[key] = {
+                label: key,
+                color: p.cor || '#888888',
+                value: 0,
+                totalValor: 0,
                 icon: getStatusIcon(key),
                 // Se encontrar no banco usa a ordem dele; caso contrário joga para o fim (999)
-                ordem: statusBanco ? Number(statusBanco.ordem) : 999 
+                ordem: statusBanco ? Number(statusBanco.ordem) : 999
             }
         }
         map[key].value++
@@ -1333,5 +1355,54 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
     font-size: 13px;
     line-height: 1.5;
     margin: 0 0 20px;
+}
+
+/* ==========================================
+   ESTILOS DA BARRA DE FILTROS (REFINADO)
+   ========================================== */
+.filter-bar {
+    padding-bottom: 28px !important;
+}
+
+.icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+    padding-left: 2px;
+}
+
+.shadow-btn {
+    transition: all 0.2s ease;
+}
+
+.shadow-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+/* Modifica internamente o visual dos inputs do Quasar para ficarem arredondados */
+:deep(.custom-bg-input .q-field__control) {
+    border-radius: 8px !important;
+}
+
+/* Fundo discreto para os inputs se destacarem do fundo branco/preto do card */
+.block--light :deep(.custom-bg-input .q-field__control) {
+    background: #f8f9fa;
+}
+
+.block--dark :deep(.custom-bg-input .q-field__control) {
+    background: #0f1319;
 }
 </style>
