@@ -5,7 +5,7 @@
         <!-- CABEÇALHO E FILTROS (Alinhados) -->
         <!-- ============================================== -->
         <div class="row justify-between items-end q-mb-xl q-col-gutter-lg">
-            
+
             <!-- Saudação (Esquerda) -->
             <div class="col-12 col-lg-5" style="margin-bottom: 0;">
                 <h1 class="greeting" :class="isDark ? 'text-white' : 'text-grey-9'">
@@ -16,19 +16,19 @@
                 </p>
             </div>
 
-<!-- Filtros (Direita) -->
+            <!-- Filtros (Direita) -->
             <div class="col-12 col-lg-7">
-                
+
                 <!-- Separador Mobile: Visível apenas em telas menores que 'lg' -->
                 <q-separator :dark="isDark" class="lt-lg q-mb-md" />
 
                 <div class="row q-col-gutter-sm items-end justify-end">
-                    
+
                     <!-- Agrupamento -->
                     <div class="col-12 col-sm-3">
                         <span class="filter-label" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Agrupamento</span>
-                        <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options outlined
-                            dense :dark="isDark" color="primary" class="q-mt-xs custom-bg-input"
+                        <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options
+                            outlined dense :dark="isDark" color="primary" class="q-mt-xs custom-bg-input"
                             dropdown-icon="expand_more">
                             <template v-slot:prepend>
                                 <q-icon name="bar_chart" size="20px" color="primary" />
@@ -43,7 +43,8 @@
                             class="q-mt-xs custom-bg-input" placeholder="DD/MM/AAAA">
                             <template v-slot:append>
                                 <q-icon name="event" class="cursor-pointer" color="primary">
-                                    <q-popup-proxy ref="qDateProxyInicio" transition-show="scale" transition-hide="scale">
+                                    <q-popup-proxy ref="qDateProxyInicio" transition-show="scale"
+                                        transition-hide="scale">
                                         <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark"
                                             color="primary" @update:model-value="() => $refs.qDateProxyInicio.hide()" />
                                     </q-popup-proxy>
@@ -60,8 +61,8 @@
                             <template v-slot:append>
                                 <q-icon name="event" class="cursor-pointer" color="primary">
                                     <q-popup-proxy ref="qDateProxyFim" transition-show="scale" transition-hide="scale">
-                                        <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark" color="primary"
-                                            @update:model-value="() => $refs.qDateProxyFim.hide()" />
+                                        <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark"
+                                            color="primary" @update:model-value="() => $refs.qDateProxyFim.hide()" />
                                     </q-popup-proxy>
                                 </q-icon>
                             </template>
@@ -116,7 +117,7 @@
             </div>
         </div>
 
-        <!-- ============================================== -->
+<!-- ============================================== -->
         <!-- SESSÃO DE GRÁFICOS -->
         <!-- ============================================== -->
         <div class="charts-wrap q-mb-xl">
@@ -126,7 +127,7 @@
                     <q-icon name="trending_up" color="primary" class="q-mr-sm" size="20px" />
                     Evolução Financeira
                 </div>
-                <apexchart type="area" height="320" :options="chartAreaOptions" :series="chartAreaSeries" />
+                <apexchart :key="chaveGrafico" type="area" height="320" :options="chartAreaOptions" :series="chartAreaSeries" />
             </div>
 
             <div class="row q-col-gutter-md">
@@ -138,7 +139,7 @@
                             <q-icon name="donut_large" color="primary" class="q-mr-sm" size="20px" />
                             Status dos Projetos
                         </div>
-                        <apexchart type="donut" height="320" :options="chartPieOptions" :series="chartPieSeries" />
+                        <apexchart :key="chaveGrafico" type="donut" height="320" :options="chartPieOptions" :series="chartPieSeries" />
                     </div>
                 </div>
 
@@ -150,7 +151,7 @@
                             <q-icon name="emoji_events" color="orange" class="q-mr-sm" size="20px" />
                             Maiores Representantes
                         </div>
-                        <apexchart type="bar" height="320" :options="chartBarOptions" :series="chartBarSeries" />
+                        <apexchart :key="chaveGrafico" type="bar" height="320" :options="chartBarOptions" :series="chartBarSeries" />
                     </div>
                 </div>
 
@@ -162,7 +163,7 @@
                             <q-icon name="storefront" color="purple" class="q-mr-sm" size="20px" />
                             Maiores Lojistas
                         </div>
-                        <apexchart type="bar" height="320" :options="chartBarLojistasOptions"
+                        <apexchart :key="chaveGrafico" type="bar" height="320" :options="chartBarLojistasOptions"
                             :series="chartBarLojistasSeries" />
                     </div>
                 </div>
@@ -342,25 +343,221 @@
                 </div>
             </div>
 
-            <!-- Coluna Lateral Admin - Representantes -->
+            <!-- Coluna Lateral Admin - Rede -->
             <div class="side-column">
                 <div class="block support-block" :class="isDark ? 'block--dark' : 'block--light'">
                     <div class="support-icon-wrap">
-                        <q-icon name="badge" size="36px" color="primary" />
+                        <q-icon name="hub" size="36px" color="primary" />
                     </div>
                     <h3 class="support-title" :class="isDark ? 'text-white' : 'text-grey-9'">Minha Rede</h3>
                     <p class="support-text" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                        Acesse rapidamente a agenda e os contatos dos seus representantes comerciais.
+                        Acesse as vendas filtradas vinculadas à sua rede de parceiros.
                     </p>
 
-                    <q-btn unelevated no-caps color="primary" icon="assignment_ind" label="Representantes"
-                        class="full-width"
-                        style="border-radius: 10px; font-weight: 700; font-size: 14px; padding: 12px 0;"
-                        @click="modalRepresentantes = true" />
+                    <div class="column q-gutter-y-sm full-width">
+                        <q-btn unelevated no-caps color="primary" icon="assignment_ind" label="Rede Representantes"
+                            class="full-width"
+                            style="border-radius: 10px; font-weight: 700; font-size: 14px; padding: 12px 0;"
+                            @click="modalRepresentantes = true" />
+
+                        <q-btn unelevated no-caps color="purple" icon="storefront" label="Rede Lojistas"
+                            class="full-width"
+                            style="border-radius: 10px; font-weight: 700; font-size: 14px; padding: 12px 0;"
+                            @click="modalLojistas = true" />
+                    </div>
                 </div>
             </div>
-        </div>
+        </div> <!-- FECHA A MAIN-GRID -->
     </q-page>
+
+    <!-- ========================================================= -->
+    <!-- Modal de Representantes (Expandível por Lojista e Projetos) -->
+    <!-- ========================================================= -->
+    <q-dialog v-model="modalRepresentantes">
+        <q-card style="width: 600px; max-width: 95vw; border-radius: 16px;"
+            :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
+            <q-card-section class="row items-center q-pb-none">
+                <div class="text-h6 text-weight-bold flex items-center">
+                    <q-icon name="assignment_ind" color="primary" class="q-mr-sm" size="24px" />
+                    Rede Representantes
+                </div>
+                <q-space />
+                <q-btn icon="close" flat round dense v-close-popup />
+            </q-card-section>
+
+            <q-card-section class="q-pa-md">
+                <div v-if="representantesFiltrados.length === 0" class="text-center q-pa-md"
+                    style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
+                    <span class="text-grey-6">Nenhum dado encontrado para os filtros atuais.</span>
+                </div>
+
+                <q-list v-else bordered class="rounded-borders" :class="isDark ? 'border-grey-8' : 'border-grey-3'">
+                    <!-- Nível 1: Representantes -->
+                    <q-expansion-item v-for="rep in representantesFiltrados" :key="rep.id" group="representantes">
+
+                        <template v-slot:header>
+                            <q-item-section avatar>
+                                <q-icon name="account_circle" color="primary" />
+                            </q-item-section>
+                            <q-item-section>
+                                <q-item-label class="text-weight-bold text-primary">
+                                    {{ rep.nome }} <span v-if="rep.id !== 'undefined'" class="text-grey-5 q-ml-xs">#{{
+                                        rep.id }}</span>
+                                </q-item-label>
+                                <q-item-label caption>{{ rep.lojistas.length }} Lojista(s) vinculado(s)</q-item-label>
+                            </q-item-section>
+                        </template>
+
+                        <q-separator :dark="isDark" />
+                        <q-card :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
+                            <q-card-section class="q-pa-sm">
+
+                                <!-- Nível 2: Lojistas do Representante -->
+                                <q-list bordered class="rounded-borders"
+                                    :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
+
+                                    <q-expansion-item v-for="lojista in rep.lojistas" :key="lojista.id"
+                                        group="lojistas_rep">
+
+                                        <template v-slot:header>
+                                            <q-item-section avatar>
+                                                <q-icon name="storefront" />
+                                            </q-item-section>
+                                            <q-item-section>
+                                                <q-item-label class="text-weight-medium">
+                                                    {{ lojista.nome }} <span v-if="lojista.id !== 'sem_lojista'"
+                                                        class="text-grey-5 q-ml-xs">#{{ lojista.id }}</span>
+                                                </q-item-label>
+                                                <q-item-label caption>{{ lojista.projetos.length }}
+                                                    Projeto(s)</q-item-label>
+                                            </q-item-section>
+                                        </template>
+
+                                        <q-separator :dark="isDark" />
+                                        <q-card :class="isDark ? 'bg-dark' : 'bg-white'">
+                                            <q-card-section class="q-pa-sm">
+
+                                                <!-- Nível 3: Projetos -->
+                                                <div v-for="projeto in lojista.projetos" :key="projeto.id"
+                                                    class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
+                                                    :class="isDark ? 'bg-grey-10' : 'bg-grey-1'"
+                                                    style="border: 1px solid rgba(128,128,128,0.15);">
+                                                    <div class="col-7 flex column">
+                                                        <span class="text-weight-bold"
+                                                            style="font-size: 13px; line-height: 1.2;">
+                                                            {{ projeto.nome || 'Projeto sem nome' }} <span
+                                                                class="text-grey-5 q-ml-xs">#{{ projeto.id }}</span>
+                                                        </span>
+                                                        <span class="text-caption text-grey-6" style="font-size: 11px;">
+                                                            Cli: {{ projeto.nome_cliente }}
+                                                            <!-- 👉 ESTA LINHA ABAIXO FAZ O ID APARECER NO LOJISTA -->
+                                                            <span v-if="projeto.id_cliente"
+                                                                class="text-weight-bold q-ml-xs">#{{ projeto.id_cliente
+                                                                }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
+                                                        <span class="text-weight-bold" style="font-size: 12px;">{{
+                                                            formatMoney(projeto.valor) }}</span>
+                                                        <span class="status-badge"
+                                                            :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
+                                                            {{ projeto.status }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                            </q-card-section>
+                                        </q-card>
+                                    </q-expansion-item>
+
+                                </q-list>
+
+                            </q-card-section>
+                        </q-card>
+                    </q-expansion-item>
+                </q-list>
+            </q-card-section>
+        </q-card>
+    </q-dialog>
+
+    <!-- ========================================================= -->
+    <!-- Modal de Lojistas (Expandível por Projetos) -->
+    <!-- ========================================================= -->
+    <q-dialog v-model="modalLojistas">
+        <q-card style="width: 500px; max-width: 95vw; border-radius: 16px;"
+            :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
+            <q-card-section class="row items-center q-pb-none">
+                <div class="text-h6 text-weight-bold flex items-center">
+                    <q-icon name="storefront" color="purple" class="q-mr-sm" size="24px" />
+                    Rede Lojistas
+                </div>
+                <q-space />
+                <q-btn icon="close" flat round dense v-close-popup />
+            </q-card-section>
+
+            <q-card-section class="q-pa-md">
+                <div v-if="lojistasFiltrados.length === 0" class="text-center q-pa-md"
+                    style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
+                    <span class="text-grey-6">Nenhum dado encontrado para os filtros atuais.</span>
+                </div>
+
+                <q-list v-else bordered class="rounded-borders" :class="isDark ? 'border-grey-8' : 'border-grey-3'">
+                    <!-- Nível 1: Lojistas -->
+                    <q-expansion-item v-for="lojista in lojistasFiltrados" :key="lojista.id" group="lojistas">
+
+                        <template v-slot:header>
+                            <q-item-section avatar>
+                                <q-icon name="storefront" color="purple" />
+                            </q-item-section>
+                            <q-item-section>
+                                <q-item-label class="text-weight-bold text-purple">
+                                    {{ lojista.nome }} <span v-if="lojista.id !== 'undefined'"
+                                        class="text-grey-5 q-ml-xs">#{{ lojista.id }}</span>
+                                </q-item-label>
+                                <q-item-label caption>{{ lojista.projetos.length }} Projeto(s)
+                                    vinculado(s)</q-item-label>
+                            </q-item-section>
+                        </template>
+
+                        <q-separator :dark="isDark" />
+                        <q-card :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
+                            <q-card-section class="q-pa-sm">
+
+                                <!-- Nível 2: Projetos -->
+                                <div v-for="projeto in lojista.projetos" :key="projeto.id"
+                                    class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
+                                    :class="isDark ? 'bg-dark' : 'bg-white'"
+                                    style="border: 1px solid rgba(128,128,128,0.15);">
+                                    <div class="col-7 flex column">
+                                        <span class="text-weight-bold text-primary"
+                                            style="font-size: 13px; line-height: 1.2;">
+                                            {{ projeto.nome || 'Projeto sem nome' }} <span
+                                                class="text-grey-5 q-ml-xs">#{{
+                                                    projeto.id }}</span>
+                                        </span>
+                                        <span class="text-caption text-grey-6" style="font-size: 11px;">
+                                            Cli: {{ projeto.nome_cliente }}
+                                            <span v-if="projeto.id_cliente" class="text-weight-bold q-ml-xs">#{{
+                                                projeto.id_cliente }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
+                                        <span class="text-weight-bold" style="font-size: 12px;">{{
+                                            formatMoney(projeto.valor) }}</span>
+                                        <span class="status-badge"
+                                            :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
+                                            {{ projeto.status }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                            </q-card-section>
+                        </q-card>
+                    </q-expansion-item>
+                </q-list>
+            </q-card-section>
+        </q-card>
+    </q-dialog>
 
     <!-- Modal de Representantes (Admin) -->
     <q-dialog v-model="modalRepresentantes">
@@ -440,7 +637,7 @@
                                     <span class="text-caption text-grey-6" style="font-size: 11px;">
                                         Cli: {{ projeto.nome_cliente || 'Não inf.' }}
                                         <span v-if="projeto.id_cliente" class="text-weight-bold">#{{ projeto.id_cliente
-                                        }}</span>
+                                            }}</span>
                                     </span>
                                 </div>
                                 <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
@@ -469,6 +666,8 @@ import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth'
 import { api } from 'boot/axios'
 import VueApexCharts from 'vue3-apexcharts'
+
+const chaveGrafico = ref(0)
 
 const apexchart = VueApexCharts
 
@@ -520,6 +719,7 @@ const totalPedidos = ref(0)
 const pedidoTimelineAberto = ref(null)
 
 const modalRepresentantes = ref(false)
+const modalLojistas = ref(false)
 
 const totalEtapas = ref(0)
 const todosOsStatusDoBanco = ref([])
@@ -779,29 +979,83 @@ const chartBarLojistasOptions = computed(() => ({
     tooltip: { y: { formatter: val => formatMoney(val) } }
 }))
 
+// Agrupamento Multinível: Representante -> Lojista -> Projetos
 const representantesFiltrados = computed(() => {
-    const mapa = new Map()
-    todosOsRepresentantes.value.forEach(r => {
-        mapa.set(String(r.id), {
-            id: r.id, nome: r.nome, email: r.email || 'Não informado', telefone: r.telefone || null, projetos: []
+    const mapaRep = new Map()
+
+    // Varremos apenas os pedidos já filtrados pela tela
+    meusPedidos.value.forEach(p => {
+        const idRep = p.id_representante || p.representante_id
+        if (!idRep) return
+
+        const repKey = String(idRep)
+        if (!mapaRep.has(repKey)) {
+            mapaRep.set(repKey, {
+                id: repKey,
+                nome: p.nome_representante || p.representante || 'Representante Não Informado',
+                lojistas: new Map() // Mapa interno para agrupar os lojistas deste representante
+            })
+        }
+
+        const rep = mapaRep.get(repKey)
+        const idLoj = p.id_lojista || 'sem_lojista'
+
+        if (!rep.lojistas.has(idLoj)) {
+            rep.lojistas.set(idLoj, {
+                id: idLoj,
+                nome: p.nome_lojista || 'Lojista não informado',
+                projetos: []
+            })
+        }
+
+        // Insere o projeto dentro do Lojista vinculado ao Representante
+        rep.lojistas.get(idLoj).projetos.push({
+            id: p.id,
+            nome: p.nome_projeto || p.projeto,
+            nome_cliente: p.nome_cliente || p.cliente || 'Não inf.',
+            id_cliente: p.id_cliente || p.cliente_id, // 👉 Alterado aqui para garantir as duas variações!
+            status: p.status,
+            cor: p.cor || '#1976D2',
+            valor: p.valor
         })
     })
 
+    // Converte os Mapas aninhados em Arrays para o Vue iterar
+    return Array.from(mapaRep.values()).map(rep => ({
+        ...rep,
+        lojistas: Array.from(rep.lojistas.values())
+    }))
+})
+
+// Agrupamento Simples: Lojista -> Projetos
+const lojistasFiltrados = computed(() => {
+    const mapaLoj = new Map()
+
     meusPedidos.value.forEach(p => {
-        const idRep = p.id_representante || p.representante_id
-        if (idRep) {
-            const key = String(idRep)
-            if (!mapa.has(key)) {
-                mapa.set(key, {
-                    id: key, nome: p.nome_representante || 'Representante Sem Nome', email: p.email_representante || 'Não informado', telefone: p.telefone_representante || null, projetos: []
-                })
-            }
-            mapa.get(key).projetos.push({
-                id: p.id, nome: p.nome_projeto || p.projeto || 'Projeto sem nome', nome_cliente: p.nome_cliente || p.cliente || 'Não inf.', id_cliente: p.id_cliente, status: p.status, cor: p.cor || '#1976D2', valor: p.valor
+        const idLoj = p.id_lojista
+        if (!idLoj) return
+
+        const lojKey = String(idLoj)
+        if (!mapaLoj.has(lojKey)) {
+            mapaLoj.set(lojKey, {
+                id: lojKey,
+                nome: p.nome_lojista || 'Lojista Não Informado',
+                projetos: []
             })
         }
+
+        mapaLoj.get(lojKey).projetos.push({
+            id: p.id,
+            nome: p.nome_projeto || p.projeto,
+            nome_cliente: p.nome_cliente || p.cliente || 'Não inf.',
+            id_cliente: p.id_cliente || p.cliente_id, // 👉 ESSA LINHA PRECISA ESTAR AQUI TAMBÉM
+            status: p.status,
+            cor: p.cor || '#1976D2',
+            valor: p.valor
+        })
     })
-    return Array.from(mapa.values())
+
+    return Array.from(mapaLoj.values())
 })
 
 const statCards = computed(() => {
