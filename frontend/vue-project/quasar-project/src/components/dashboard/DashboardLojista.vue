@@ -343,12 +343,17 @@
         </div>
     </q-page>
 
-    <!-- Modal de Clientes -->
+<!-- ========================================================= -->
+    <!-- Modal de Clientes (Expandível) - Visão Lojista            -->
+    <!-- ========================================================= -->
     <q-dialog v-model="modalClientes">
-        <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;"
+        <q-card style="width: 600px; max-width: 95vw; border-radius: 16px;"
             :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
             <q-card-section class="row items-center q-pb-none">
-                <div class="text-h6 text-weight-bold">Meus Clientes Recentes</div>
+                <div class="text-h6 text-weight-bold flex items-center">
+                    <q-icon name="group" color="primary" class="q-mr-sm" size="24px" />
+                    Meus Clientes Recentes
+                </div>
                 <q-space />
                 <q-btn icon="close" flat round dense v-close-popup />
             </q-card-section>
@@ -359,82 +364,82 @@
                     <span class="text-grey-6">Nenhum cliente recente encontrado.</span>
                 </div>
 
-                <template v-else>
-                    <q-card v-for="cliente in clientesFiltrados" :key="cliente.email" flat bordered class="q-mb-md"
-                        :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
-                        style="border-radius: 12px; overflow: hidden;">
-
-                        <!-- Dados do Cliente -->
-                        <q-card-section class="row items-center q-pb-sm">
-                            <q-avatar color="primary" text-color="white" icon="person" size="42px" class="q-mr-md" />
-
-                            <div class="col">
-                                <!-- Nome do cliente + ID -->
-                                <div class="text-weight-bold flex items-center" style="font-size: 15px;">
+                <q-list v-else bordered class="rounded-borders" :class="isDark ? 'border-grey-8' : 'border-grey-3'">
+                    <!-- Nível 1: Clientes em formato Expansion -->
+                    <q-expansion-item v-for="cliente in clientesFiltrados" :key="cliente.chave" group="clientes">
+                        
+                        <template v-slot:header>
+                            <q-item-section avatar>
+                                <q-avatar color="primary" text-color="white" icon="person" size="38px" />
+                            </q-item-section>
+                            
+                            <q-item-section>
+                                <q-item-label class="text-weight-bold text-primary" style="font-size: 15px;">
                                     {{ cliente.nome }}
-                                    <span v-if="cliente.id" class="text-caption text-grey-6 text-weight-normal q-ml-xs">
-                                        #{{ cliente.id }}
-                                    </span>
+                                    <span v-if="cliente.id" class="text-caption text-grey-6 text-weight-normal q-ml-xs">#{{ cliente.id }}</span>
+                                </q-item-label>
+                                <q-item-label caption>{{ cliente.projetos.length }} Projeto(s) vinculado(s)</q-item-label>
+                            </q-item-section>
+                            
+                            <!-- Botões de Contato (Impede a sanfona de abrir usando @click.stop) -->
+                            <q-item-section side>
+                                <div class="row q-gutter-xs">
+                                    <q-btn v-if="cliente.telefone" round flat dense color="green" icon="chat" size="14px"
+                                        @click.stop="abrirWhatsApp(cliente.telefone, cliente.nome)">
+                                        <q-tooltip>Chamar no WhatsApp</q-tooltip>
+                                    </q-btn>
+                                    <q-btn round flat dense color="primary" icon="mail" size="14px"
+                                        @click.stop="abrirEmail(cliente.email)">
+                                        <q-tooltip>Enviar E-mail</q-tooltip>
+                                    </q-btn>
                                 </div>
-
-                                <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                                    {{ cliente.email }}
-                                </div>
-                                <div v-if="cliente.telefone" :class="isDark ? 'text-grey-4' : 'text-grey-7'"
-                                    class="text-caption text-weight-medium q-mt-xs flex items-center">
-                                    <q-icon name="phone" size="14px" class="q-mr-xs" />{{
-                                        formatarTelefone(cliente.telefone) }}
-                                </div>
-                            </div>
-
-                            <div class="col-auto row q-gutter-xs">
-                                <q-btn v-if="cliente.telefone" round flat dense color="green" icon="chat" size="14px"
-                                    @click="abrirWhatsApp(cliente.telefone, cliente.nome)">
-                                    <q-tooltip>Chamar no WhatsApp</q-tooltip>
-                                </q-btn>
-                                <q-btn round flat dense color="primary" icon="mail" size="14px"
-                                    @click="abrirEmail(cliente.email)">
-                                    <q-tooltip>Enviar E-mail</q-tooltip>
-                                </q-btn>
-                            </div>
-                        </q-card-section>
+                            </q-item-section>
+                        </template>
 
                         <q-separator :dark="isDark" />
-
-                        <!-- Listagem dos Projetos do Cliente -->
-                        <q-card-section class="q-pt-sm q-pb-sm" :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
-                            <div class="text-caption text-weight-bold q-mb-xs"
-                                :class="isDark ? 'text-grey-5' : 'text-grey-7'">
-                                <q-icon name="receipt_long" size="14px" class="q-mr-xs" /> Projetos vinculados
-                            </div>
-
-                            <div v-for="projeto in cliente.projetos" :key="projeto.id"
-                                class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
-                                :class="isDark ? 'bg-dark' : 'bg-white'"
-                                style="border: 1px solid rgba(128,128,128,0.15);">
-
-                                <div class="col-7 flex column">
-                                    <span class="text-weight-bold text-primary"
-                                        style="font-size: 13px; line-height: 1.2;">
-                                        {{ projeto.nome || 'Projeto sem nome' }}
-                                        <span class="text-grey-6 text-weight-medium q-ml-xs">#{{ projeto.id }}</span>
-                                    </span>
+                        
+                        <!-- Nível 2: Contatos e Projetos -->
+                        <q-card :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
+                            <q-card-section class="q-pa-sm">
+                                
+                                <!-- Contatos em texto -->
+                                <div class="row items-center q-mb-sm q-px-sm">
+                                    <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
+                                        {{ cliente.email }}
+                                    </div>
+                                    <div v-if="cliente.telefone" class="text-caption text-weight-medium q-ml-md flex items-center" :class="isDark ? 'text-grey-4' : 'text-grey-7'">
+                                        <q-icon name="phone" size="14px" class="q-mr-xs" />
+                                        {{ formatarTelefone(cliente.telefone) }}
+                                    </div>
                                 </div>
 
-                                <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
-                                    <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'"
-                                        style="font-size: 12px;">
-                                        {{ formatMoney(projeto.valor) }}
-                                    </span>
-                                    <span class="status-badge"
-                                        :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
-                                        {{ projeto.status }}
-                                    </span>
+                                <!-- Lista de Projetos -->
+                                <div v-for="projeto in cliente.projetos" :key="projeto.id"
+                                    class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
+                                    :class="isDark ? 'bg-dark' : 'bg-white'"
+                                    style="border: 1px solid rgba(128,128,128,0.15);">
+
+                                    <div class="col-7 flex column">
+                                        <span class="text-weight-bold text-primary" style="font-size: 13px; line-height: 1.2;">
+                                            {{ projeto.nome || 'Projeto sem nome' }}
+                                            <span class="text-grey-5 q-ml-xs">#{{ projeto.id }}</span>
+                                        </span>
+                                    </div>
+
+                                    <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
+                                        <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'" style="font-size: 12px;">
+                                            {{ formatMoney(projeto.valor) }}
+                                        </span>
+                                        <span class="status-badge"
+                                            :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
+                                            {{ projeto.status }}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        </q-card-section>
-                    </q-card>
-                </template>
+                            </q-card-section>
+                        </q-card>
+                    </q-expansion-item>
+                </q-list>
             </q-card-section>
         </q-card>
     </q-dialog>
@@ -625,28 +630,34 @@ const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3))
 const clientesFiltrados = computed(() => {
     const mapa = new Map()
     meusPedidos.value.forEach(p => {
-        if (p.email_cliente) {
-            // Se o cliente ainda não existe no mapa, cria ele
-            if (!mapa.has(p.email_cliente)) {
-                mapa.set(p.email_cliente, {
-                    id: p.id_cliente,
-                    nome: p.nome_cliente || 'Cliente Sem Nome',
-                    email: p.email_cliente,
-                    telefone: p.telefone_cliente || '',
-                    projetos: [] // <-- Novo: Array para guardar os projetos
-                })
-            }
+        // Usa o ID do cliente como chave primária. Se não tiver, tenta o email ou o nome.
+        const chave = p.id_cliente ? String(p.id_cliente) : (p.email_cliente || p.nome_cliente || 'SemRegistro')
 
-            // Adiciona o projeto atual na lista de projetos desse cliente
-            mapa.get(p.email_cliente).projetos.push({
-                id: p.id,
-                nome: p.nome_projeto,
-                status: p.status,
-                cor: p.cor || '#1976D2',
-                valor: p.valor
+        // Ignora se realmente não houver dados do cliente
+        if (chave === 'SemRegistro' && !p.nome_cliente) return; 
+
+        // Cria o registro do cliente se não existir
+        if (!mapa.has(chave)) {
+            mapa.set(chave, {
+                chave: chave,
+                id: p.id_cliente,
+                nome: p.nome_cliente || 'Cliente Sem Nome',
+                email: p.email_cliente || 'Email não informado',
+                telefone: p.telefone_cliente || null,
+                projetos: [] // Array para os projetos expandíveis
             })
         }
+
+        // Adiciona o projeto à lista deste cliente
+        mapa.get(chave).projetos.push({
+            id: p.id,
+            nome: p.nome_projeto,
+            status: p.status,
+            cor: p.cor || '#1976D2',
+            valor: p.valor
+        })
     })
+    
     return Array.from(mapa.values())
 })
 
