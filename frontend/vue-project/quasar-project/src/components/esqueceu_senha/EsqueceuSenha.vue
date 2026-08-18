@@ -2,7 +2,7 @@
   <div class="forgot-container">
     <q-card class="forgot-card shadow-10">
       
-      <!-- ── Cabeçalho com Ícone Dinâmico ── -->
+      <!-- ── Cabeçalho ── -->
       <q-card-section class="text-center q-pb-none">
         <div class="icon-wrapper q-mx-auto q-mb-md">
           <q-icon :name="etapa === 1 ? 'mark_email_read' : 'vpn_key'" size="32px" color="orange" />
@@ -10,18 +10,19 @@
         <h2 class="form-title">{{ etapa === 1 ? 'Recuperar Senha' : 'Criar Nova Senha' }}</h2>
         <p class="form-sub q-mt-xs">
           {{ etapa === 1 
-            ? 'Digite seu e-mail para receber o código de segurança.' 
+            ? 'Preencha o seu E-mail OU o seu CPF/CNPJ.' 
             : 'Enviamos um código para o seu e-mail. Digite-o abaixo.' 
           }}
         </p>
       </q-card-section>
 
       <q-card-section>
-        <!-- Transição suave entre as etapas -->
         <transition name="slide-fade" mode="out-in">
           
-          <!-- ── ETAPA 1: Solicitar E-mail ── -->
+          <!-- ── ETAPA 1: Solicitar Código ── -->
           <q-form v-if="etapa === 1" @submit.prevent="solicitarCodigo" class="q-gutter-y-sm" key="step1">
+            
+            <!-- Campo de E-mail -->
             <div class="field-group q-mt-md">
               <label class="field-label">E-mail cadastrado</label>
               <q-input
@@ -31,10 +32,34 @@
                 outlined dense dark
                 bg-color="grey-9"
                 color="orange"
-                :rules="[val => !!val || 'O e-mail é obrigatório']"
+                hide-bottom-space
               >
                 <template #prepend>
                   <q-icon name="mail_outline" size="18px" color="grey-6" />
+                </template>
+              </q-input>
+            </div>
+
+            <!-- Separador OU -->
+            <div class="text-center q-my-sm position-relative separator-ou">
+              <span class="text-weight-bold" style="color: rgba(255,255,255,0.4); font-size: 12px; padding: 0 10px; background: #161b22; position: relative; z-index: 1;">OU</span>
+              <div style="position: absolute; top: 50%; left: 0; right: 0; border-top: 1px dashed rgba(255,255,255,0.1); z-index: 0;"></div>
+            </div>
+
+            <!-- Campo de CPF/CNPJ -->
+            <div class="field-group">
+              <label class="field-label">CPF ou CNPJ</label>
+              <q-input
+                v-model="cpf"
+                type="text"
+                placeholder="Apenas números"
+                outlined dense dark
+                bg-color="grey-9"
+                color="orange"
+                hide-bottom-space
+              >
+                <template #prepend>
+                  <q-icon name="badge" size="18px" color="grey-6" />
                 </template>
               </q-input>
             </div>
@@ -57,12 +82,11 @@
           </q-form>
 
           <!-- ── ETAPA 2: Código e Nova Senha ── -->
-          <q-form v-else @submit.prevent="redefinirSenha" class="q-gutter-y-sm" key="step2">
+          <q-form v-else @submit.prevent="redefinirSenhaLocal" class="q-gutter-y-sm" key="step2">
             
-            <!-- Aviso visual mostrando onde o código foi enviado -->
             <div class="email-badge q-mb-md q-mt-sm">
               <q-icon name="check_circle" color="positive" size="16px" class="q-mr-xs" />
-              Código enviado para: <strong>{{ email }}</strong>
+              Código enviado para: <strong>{{ emailMascarado }}</strong>
             </div>
 
             <div class="field-group">
@@ -149,7 +173,7 @@
             </q-btn>
 
             <div class="text-center q-mt-md">
-              <q-btn flat no-caps label="Informou o e-mail errado? Voltar" @click="etapa = 1" class="back-link" />
+              <q-btn flat no-caps label="Voltar" @click="etapa = 1" class="back-link" />
             </div>
           </q-form>
 
@@ -168,44 +192,67 @@ import { api } from 'boot/axios'
 const $q = useQuasar()
 const router = useRouter()
 
-const etapa = ref(1) // 1 = Pedir e-mail | 2 = Redefinir senha
+const etapa = ref(1) 
 const loading = ref(false)
 
+// Variáveis separadas para E-mail e CPF
 const email = ref('')
+const cpf = ref('')
+
+const emailMascarado = ref('') 
 const codigo = ref('')
 const novaSenha = ref('')
 const confirmarSenha = ref('')
 
-// Variáveis para alternar a visualização da senha
 const showNovaSenha = ref(false)
 const showConfirmarSenha = ref(false)
 
 const solicitarCodigo = async () => {
+  // Validação manual para garantir que pelo menos um dos campos foi preenchido
+  if (!email.value && !cpf.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'Por favor, preencha o seu E-mail OU o seu CPF/CNPJ.',
+      position: 'top'
+    })
+    return
+  }
+
   loading.value = true
+  
+  // Pegamos qual campo o usuário preencheu (damos prioridade pro email se preencheu os dois)
+  const identificadorParaEnviar = email.value || cpf.value
+
   try {
-    const response = await api.post('/resetsenha', { email: email.value })
+    // Mandamos para o backend com o mesmo nome que já programamos (identificador)
+    const response = await api.post('/resetsenha', { identificador: identificadorParaEnviar })
     
     if (response.data.success) {
+      emailMascarado.value = response.data.emailMascarado || 'seu e-mail'
+      
       $q.notify({
         type: 'positive',
-        message: response.data.message || 'Código enviado para o seu e-mail!',
+        message: 'Verifique sua caixa de entrada!',
         position: 'top'
       })
       etapa.value = 2
     }
   } catch (error) {
-    const msg = error.response?.data?.message || 'Erro ao solicitar código.'
+    const msg = error.response?.data?.message || 'Erro ao localizar usuário.'
     $q.notify({ type: 'negative', message: msg, position: 'top' })
   } finally {
     loading.value = false
   }
 }
 
-const redefinirSenha = async () => {
+const redefinirSenhaLocal = async () => {
   loading.value = true
+  
+  const identificadorParaEnviar = email.value || cpf.value
+
   try {
     const response = await api.post('/redefinir-senha', {
-      email: email.value,
+      identificador: identificadorParaEnviar,
       codigo: codigo.value,
       novaSenha: novaSenha.value
     })
@@ -228,6 +275,12 @@ const redefinirSenha = async () => {
 </script>
 
 <style scoped>
+/* Pode manter o CSS anterior e apenas adicionar este para o separador OU: */
+.separator-ou {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
 .forgot-container {
   width: 100%;
   display: flex;
@@ -243,7 +296,6 @@ const redefinirSenha = async () => {
   padding: 10px;
 }
 
-/* ── Ícone do Topo ── */
 .icon-wrapper {
   width: 64px;
   height: 64px;
@@ -255,7 +307,6 @@ const redefinirSenha = async () => {
   border: 1px solid rgba(255, 123, 0, 0.2);
 }
 
-/* ── Textos ── */
 .form-title {
   font-size: 22px;
   font-weight: 800;
@@ -269,7 +320,6 @@ const redefinirSenha = async () => {
   margin: 0;
 }
 
-/* ── Labels dos inputs ── */
 .field-group { margin-bottom: 6px; }
 .field-label {
   display: block;
@@ -281,7 +331,6 @@ const redefinirSenha = async () => {
   margin-bottom: 6px;
 }
 
-/* ── Etiqueta de E-mail ── */
 .email-badge {
   background: rgba(33, 186, 69, 0.1);
   border: 1px solid rgba(33, 186, 69, 0.3);
@@ -298,7 +347,6 @@ const redefinirSenha = async () => {
   margin-left: 4px;
 }
 
-/* ── Botão Principal ── */
 .action-btn {
   background: #ff7b00 !important;
   color: #fff !important;
@@ -314,7 +362,6 @@ const redefinirSenha = async () => {
   box-shadow: 0 12px 32px rgba(255,123,0,.48) !important;
 }
 
-/* ── Links ── */
 .back-link {
   font-size: 12.5px;
   color: rgba(255,255,255,.45) !important;
@@ -324,7 +371,6 @@ const redefinirSenha = async () => {
   color: #ff7b00 !important;
 }
 
-/* ── Animação (Transition) ── */
 .slide-fade-enter-active {
   transition: all 0.3s ease-out;
 }

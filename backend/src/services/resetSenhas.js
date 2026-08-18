@@ -1,45 +1,61 @@
 const db = require('../config');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const bcrypt = require('bcrypt'); // <-- ADICIONE ESTA LINHA AQUI
+const bcrypt = require('bcrypt'); 
 
-async function solicitarRecuperacaoSenha(email) {
+// Função auxiliar para mascarar o e-mail (Ex: joao@gmail.com -> jo**@gmail.com)
+function mascararEmail(email) {
+    if (!email) return '';
+    const [nome, dominio] = email.split('@');
+    if (!dominio) return email;
+    const nomeMascarado = nome.length > 2 
+        ? nome.substring(0, 2) + '*'.repeat(nome.length - 2) 
+        : nome + '*';
+    return `${nomeMascarado}@${dominio}`;
+}
+
+async function solicitarRecuperacaoSenha(identificador) {
     try {
-        // 1. Verifica se o e-mail existe em alguma das tabelas
+        // Limpa a string para buscar apenas por números (útil caso o cpf_cnpj esteja salvo sem máscara)
+        const apenasNumeros = identificador.replace(/\D/g, '');
+
+        // 1. Verifica se o usuário existe
+        // Apenas 'clientes' tem a coluna 'cpf_cnpj'. Os demais buscam apenas por e-mail.
         const userCheck = await db.query(
-            `SELECT email, nome, 'cliente' AS tipo FROM clientes WHERE email = $1
+            `SELECT email, nome, 'cliente' AS tipo FROM clientes WHERE email = $1 OR cpf_cnpj = $1 OR cpf_cnpj = $2
              UNION
              SELECT email, nome, 'lojista' AS tipo FROM lojistas WHERE email = $1
              UNION
              SELECT email, nome, 'representante' AS tipo FROM representantes WHERE email = $1
              UNION
              SELECT email, nome, 'admin' AS tipo FROM admins WHERE email = $1`,
-            [email]
+            [identificador, apenasNumeros || null]
         );
 
         if (userCheck.rows.length === 0) {
             return { 
                 success: false, 
-                message: 'Este e-mail não está cadastrado em nosso sistema.' 
+                message: 'Nenhum usuário encontrado com esta informação.' 
             };
         }
 
         const user = userCheck.rows[0];
+        const emailReal = user.email; // Pegamos o e-mail real do banco
 
-        // 2. Gera um código numérico de 6 dígitos seguro (ex: 482910)
+        // 2. Gera um código numérico de 6 dígitos seguro
         const codigo = crypto.randomInt(100000, 999999).toString();
         const expiraEm = new Date(Date.now() + 3600000); // +1 hora
 
-        // 3. Salva na tabela resets_senha (com os nomes de tabela e coluna corretos)
+        // 3. Salva na tabela resets_senha usando o E-MAIL REAL
         await db.query(
             `INSERT INTO resets_senha (email, codigo, expira_em) VALUES ($1, $2, $3)`,
-            [email, codigo, expiraEm]
+            [emailReal, codigo, expiraEm]
         );
 
         // 4. Busca as configurações de SMTP
         const configDb = await db.query(`SELECT * FROM configuracoes LIMIT 1`);
         if (configDb.rows.length === 0) {
-            throw new Error('Configurações de SMTP não encontradas no banco de dados.');
+            throw new Error('Configurações de SMTP não encontradas no banco.');
         }
         const config = configDb.rows[0];
 
@@ -54,13 +70,12 @@ async function solicitarRecuperacaoSenha(email) {
             }
         });
 
-        // Opcional: Ainda podemos mandar o link já com o código preenchido na URL
         const urlFrontend = process.env.FRONTEND_URL || 'http://localhost:9000';
-        const linkRecuperacao = `${urlFrontend}/redefinir-senha?codigo=${codigo}&email=${email}`;
+        const linkRecuperacao = `${urlFrontend}/redefinir-senha?codigo=${codigo}&email=${emailReal}`;
 
         await transporter.sendMail({
             from: `"Artezza" <${config.smtp_user}>`,
-            to: email,
+            to: emailReal,
             subject: 'Seu código de recuperação de senha - Artezza',
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px;">
@@ -87,7 +102,8 @@ async function solicitarRecuperacaoSenha(email) {
 
         return { 
             success: true, 
-            message: 'E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada.' 
+            message: 'Código de recuperação enviado com sucesso!',
+            emailMascarado: mascararEmail(emailReal) // Envia pro front o e-mail parcialmente oculto
         };
 
     } catch (error) {
@@ -100,55 +116,52 @@ async function solicitarRecuperacaoSenha(email) {
     }
 }
 
-async function redefinirSenha(email, codigo, novaSenha) {
+async function redefinirSenha(identificador, codigo, novaSenha) {
     try {
-        // 1. Verifica se o código existe e pertence ao e-mail informado
-        const resetCheck = await db.query(
-            `SELECT * FROM resets_senha WHERE email = $1 AND codigo = $2`,
-            [email, codigo]
-        );
+        const apenasNumeros = identificador.replace(/\D/g, '');
 
-        if (resetCheck.rows.length === 0) {
-            return { 
-                success: false, 
-                message: 'Código inválido ou incorreto.' 
-            };
-        }
-
-        const resetData = resetCheck.rows[0];
-
-        // 2. Verifica se o código já expirou
-        if (new Date() > new Date(resetData.expira_em)) {
-            return { 
-                success: false, 
-                message: 'Este código expirou. Solicite um novo.' 
-            };
-        }
-
-        // 3. Descobre de qual tabela é esse usuário para poder atualizar a senha
+        // 1. Descobre de qual tabela é esse usuário e pega o e-mail real
         const userCheck = await db.query(
-            `SELECT 'clientes' AS tabela FROM clientes WHERE email = $1
+            `SELECT email, 'clientes' AS tabela FROM clientes WHERE email = $1 OR cpf_cnpj = $1 OR cpf_cnpj = $2
              UNION
-             SELECT 'lojistas' AS tabela FROM lojistas WHERE email = $1
+             SELECT email, 'lojistas' AS tabela FROM lojistas WHERE email = $1
              UNION
-             SELECT 'representantes' AS tabela FROM representantes WHERE email = $1
+             SELECT email, 'representantes' AS tabela FROM representantes WHERE email = $1
              UNION
-             SELECT 'admins' AS tabela FROM admins WHERE email = $1`,
-            [email]
+             SELECT email, 'admins' AS tabela FROM admins WHERE email = $1`,
+            [identificador, apenasNumeros || null]
         );
 
         if (userCheck.rows.length === 0) {
             return { success: false, message: 'Usuário não encontrado no sistema.' };
         }
 
+        const emailReal = userCheck.rows[0].email;
         const tabela = userCheck.rows[0].tabela;
 
-        // 4. Criptografa a nova senha com bcrypt (como faz no cadastro normal)
+        // 2. Verifica se o código existe na tabela resets_senha para este e-mail
+        const resetCheck = await db.query(
+            `SELECT * FROM resets_senha WHERE email = $1 AND codigo = $2`,
+            [emailReal, codigo]
+        );
+
+        if (resetCheck.rows.length === 0) {
+            return { success: false, message: 'Código inválido ou incorreto.' };
+        }
+
+        const resetData = resetCheck.rows[0];
+
+        // 3. Verifica se o código já expirou
+        if (new Date() > new Date(resetData.expira_em)) {
+            return { success: false, message: 'Este código expirou. Solicite um novo.' };
+        }
+
+        // 4. Criptografa a nova senha com bcrypt
         const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(novaSenha, salt);
 
-        // 5. Atualiza a senha na tabela correta (clientes, lojistas, etc.)
-        await db.query(`UPDATE ${tabela} SET senha = $1 WHERE email = $2`, [senhaHash, email]);
+        // 5. Atualiza a senha na tabela correta
+        await db.query(`UPDATE ${tabela} SET senha = $1 WHERE email = $2`, [senhaHash, emailReal]);
 
         // 6. Deleta o código usado para que não possa ser usado novamente
         await db.query(`DELETE FROM resets_senha WHERE id = $1`, [resetData.id]);

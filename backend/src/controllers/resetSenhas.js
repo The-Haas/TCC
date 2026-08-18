@@ -1,9 +1,14 @@
 const { solicitarRecuperacaoSenha, redefinirSenha } = require('../services/resetSenhas');
 
 const esqueceuSenha = async (req, res) => {
-    const { email } = req.body;
+    // Agora aceitamos "identificador", que pode ser email ou CPF
+    const { identificador } = req.body;
 
-    const resultado = await solicitarRecuperacaoSenha(email);
+    if (!identificador) {
+        return res.status(400).json({ success: false, message: 'Informe seu e-mail ou CPF.' });
+    }
+
+    const resultado = await solicitarRecuperacaoSenha(identificador);
 
     if (!resultado.success) {
         return res.status(400).json(resultado);
@@ -13,21 +18,20 @@ const esqueceuSenha = async (req, res) => {
 };
 
 const redefinir = async (req, res) => {
-    const { email, codigo, novaSenha } = req.body;
+    // Mudou "email" para "identificador"
+    const { identificador, codigo, novaSenha } = req.body;
 
-    // Validação básica
-    if (!email || !codigo || !novaSenha) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'E-mail, código e nova senha são obrigatórios.' 
+    if (!identificador || !codigo || !novaSenha) {
+        return res.status(400).json({
+            success: false,
+            message: 'E-mail/CPF, código e nova senha são obrigatórios.'
         });
     }
 
-    // Chamamos a função redefinirSenha diretamente aqui
-    const resultado = await redefinirSenha(email, codigo, novaSenha);
+    const resultado = await redefinirSenha(identificador, codigo, novaSenha);
 
     if (!resultado.success) {
-        return res.status(400).json(resultado); 
+        return res.status(400).json(resultado);
     }
 
     return res.status(200).json(resultado);
