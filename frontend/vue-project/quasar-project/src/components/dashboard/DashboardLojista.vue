@@ -239,7 +239,7 @@
                             <div class="row justify-between items-center q-mb-xs">
                                 <span v-if="order.ordem_status === 0" class="text-weight-bold text-uppercase"
                                     :style="{ color: order.cor, fontSize: '13px' }">
-                                    ⚠️ Projeto Suspenso / Recusado
+                                    Projeto Suspenso / Recusado
                                 </span>
                                 <span v-else class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'"
                                     style="font-size: 13px; letter-spacing: 0.2px;">

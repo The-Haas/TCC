@@ -4,7 +4,7 @@
     <!-- ══════════════════════════════════════════════
          SIDEBAR
          ══════════════════════════════════════════════ -->
-    <q-drawer v-model="drawerOpen" show-if-above :width="sidebarWidth" :breakpoint="820"
+    <q-drawer v-model="drawerOpen" show-if-above :mini="isCollapsed" :width="252" :mini-width="64" :breakpoint="820"
       :class="isDark ? 'sidebar-dark' : 'sidebar-light'" bordered no-swipe-close>
       <div class="sidebar-inner">
 
@@ -249,9 +249,7 @@ const authStore = useAuthStore()
 const drawerOpen = ref(false)
 const isCollapsed = ref(false)
 
-const FULL_WIDTH = 252
-const MINI_WIDTH = 64
-const sidebarWidth = computed(() => isCollapsed.value ? MINI_WIDTH : FULL_WIDTH)
+
 
 function toggleCollapse() {
   if ($q.screen.lt.sm) {

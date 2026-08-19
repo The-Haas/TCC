@@ -190,7 +190,7 @@
                             <div class="row justify-between items-center q-mb-xs">
                                 <span v-if="getOrdemReal(order) === 0" class="text-weight-bold text-uppercase"
                                     :style="{ color: getCorReal(order), fontSize: '12px' }">
-                                    ⚠️ Suspenso
+                                    Suspenso
                                 </span>
                                 <span v-else class="text-caption font-weight-bold text-grey-6">Progresso</span>
 
