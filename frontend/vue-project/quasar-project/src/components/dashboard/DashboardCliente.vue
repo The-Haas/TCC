@@ -37,11 +37,6 @@
           <span class="stat-value" :class="isDark ? 'text-white' : 'text-grey-9'">
             {{ card.value }}
           </span>
-
-          <span class="text-weight-bold q-mt-xs" :class="isDark ? 'text-grey-4' : 'text-grey-7'"
-            style="font-size: 14px; line-height: 1;">
-            {{ formatMoney(card.totalValor) }}
-          </span>
         </div>
 
         <div class="stat-bar" :style="{ background: card.color }" />
@@ -110,10 +105,6 @@
                   :style="{ background: order.cor + '15', color: order.cor, border: `1px solid ${order.cor}30` }">
                   {{ order.status }}
                 </span>
-              </div>
-
-              <div class="order-col-value text-weight-bold text-subtitle1">
-                {{ formatMoney(order.valor) }}
               </div>
             </div>
 
@@ -468,7 +459,6 @@ const statCards = computed(() => {
   meusPedidos.value.forEach(p => {
     const key = p.status || 'Pendente'
     if (!map[key]) {
-      // Busca o status correspondente direto na lista do banco de dados
       const statusBanco = todosOsStatusDoBanco.value.find(
         s => String(s.descricao).trim().toLowerCase() === String(key).trim().toLowerCase()
       )
@@ -477,21 +467,20 @@ const statCards = computed(() => {
         label: key,
         color: p.cor || '#888888',
         value: 0,
-        totalValor: 0,
+        // Removido: totalValor: 0,
         icon: getStatusIcon(key),
-        // Utiliza a ordem exata cadastrada no banco de dados
         ordem: statusBanco ? Number(statusBanco.ordem) : 0
       }
     }
     map[key].value++
-    map[key].totalValor += Number(p.valor || 0)
+    // Removido: map[key].totalValor += Number(p.valor || 0)
   })
 
   if (Object.keys(map).length === 0) {
-    return [{ label: 'Projetos', color: '#888888', value: 0, totalValor: 0, icon: 'inventory_2', ordem: 0 }]
+    // Atualize o fallback removendo o totalValor
+    return [{ label: 'Projetos', color: '#888888', value: 0, icon: 'inventory_2', ordem: 0 }]
   }
 
-  // Ordena os cards estritamente pela ordem numérica cadastrada
   return Object.values(map).sort((a, b) => a.ordem - b.ordem)
 })
 
@@ -514,10 +503,6 @@ function badgeStyle(corBanco) {
   }
 }
 
-function formatMoney(valor) {
-  if (valor == null) return 'R$ 0,00'
-  return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 function formatDate(d) {
   if (!d) return ''
@@ -761,7 +746,7 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 @media (min-width: 601px) {
   .order-row {
     display: grid;
-    grid-template-columns: 2.2fr 1.3fr 1.5fr 1fr;
+    grid-template-columns: 2.2fr 1.5fr 1.5fr; 
     align-items: center;
     gap: 16px;
   }

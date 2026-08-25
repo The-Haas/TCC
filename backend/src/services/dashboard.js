@@ -15,7 +15,6 @@ async function getDashboardCliente(idCliente) {
             SELECT
                 p.id,
                 p.nome_projeto,
-                p.valor,
                 p.data_pedido,
                 p.data_previsao_pedido,
                 sp.descricao AS status,

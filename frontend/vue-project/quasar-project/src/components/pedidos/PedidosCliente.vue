@@ -80,14 +80,14 @@
               </span>
             </div>
 
-            <!-- Volume Financeiro -->
-            <div class="flex column">
-              <span class="text-overline text-grey-5" style="line-height: 1.2;">Volume Financeiro</span>
-              <span class="text-h5 text-weight-bolder" :class="isDark ? 'text-white' : 'text-grey-9'"
-                style="line-height: 1;">
-                {{ formatMoney(estatisticasGerais.valorTotal) }}
-              </span>
-            </div>
+<!-- Volume Financeiro -->
+<div v-if="authStore.user?.tipo !== 'cliente'" class="flex column">
+  <span class="text-overline text-grey-5" style="line-height: 1.2;">Volume Financeiro</span>
+  <span class="text-h5 text-weight-bolder" :class="isDark ? 'text-white' : 'text-grey-9'"
+    style="line-height: 1;">
+    {{ formatMoney(estatisticasGerais.valorTotal) }}
+  </span>
+</div>
           </div>
 
           <!-- Separador Horizontal (Visível apenas no celular para quebrar as linhas) -->
@@ -118,11 +118,11 @@
                 {{ stat.quantidade }}
               </q-badge>
 
-              <!-- Valor Financeiro do Status -->
-              <span class="text-caption text-weight-bold"
-                :style="{ color: stat.cor, filter: isDark ? 'brightness(1.3)' : 'brightness(0.8)' }">
-                {{ formatMoney(stat.valor) }}
-              </span>
+<!-- Valor Financeiro do Status -->
+<span v-if="authStore.user?.tipo !== 'cliente'" class="text-caption text-weight-bold"
+  :style="{ color: stat.cor, filter: isDark ? 'brightness(1.3)' : 'brightness(0.8)' }">
+  {{ formatMoney(stat.valor) }}
+</span>
 
             </div>
           </div>
@@ -205,15 +205,15 @@
               </span>
             </div>
 
-            <!-- Coluna 5: Badge de Status com cor exata -->
-            <div class="col-12 col-sm-2 flex column col-status-valor">
-              <span class="status-badge q-mb-xs" :style="getBadgeStyle(getCorReal(order))">
-                {{ order.status }}
-              </span>
-              <span class="text-weight-bold text-subtitle1" :class="isDark ? 'text-white' : 'text-grey-9'">
-                {{ formatMoney(order.valor) }}
-              </span>
-            </div>
+<!-- Coluna 5: Badge de Status com cor exata -->
+<div class="col-12 col-sm-2 flex column col-status-valor">
+  <span class="status-badge q-mb-xs" :style="getBadgeStyle(getCorReal(order))">
+    {{ order.status }}
+  </span>
+  <span v-if="authStore.user?.tipo !== 'cliente'" class="text-weight-bold text-subtitle1" :class="isDark ? 'text-white' : 'text-grey-9'">
+    {{ formatMoney(order.valor) }}
+  </span>
+</div>
           </div>
         </template>
 
@@ -272,10 +272,6 @@
               </div>
             </div>
 
-            <div v-if="detalhes[order.id].xml" class="row justify-end q-mt-md">
-              <q-btn color="secondary" icon="download" no-caps outline label="Download XML"
-                @click="downloadXML(detalhes[order.id])" />
-            </div>
           </template>
         </q-card-section>
       </q-expansion-item>
@@ -453,17 +449,6 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 }
 
-function downloadXML(pedido) {
-  if (!pedido.xml) return
-  const blob = new Blob([pedido.xml], { type: 'text/xml;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', `projeto_${pedido.id}_${pedido.nome_projeto}.xml`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
 
 // --- FILTROS E PAGINAÇÃO ---
 const pedidosFiltrados = computed(() => {
