@@ -1,16 +1,149 @@
-// app global css — Horus
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
+// app global css — Horus / Artezza
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap');
+
+// ══════════════════════════════════════════════
+// DESIGN TOKENS — paleta corporativa premium v2
+// Reutilizados em todas as telas para manter consistência visual
+// ══════════════════════════════════════════════
+body {
+  // Superfícies
+  --surf-0: #eef0f4;      // fundo da página
+  --surf-1: #ffffff;      // cards / blocos
+  --surf-2: #f4f5f9;      // superfícies internas (inputs, sub-blocos)
+  --surf-sidebar: #ffffff;
+  --surf-topbar: rgba(255, 255, 255, .72);
+
+  // Bordas e divisores
+  --border-soft: rgba(21, 30, 51, .09);
+  --border-strong: rgba(21, 30, 51, .16);
+
+  // Texto
+  --text-strong: #10131c;
+  --text-base: #333c4d;
+  --text-muted: #6b7688;
+  --text-faint: #9aa3b2;
+
+  // Marca / acento primário (laranja Artezza)
+  --brand: #ff7b00;
+  --brand-2: #ffa440;
+  --brand-gradient: linear-gradient(135deg, #ffab30 0%, #ff7b00 55%, #e35d00 100%);
+  --brand-soft: rgba(255, 123, 0, .12);
+  --brand-glow: rgba(255, 123, 0, .35);
+
+  // Acento secundário corporativo (navy profundo — contraponto ao laranja)
+  --navy: #131b33;
+  --navy-2: #24314f;
+  --navy-gradient: linear-gradient(135deg, #1a2440 0%, #0d1326 100%);
+  --navy-soft: rgba(19, 27, 51, .06);
+
+  // Sombras corporativas — mais presença
+  --shadow-xs: 0 1px 3px rgba(15, 23, 42, .06);
+  --shadow-sm: 0 4px 14px rgba(15, 23, 42, .07), 0 1px 3px rgba(15, 23, 42, .05);
+  --shadow-md: 0 12px 32px rgba(15, 23, 42, .1), 0 3px 8px rgba(15, 23, 42, .05);
+  --shadow-lg: 0 24px 56px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .07);
+  --shadow-xl: 0 32px 80px rgba(15, 23, 42, .18), 0 10px 24px rgba(15, 23, 42, .08);
+  --shadow-brand: 0 14px 32px -8px rgba(255, 123, 0, .48);
+  --shadow-navy: 0 20px 44px -12px rgba(13, 19, 38, .55);
+
+  // Raios bem mais generosos — identidade "floating panel"
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+
+  // Fundo decorativo (blobs)
+  --blob-brand: radial-gradient(circle, rgba(255, 123, 0, .22) 0%, rgba(255, 123, 0, 0) 70%);
+  --blob-navy: radial-gradient(circle, rgba(19, 27, 51, .1) 0%, rgba(19, 27, 51, 0) 70%);
+}
+
+body.body--dark {
+  --surf-0: #06080d;
+  --surf-1: #12161f;
+  --surf-2: #0b0e15;
+  --surf-sidebar: #0d1017;
+  --surf-topbar: rgba(10, 13, 19, .68);
+
+  --border-soft: rgba(255, 255, 255, .08);
+  --border-strong: rgba(255, 255, 255, .15);
+
+  --text-strong: #f5f6f9;
+  --text-base: #c9cfda;
+  --text-muted: #8b93a3;
+  --text-faint: #5f6779;
+
+  --navy: #0a0e18;
+  --navy-2: #161d30;
+  --navy-gradient: linear-gradient(135deg, #171f34 0%, #090c15 100%);
+  --navy-soft: rgba(255, 255, 255, .04);
+
+  --brand-soft: rgba(255, 123, 0, .16);
+  --brand-glow: rgba(255, 123, 0, .4);
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, .3);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, .35);
+  --shadow-md: 0 14px 36px rgba(0, 0, 0, .45);
+  --shadow-lg: 0 28px 64px rgba(0, 0, 0, .55);
+  --shadow-xl: 0 40px 90px rgba(0, 0, 0, .62);
+  --shadow-brand: 0 14px 32px -8px rgba(255, 123, 0, .38);
+  --shadow-navy: 0 20px 44px -12px rgba(0, 0, 0, .6);
+
+  --blob-brand: radial-gradient(circle, rgba(255, 123, 0, .16) 0%, rgba(255, 123, 0, 0) 70%);
+  --blob-navy: radial-gradient(circle, rgba(70, 110, 255, .09) 0%, rgba(70, 110, 255, 0) 70%);
+}
 
 // Fonte global
 * { box-sizing: border-box; }
-body { font-family: 'DM Sans', sans-serif !important; }
+body {
+  font-family: 'DM Sans', sans-serif !important;
+  transition: background-color .3s ease;
+}
+
+.font-display {
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+
+// Fundo com profundidade (blobs decorativos fixos, aplicados no body)
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(10px);
+}
+
+body::before {
+  top: -12%;
+  right: -8%;
+  width: 42vw;
+  height: 42vw;
+  background: var(--blob-brand);
+}
+
+body::after {
+  bottom: -18%;
+  left: 8%;
+  width: 38vw;
+  height: 38vw;
+  background: var(--blob-navy);
+}
 
 // Scrollbar fina
-::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(128,128,128,.25); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,123,0,.5); }
 
 // Bordas arredondadas globais nos inputs e botões
-.q-field--outlined .q-field__control { border-radius: 8px !important; }
-.q-btn:not(.q-btn--round) { border-radius: 8px !important; }
+.q-field--outlined .q-field__control { border-radius: 12px !important; }
+.q-btn:not(.q-btn--round) { border-radius: 12px !important; }
+.q-card { border-radius: var(--radius-md) !important; }
+.q-menu { border-radius: var(--radius-md) !important; box-shadow: var(--shadow-lg) !important; }
+.q-dialog__inner > div { border-radius: var(--radius-lg) !important; }
+
+// Foco mais elegante nos inputs outlined
+.q-field--outlined.q-field--focused .q-field__control:before {
+  border-width: 1.5px !important;
+}
