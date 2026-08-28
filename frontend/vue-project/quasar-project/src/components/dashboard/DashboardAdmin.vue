@@ -1,664 +1,541 @@
 <template>
-    <q-page class="page">
+  <q-page class="admin-dashboard">
+    <!-- Cabeçalho executivo -->
+    <section class="dashboard-hero">
+      <div class="hero-copy">
+        <div class="hero-eyebrow">
+          <span class="eyebrow-dot"></span>
+          Painel administrativo
+        </div>
+        <h1 class="hero-title font-display">
+          {{ greeting }}, <span>{{ firstName }}</span>.
+        </h1>
+        <p class="hero-subtitle">
+          {{ dateStr }} · Visão consolidada da operação comercial e dos projetos.
+        </p>
+      </div>
 
-        <!-- ============================================== -->
-        <!-- CABEÇALHO E FILTROS (Alinhados) -->
-        <!-- ============================================== -->
-        <div class="row justify-between items-end q-mb-xl q-col-gutter-lg">
+      <div class="hero-summary">
+        <div class="hero-summary__item">
+          <span class="hero-summary__label">Pedidos no período</span>
+          <strong>{{ totalPedidos }}</strong>
+        </div>
+        <div class="hero-summary__divider"></div>
+        <div class="hero-summary__item">
+          <span class="hero-summary__label">Volume financeiro</span>
+          <strong>{{ formatMoney(valorTotalPeriodo) }}</strong>
+        </div>
+      </div>
+    </section>
 
-            <!-- Saudação (Esquerda) -->
-            <div class="col-12 col-lg-5" style="margin-bottom: 0;">
-                <h1 class="greeting" :class="isDark ? 'text-white' : 'text-grey-9'">
-                    {{ greeting }}, <span class="greeting-name">{{ firstName }}</span>.
-                </h1>
-                <p class="greeting-sub" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                    {{ dateStr }} — Acompanhe as vendas gerais, representantes, lojistas e projetos.
-                </p>
-            </div>
+    <!-- Consulta compacta -->
+    <section class="panel filter-panel">
+      <div class="filter-intro">
+        <div class="section-kicker">Consulta</div>
+        <h2 class="section-title">Filtros do dashboard</h2>
+        <p class="filter-note">Os indicadores respeitam o período selecionado.</p>
+      </div>
 
-            <!-- Filtros (Direita) -->
-            <div class="col-12 col-lg-7">
-
-                <!-- Separador Mobile: Visível apenas em telas menores que 'lg' -->
-                <q-separator :dark="isDark" class="lt-lg q-mb-md" />
-
-                <div class="row q-col-gutter-sm items-end justify-end">
-
-                    <!-- Agrupamento -->
-                    <div class="col-12 col-sm-3">
-                        <span class="filter-label" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Agrupamento</span>
-                        <q-select v-model="filtros.agrupamento" :options="opcoesAgrupamento" emit-value map-options
-                            outlined dense :dark="isDark" color="primary" class="q-mt-xs custom-bg-input"
-                            dropdown-icon="expand_more">
-                            <template v-slot:prepend>
-                                <q-icon name="bar_chart" size="20px" color="primary" />
-                            </template>
-                        </q-select>
-                    </div>
-
-                    <!-- Data Inicial -->
-                    <div class="col-12 col-sm-3">
-                        <span class="filter-label" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Data Inicial</span>
-                        <q-input v-model="filtros.dataInicio" mask="##/##/####" outlined dense :dark="isDark"
-                            class="q-mt-xs custom-bg-input" placeholder="DD/MM/AAAA">
-                            <template v-slot:append>
-                                <q-icon name="event" class="cursor-pointer" color="primary">
-                                    <q-popup-proxy ref="qDateProxyInicio" transition-show="scale"
-                                        transition-hide="scale">
-                                        <q-date v-model="filtros.dataInicio" mask="DD/MM/YYYY" :dark="isDark"
-                                            color="primary" @update:model-value="() => $refs.qDateProxyInicio.hide()" />
-                                    </q-popup-proxy>
-                                </q-icon>
-                            </template>
-                        </q-input>
-                    </div>
-
-                    <!-- Data Final -->
-                    <div class="col-12 col-sm-3">
-                        <span class="filter-label" :class="isDark ? 'text-grey-4' : 'text-grey-7'">Data Final</span>
-                        <q-input v-model="filtros.dataFim" mask="##/##/####" outlined dense :dark="isDark"
-                            class="q-mt-xs custom-bg-input" placeholder="DD/MM/AAAA">
-                            <template v-slot:append>
-                                <q-icon name="event" class="cursor-pointer" color="primary">
-                                    <q-popup-proxy ref="qDateProxyFim" transition-show="scale" transition-hide="scale">
-                                        <q-date v-model="filtros.dataFim" mask="DD/MM/YYYY" :dark="isDark"
-                                            color="primary" @update:model-value="() => $refs.qDateProxyFim.hide()" />
-                                    </q-popup-proxy>
-                                </q-icon>
-                            </template>
-                        </q-input>
-                    </div>
-
-                    <!-- Botão Atualizar -->
-                    <div class="col-12 col-sm-3">
-                        <q-btn color="primary" icon="sync" label="Atualizar" @click="carregarDados" unelevated
-                            class="full-width text-weight-bold shadow-btn" style="height: 40px; border-radius: 8px;"
-                            :loading="loading" />
-                    </div>
-                </div>
-            </div>
+      <div class="filter-grid">
+        <div class="field-group">
+          <span class="field-label">Agrupamento</span>
+          <q-select
+            v-model="filtros.agrupamento"
+            :options="opcoesAgrupamento"
+            emit-value
+            map-options
+            outlined
+            dense
+            :dark="isDark"
+            class="dashboard-field"
+            dropdown-icon="expand_more"
+          >
+            <template #prepend>
+              <q-icon name="calendar_view_month" size="17px" class="field-icon" />
+            </template>
+          </q-select>
         </div>
 
-        <!-- ============================================== -->
-        <!-- Cards dinâmicos de Resumo de Vendas -->
-        <!-- ============================================== -->
-        <div class="stats-row q-mb-xl">
-            <div v-for="card in statCards" :key="card.label" class="stat-card"
-                :class="isDark ? 'stat-card--dark' : 'stat-card--light'">
-                <div class="stat-icon-wrap" :style="{ background: card.color + '15', color: card.color }">
-                    <q-icon :name="card.icon" size="24px" />
+        <div class="field-group">
+          <span class="field-label">Data inicial</span>
+          <q-input
+            v-model="filtros.dataInicio"
+            mask="##/##/####"
+            outlined
+            dense
+            :dark="isDark"
+            class="dashboard-field"
+            placeholder="DD/MM/AAAA"
+          >
+            <template #append>
+              <q-icon name="event" class="cursor-pointer field-icon">
+                <q-popup-proxy ref="qDateProxyInicio" transition-show="scale" transition-hide="scale">
+                  <q-date
+                    v-model="filtros.dataInicio"
+                    mask="DD/MM/YYYY"
+                    :dark="isDark"
+                    color="orange"
+                    @update:model-value="() => $refs.qDateProxyInicio.hide()"
+                  />
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
+        </div>
+
+        <div class="field-group">
+          <span class="field-label">Data final</span>
+          <q-input
+            v-model="filtros.dataFim"
+            mask="##/##/####"
+            outlined
+            dense
+            :dark="isDark"
+            class="dashboard-field"
+            placeholder="DD/MM/AAAA"
+          >
+            <template #append>
+              <q-icon name="event" class="cursor-pointer field-icon">
+                <q-popup-proxy ref="qDateProxyFim" transition-show="scale" transition-hide="scale">
+                  <q-date
+                    v-model="filtros.dataFim"
+                    mask="DD/MM/YYYY"
+                    :dark="isDark"
+                    color="orange"
+                    @update:model-value="() => $refs.qDateProxyFim.hide()"
+                  />
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
+        </div>
+
+        <q-btn
+          unelevated
+          no-caps
+          icon="sync"
+          label="Atualizar"
+          class="refresh-btn"
+          :loading="loading"
+          @click="carregarDados"
+        />
+      </div>
+    </section>
+
+    <div v-if="loadError" class="dashboard-alert dashboard-alert--error">
+      <q-icon name="error_outline" size="20px" />
+      <span>{{ loadError }}</span>
+      <q-space />
+      <q-btn flat dense no-caps label="Tentar novamente" @click="carregarDados" />
+    </div>
+
+    <!-- Situação dos projetos -->
+    <section class="dashboard-section dashboard-section--separated">
+      <div class="section-heading-row">
+        <div>
+          <div class="section-kicker">Pipeline</div>
+          <h2 class="section-title">Situação dos projetos</h2>
+        </div>
+        <span class="section-caption">Valores e quantidade por status</span>
+      </div>
+
+      <div class="status-grid">
+        <article v-for="card in statCards" :key="card.label" class="status-card panel">
+          <div class="status-card__top">
+            <div class="status-card__icon" :style="{ color: card.color, background: card.color + '14' }">
+              <q-icon :name="card.icon" size="22px" />
+            </div>
+            <span class="status-pill" :style="{ color: card.color, borderColor: card.color + '35', background: card.color + '10' }">
+              {{ card.label }}
+            </span>
+          </div>
+          <strong class="status-card__value">{{ formatMoney(card.totalValor) }}</strong>
+          <div class="status-card__footer">
+            <span>{{ card.value }} {{ card.value === 1 ? 'pedido' : 'pedidos' }}</span>
+            <span class="status-card__percent">{{ getStatusPercent(card.value) }}%</span>
+          </div>
+          <div class="status-card__accent" :style="{ background: card.color }"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Resumo do período -->
+    <section class="dashboard-section dashboard-section--summary dashboard-section--separated">
+      <div class="section-heading-row">
+        <div>
+          <div class="section-kicker">Resumo</div>
+          <h2 class="section-title">Indicadores do período</h2>
+        </div>
+        <span class="section-caption">Visão rápida dos principais números da consulta</span>
+      </div>
+
+      <div class="executive-grid">
+        <article v-for="metric in executiveMetrics" :key="metric.label" class="metric-card panel">
+          <div class="metric-card__icon">
+            <q-icon :name="metric.icon" size="21px" />
+          </div>
+          <div class="metric-card__body">
+            <span class="metric-card__label">{{ metric.label }}</span>
+            <strong class="metric-card__value">{{ metric.value }}</strong>
+            <span class="metric-card__helper">{{ metric.helper }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Analytics -->
+    <section class="dashboard-section dashboard-section--separated">
+      <div class="section-heading-row">
+        <div>
+          <div class="section-kicker">Desempenho</div>
+          <h2 class="section-title">Visão analítica</h2>
+        </div>
+        <span class="section-caption">Acompanhe evolução, distribuição e destaques da rede</span>
+      </div>
+
+      <div class="analytics-grid analytics-grid--primary">
+        <article class="panel chart-card chart-card--wide">
+          <div class="chart-head">
+            <div class="chart-title-wrap">
+              <div class="chart-icon chart-icon--brand"><q-icon name="trending_up" size="19px" /></div>
+              <div>
+                <h3>Evolução financeira</h3>
+                <p>Volume vendido ao longo do período</p>
+              </div>
+            </div>
+          </div>
+          <apexchart :key="chaveGrafico" type="area" height="330" :options="chartAreaOptions" :series="chartAreaSeries" />
+        </article>
+
+        <article class="panel chart-card">
+          <div class="chart-head">
+            <div class="chart-title-wrap">
+              <div class="chart-icon chart-icon--brand"><q-icon name="donut_large" size="19px" /></div>
+              <div>
+                <h3>Status dos projetos</h3>
+                <p>Distribuição da carteira atual</p>
+              </div>
+            </div>
+          </div>
+          <apexchart :key="chaveGrafico" type="donut" height="330" :options="chartPieOptions" :series="chartPieSeries" />
+        </article>
+      </div>
+
+      <div class="analytics-grid analytics-grid--rankings">
+        <article class="panel chart-card">
+          <div class="chart-head">
+            <div class="chart-title-wrap">
+              <div class="chart-icon chart-icon--brand"><q-icon name="workspace_premium" size="19px" /></div>
+              <div>
+                <h3>Representantes em destaque</h3>
+                <p>Ranking por valor vendido</p>
+              </div>
+            </div>
+          </div>
+          <apexchart :key="chaveGrafico" type="bar" height="300" :options="chartBarOptions" :series="chartBarSeries" />
+        </article>
+
+        <article class="panel chart-card">
+          <div class="chart-head">
+            <div class="chart-title-wrap">
+              <div class="chart-icon chart-icon--brand"><q-icon name="storefront" size="19px" /></div>
+              <div>
+                <h3>Lojistas em destaque</h3>
+                <p>Ranking por valor vendido</p>
+              </div>
+            </div>
+          </div>
+          <apexchart :key="chaveGrafico" type="bar" height="300" :options="chartBarLojistasOptions" :series="chartBarLojistasSeries" />
+        </article>
+      </div>
+    </section>
+
+    <!-- Operação recente + rede -->
+    <section class="operations-grid operations-grid--separated">
+      <article class="panel recent-panel">
+        <div class="panel-heading recent-heading">
+          <div>
+            <div class="section-kicker">Operação</div>
+            <h2 class="section-title">Projetos recentes</h2>
+          </div>
+          <q-btn flat no-caps dense class="text-btn" label="Ver todos" icon-right="arrow_forward" to="/pedidos" />
+        </div>
+
+        <div v-if="loading && recentOrders.length === 0" class="loading-state">
+          <q-spinner size="28px" color="orange" />
+          <span>Carregando projetos...</span>
+        </div>
+
+        <div v-else-if="recentOrders.length === 0" class="empty-state">
+          <div class="empty-icon"><q-icon name="inventory_2" size="26px" /></div>
+          <strong>Nenhum projeto encontrado</strong>
+          <span>Ajuste os filtros ou aguarde novas movimentações.</span>
+        </div>
+
+        <div v-else class="orders-stack">
+          <article v-for="order in recentOrders" :key="order.id" class="order-card">
+            <div class="order-card__main">
+              <div class="order-identity">
+                <div class="order-id-row">
+                  <span class="order-id">Pedido #{{ order.id }}</span>
+                  <span class="order-date">{{ formatDate(order.data_pedido) }}</span>
+                </div>
+                <div class="order-store">
+                  <q-icon name="storefront" size="17px" />
+                  <strong>{{ order.nome_lojista || 'Lojista não informado' }}</strong>
+                  <span v-if="order.id_lojista">#{{ order.id_lojista }}</span>
+                </div>
+                <div class="order-meta">
+                  <span><q-icon name="badge" size="14px" /> {{ order.representante || order.nome_representante || 'Sem representante' }}</span>
+                  <span><q-icon name="person" size="14px" /> {{ order.nome_cliente || 'Cliente não informado' }}</span>
+                  <span><q-icon name="draw" size="14px" /> {{ order.nome_projeto || 'Projeto sem nome' }}</span>
+                </div>
+              </div>
+
+              <div class="order-side-data">
+                <div class="order-money">{{ formatMoney(order.valor) }}</div>
+                <span class="status-pill order-status" :style="{ color: order.cor, borderColor: order.cor + '35', background: order.cor + '10' }">
+                  {{ order.status }}
+                </span>
+                <span class="forecast-text" :class="{ 'forecast-text--danger': order.ordem_status === 0 }">
+                  <q-icon name="event_available" size="14px" />
+                  {{ order.ordem_status === 0 ? 'Projeto recusado' : (order.data_previsao_pedido ? `Previsão: ${formatDate(order.data_previsao_pedido)}` : 'Previsão aguardando definição') }}
+                </span>
+              </div>
+            </div>
+
+            <div class="order-progress">
+              <div class="order-progress__head">
+                <div>
+                  <strong>{{ order.ordem_status === 0 ? 'Fluxo interrompido' : 'Progresso do projeto' }}</strong>
+                  <span>{{ order.ordem_status === 0 ? 'O projeto precisa de uma nova ação para continuar.' : 'Acompanhe a etapa atual de produção.' }}</span>
+                </div>
+                <span class="progress-number" :style="{ color: order.ordem_status === 0 ? order.cor : 'var(--brand)' }">
+                  {{ order.ordem_status === 0 ? '0%' : `${Math.round((order.ordem_status / (totalEtapas || 1)) * 100)}%` }}
+                </span>
+              </div>
+
+              <q-linear-progress
+                rounded
+                size="7px"
+                :value="order.ordem_status === 0 ? 0 : (order.ordem_status / (totalEtapas || 1))"
+                :color="order.ordem_status === 0 ? 'negative' : (order.ordem_status === totalEtapas ? 'positive' : 'orange')"
+                :track-color="isDark ? 'grey-9' : 'grey-3'"
+              />
+
+              <template v-if="order.ordem_status !== 0">
+                <div class="timeline-action-row">
+                  <q-btn
+                    flat
+                    dense
+                    no-caps
+                    class="text-btn"
+                    :icon-right="pedidoTimelineAberto === order.id ? 'expand_less' : 'expand_more'"
+                    :label="pedidoTimelineAberto === order.id ? 'Ocultar etapas' : 'Detalhar etapas'"
+                    @click="toggleTimeline(order.id)"
+                  />
                 </div>
 
-                <div class="stat-text" style="gap: 2px;">
-                    <div class="row q-mb-xs">
-                        <span class="stat-label" :style="{
-                            color: card.color,
-                            background: card.color + '15',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            border: `1px solid ${card.color}30`,
-                            fontSize: '11px',
-                            fontWeight: '800'
-                        }">
-                            {{ card.label }}
+                <q-slide-transition>
+                  <div v-show="pedidoTimelineAberto === order.id" class="timeline-shell">
+                    <div class="timeline-hz-row">
+                      <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id" class="timeline-hz-item">
+                        <div
+                          v-if="index < listaEtapasDoBanco.length - 1"
+                          class="step-connect-line"
+                          :class="{ 'line-pulsing': isTrackPulsing(step.ordem, order.ordem_status) }"
+                          :style="getTrackStyle(step.ordem, order)"
+                        ></div>
+                        <div
+                          class="step-circle"
+                          :class="{ 'step-circle--active': step.ordem === order.ordem_status && order.ordem_status !== 0 }"
+                          :style="{
+                            background: getCircleBg(step.ordem, order, isDark),
+                            color: step.ordem <= order.ordem_status && order.ordem_status !== 0 ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
+                            boxShadow: step.ordem === order.ordem_status ? `0 0 0 4px ${order.cor}30` : 'none'
+                          }"
+                        >
+                          <q-icon :name="getTimelineIcon(step.ordem, order.ordem_status)" size="12px" />
+                        </div>
+                        <span class="step-title" :class="{ 'step-title--active': step.ordem === order.ordem_status }">
+                          {{ step.descricao }}
                         </span>
+                        <span v-if="step.ordem === order.ordem_status" class="step-current-tag">Atual</span>
+                      </div>
                     </div>
-
-                    <span class="stat-value" :class="isDark ? 'text-white' : 'text-grey-9'">
-                        {{ formatMoney(card.totalValor) }}
-                    </span>
-
-                    <span class="stat-qty" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                        {{ card.value }} {{ card.value === 1 ? 'pedido' : 'pedidos' }}
-                    </span>
-                </div>
-
-                <div class="stat-bar" :style="{ background: card.color }" />
+                  </div>
+                </q-slide-transition>
+              </template>
             </div>
+          </article>
         </div>
+      </article>
 
-<!-- ============================================== -->
-        <!-- SESSÃO DE GRÁFICOS -->
-        <!-- ============================================== -->
-        <div class="charts-wrap q-mb-xl">
-            <!-- Gráfico de Evolução (Área) -->
-            <div class="block q-mb-md" :class="isDark ? 'block--dark' : 'block--light'">
-                <div class="text-subtitle1 text-weight-bold q-mb-md" :class="isDark ? 'text-grey-3' : 'text-grey-8'">
-                    <q-icon name="trending_up" color="primary" class="q-mr-sm" size="20px" />
-                    Evolução Financeira
-                </div>
-                <apexchart :key="chaveGrafico" type="area" height="320" :options="chartAreaOptions" :series="chartAreaSeries" />
+      <aside class="network-column">
+        <article class="panel network-card">
+          <div class="network-card__visual">
+            <div class="network-orbit network-orbit--one"></div>
+            <div class="network-orbit network-orbit--two"></div>
+            <div class="network-main-icon"><q-icon name="hub" size="27px" /></div>
+          </div>
+          <div class="section-kicker">Rede comercial</div>
+          <h2 class="network-title">Estrutura de parceiros</h2>
+          <p class="network-copy">Consulte rapidamente os representantes, lojistas e projetos vinculados ao período.</p>
+
+          <div class="network-stats">
+            <div>
+              <strong>{{ representantesFiltrados.length }}</strong>
+              <span>Representantes</span>
             </div>
-
-            <div class="row q-col-gutter-md">
-                <!-- Gráfico de Pizza (Status) -->
-                <div class="col-12 col-md-4">
-                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
-                        <div class="text-subtitle1 text-weight-bold q-mb-md"
-                            :class="isDark ? 'text-grey-3' : 'text-grey-8'">
-                            <q-icon name="donut_large" color="primary" class="q-mr-sm" size="20px" />
-                            Status dos Projetos
-                        </div>
-                        <apexchart :key="chaveGrafico" type="donut" height="320" :options="chartPieOptions" :series="chartPieSeries" />
-                    </div>
-                </div>
-
-                <!-- Gráfico de Barras (Top Representantes) -->
-                <div class="col-12 col-md-4">
-                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
-                        <div class="text-subtitle1 text-weight-bold q-mb-md"
-                            :class="isDark ? 'text-grey-3' : 'text-grey-8'">
-                            <q-icon name="emoji_events" color="orange" class="q-mr-sm" size="20px" />
-                            Maiores Representantes
-                        </div>
-                        <apexchart :key="chaveGrafico" type="bar" height="320" :options="chartBarOptions" :series="chartBarSeries" />
-                    </div>
-                </div>
-
-                <!-- Gráfico de Barras (Top Lojistas) -->
-                <div class="col-12 col-md-4">
-                    <div class="block full-height" :class="isDark ? 'block--dark' : 'block--light'">
-                        <div class="text-subtitle1 text-weight-bold q-mb-md"
-                            :class="isDark ? 'text-grey-3' : 'text-grey-8'">
-                            <q-icon name="storefront" color="purple" class="q-mr-sm" size="20px" />
-                            Maiores Lojistas
-                        </div>
-                        <apexchart :key="chaveGrafico" type="bar" height="320" :options="chartBarLojistasOptions"
-                            :series="chartBarLojistasSeries" />
-                    </div>
-                </div>
+            <div>
+              <strong>{{ lojistasFiltrados.length }}</strong>
+              <span>Lojistas</span>
             </div>
-        </div>
+          </div>
 
-        <div class="main-grid">
-            <!-- Lista de Projetos Recentes -->
-            <div class="block" :class="isDark ? 'block--dark' : 'block--light'">
-                <div class="block-head">
-                    <div class="block-title" :class="isDark ? 'text-grey-1' : 'text-grey-9'">
-                        <q-icon name="receipt_long" size="20px" color="primary" class="q-mr-sm" />
-                        Últimas Vendas / Projetos
-                    </div>
-                    <q-btn flat no-caps dense label="Ver todos" color="primary" icon-right="east" to="/pedidos"
-                        style="font-size:13px; font-weight: 600;" />
-                </div>
+          <div class="network-actions">
+            <q-btn unelevated no-caps icon="badge" label="Ver representantes" class="network-btn network-btn--primary" @click="modalRepresentantes = true" />
+            <q-btn flat no-caps icon="storefront" label="Ver lojistas" class="network-btn network-btn--secondary" @click="modalLojistas = true" />
+          </div>
+        </article>
+      </aside>
+    </section>
 
-                <div class="order-list">
-                    <div v-if="recentOrders.length === 0" class="empty-state">
-                        <q-icon name="inventory_2" size="40px" color="grey-4" class="q-mb-sm" />
-                        <span class="text-grey-6 text-weight-medium">Nenhum projeto encontrado.</span>
-                    </div>
-
-                    <div v-for="order in recentOrders" :key="order.id" class="order-card q-mb-md"
-                        :class="isDark ? 'order-card--dark' : 'order-card--light'">
-                        <div class="order-row q-pa-md">
-                            <div class="order-col-info">
-                                <!-- Badge de ID do Pedido -->
-                                <div class="q-mb-xs">
-                                    <span class="text-caption text-weight-bold"
-                                        :class="isDark ? 'bg-grey-9 text-grey-3' : 'bg-blue-1 text-primary'"
-                                        style="padding: 3px 8px; border-radius: 6px; font-size: 11px;">
-                                        <q-icon name="receipt_long" size="12px" class="q-mr-xs"
-                                            style="margin-top: -2px" />
-                                        Pedido #{{ order.id }}
-                                    </span>
-                                </div>
-
-                                <!-- Destaque para o NOME DA LOJA / LOJISTA -->
-                                <span
-                                    class="text-weight-bold text-subtitle1 text-primary flex items-center gap-2 q-mt-xs">
-                                    <q-icon name="storefront" size="18px" class="q-mr-xs" />
-                                    {{ order.nome_lojista || 'Lojista não informado' }}
-                                    <span v-if="order.id_lojista"
-                                        class="text-caption text-grey-6 text-weight-normal q-ml-xs">
-                                        #{{ order.id_lojista }}
-                                    </span>
-                                </span>
-
-                                <!-- Representante vinculado ao Pedido -->
-                                <span class="flex items-center" style="font-size: 11.5px; margin-top: -2px;"
-                                    :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                                    <q-icon name="badge" size="13px" class="q-mr-xs" />
-                                    {{ order.representante || order.nome_representante || 'Sem representante' }}
-                                </span>
-
-                                <!-- Dados do Cliente Final -->
-                                <span class="text-caption text-grey-7 q-mt-xs flex items-center">
-                                    <q-icon name="person" size="14px" class="q-mr-xs text-grey-5" />
-                                    Cliente:
-                                    <strong :class="isDark ? 'text-grey-4' : 'text-grey-9'" class="q-ml-xs">
-                                        {{ order.nome_cliente || 'Não informado' }}
-                                    </strong>
-                                </span>
-
-                                <!-- Dados do Projeto -->
-                                <span class="text-caption text-grey-6 q-mt-xs">
-                                    Projeto: <strong :class="isDark ? 'text-grey-4' : 'text-grey-8'">{{
-                                        order.nome_projeto }}</strong>
-                                </span>
-                                <span class="text-caption text-grey-6">Venda em: {{ formatDate(order.data_pedido)
-                                    }}</span>
-                            </div>
-
-                            <div class="order-col-forecast">
-                                <span class="forecast-label">Previsão Fábrica:</span>
-                                <span class="forecast-value"
-                                    :style="{ color: order.ordem_status === 0 ? order.cor : '' }"
-                                    :class="order.ordem_status !== 0 ? 'text-orange' : ''">
-                                    {{ order.ordem_status === 0 ? 'Recusado' : (order.data_previsao_pedido ?
-                                        formatDate(order.data_previsao_pedido) : 'Aguardando definição') }}
-                                </span>
-                            </div>
-
-                            <div class="order-col-status">
-                                <span class="status-badge"
-                                    :style="{ background: order.cor + '15', color: order.cor, border: `1px solid ${order.cor}30` }">
-                                    {{ order.status }}
-                                </span>
-                            </div>
-
-                            <div class="order-col-value text-weight-bold text-subtitle1">
-                                {{ formatMoney(order.valor) }}
-                            </div>
-                        </div>
-
-                        <!-- LINHA DO TEMPO -->
-                        <div class="q-px-md q-pb-md q-pt-sm">
-                            <div class="row justify-between items-center q-mb-xs">
-                                <span v-if="order.ordem_status === 0" class="text-weight-bold text-uppercase"
-                                    :style="{ color: order.cor, fontSize: '13px' }">
-                                    Projeto Suspenso / Recusado
-                                </span>
-                                <span v-else class="text-weight-bold" :class="isDark ? 'text-grey-3' : 'text-grey-8'"
-                                    style="font-size: 13px; letter-spacing: 0.2px;">
-                                    Progresso do pedido
-                                </span>
-
-                                <span class="text-weight-bold"
-                                    :style="{ color: order.ordem_status === 0 ? order.cor : (order.ordem_status === totalEtapas ? '#21BA45' : 'var(--q-primary)'), fontSize: '13px' }">
-                                    {{ order.ordem_status === 0 ? '0%' : `${Math.round((order.ordem_status /
-                                        (totalEtapas || 1)) * 100)}%` }}
-                                </span>
-                            </div>
-
-                            <q-linear-progress
-                                :value="order.ordem_status === 0 ? 0 : (order.ordem_status / (totalEtapas || 1))"
-                                :color="order.ordem_status === 0 ? 'negative' : (order.ordem_status === totalEtapas ? 'positive' : 'primary')"
-                                :dark="isDark" :track-color="isDark ? 'grey-8' : 'grey-4'" :style="{
-                                    height: '8px',
-                                    borderRadius: '4px',
-                                    border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
-                                    boxShadow: isDark ? 'none' : 'inset 0 1px 3px rgba(0,0,0,0.2)'
-                                }" />
-
-                            <template v-if="order.ordem_status !== 0">
-                                <div class="row justify-end q-mt-xs">
-                                    <q-btn flat dense no-caps size="sm" color="primary" class="text-weight-bold"
-                                        :icon-right="pedidoTimelineAberto === order.id ? 'expand_less' : 'expand_more'"
-                                        :label="pedidoTimelineAberto === order.id ? 'Ocultar etapas' : 'Rastrear etapas do projeto'"
-                                        @click="toggleTimeline(order.id)" />
-                                </div>
-
-                                <q-slide-transition>
-                                    <div v-show="pedidoTimelineAberto === order.id">
-                                        <div class="timeline-hz-container q-mt-sm q-mb-md q-pa-md"
-                                            :class="isDark ? 'timeline-hz-container--dark' : 'timeline-hz-container--light'">
-                                            <div class="timeline-hz-row">
-                                                <div v-for="(step, index) in listaEtapasDoBanco" :key="step.id"
-                                                    class="timeline-hz-item">
-                                                    <div v-if="index < listaEtapasDoBanco.length - 1"
-                                                        class="step-connect-line"
-                                                        :class="{ 'line-pulsing': isTrackPulsing(step.ordem, order.ordem_status) }"
-                                                        :style="getTrackStyle(step.ordem, order)">
-                                                    </div>
-                                                    <div class="step-circle"
-                                                        :class="{ 'step-circle--active': step.ordem === order.ordem_status && order.ordem_status !== 0 }"
-                                                        :style="{
-                                                            background: getCircleBg(step.ordem, order, isDark),
-                                                            color: step.ordem <= order.ordem_status && order.ordem_status !== 0 ? '#ffffff' : (isDark ? '#747d8c' : '#a4b0be'),
-                                                            boxShadow: step.ordem === order.ordem_status ? `0 0 0 4px ${order.cor}30` : 'none'
-                                                        }">
-                                                        <q-icon :name="getTimelineIcon(step.ordem, order.ordem_status)"
-                                                            size="12px" />
-                                                    </div>
-                                                    <span class="step-title q-mt-xs"
-                                                        :style="{ color: step.ordem === order.ordem_status ? order.cor : '' }"
-                                                        :class="{ 'text-weight-bold': step.ordem === order.ordem_status }">
-                                                        {{ step.descricao }}
-                                                    </span>
-                                                    <span
-                                                        v-if="step.ordem === order.ordem_status && order.ordem_status !== 0"
-                                                        class="step-current-tag" :style="{ background: order.cor }">
-                                                        Atual
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </q-slide-transition>
-                            </template>
-
-                            <q-separator :dark="isDark" class="q-mt-sm q-mb-xs" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Coluna Lateral Admin - Rede -->
-            <div class="side-column">
-                <div class="block support-block" :class="isDark ? 'block--dark' : 'block--light'">
-                    <div class="support-icon-wrap">
-                        <q-icon name="hub" size="36px" color="primary" />
-                    </div>
-                    <h3 class="support-title" :class="isDark ? 'text-white' : 'text-grey-9'">Minha Rede</h3>
-                    <p class="support-text" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                        Acesse as vendas filtradas vinculadas à sua rede de parceiros.
-                    </p>
-
-                    <div class="column q-gutter-y-sm full-width">
-                        <q-btn unelevated no-caps color="primary" icon="assignment_ind" label="Rede Representantes"
-                            class="full-width"
-                            style="border-radius: 10px; font-weight: 700; font-size: 14px; padding: 12px 0;"
-                            @click="modalRepresentantes = true" />
-
-                        <q-btn unelevated no-caps color="purple" icon="storefront" label="Rede Lojistas"
-                            class="full-width"
-                            style="border-radius: 10px; font-weight: 700; font-size: 14px; padding: 12px 0;"
-                            @click="modalLojistas = true" />
-                    </div>
-                </div>
-            </div>
-        </div> <!-- FECHA A MAIN-GRID -->
-    </q-page>
-
-    <!-- ========================================================= -->
-    <!-- Modal de Representantes (Expandível por Lojista e Projetos) -->
-    <!-- ========================================================= -->
+    <!-- Modal: Representantes -> Lojistas -> Projetos -->
     <q-dialog v-model="modalRepresentantes">
-        <q-card style="width: 600px; max-width: 95vw; border-radius: 16px;"
-            :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
-            <q-card-section class="row items-center q-pb-none">
-                <div class="text-h6 text-weight-bold flex items-center">
-                    <q-icon name="assignment_ind" color="primary" class="q-mr-sm" size="24px" />
-                    Rede Representantes
+      <q-card class="network-dialog">
+        <q-card-section class="dialog-head">
+          <div class="dialog-title-wrap">
+            <div class="dialog-icon"><q-icon name="badge" size="21px" /></div>
+            <div>
+              <h3>Rede de representantes</h3>
+              <p>{{ representantesFiltrados.length }} representantes na consulta atual</p>
+            </div>
+          </div>
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="dialog-body">
+          <div v-if="representantesFiltrados.length === 0" class="empty-state compact-empty">
+            <div class="empty-icon"><q-icon name="person_off" size="25px" /></div>
+            <strong>Nenhum representante encontrado</strong>
+            <span>Não há dados para os filtros atuais.</span>
+          </div>
+
+          <q-list v-else class="network-list">
+            <q-expansion-item v-for="rep in representantesFiltrados" :key="rep.id" group="representantes" class="network-expansion">
+              <template #header>
+                <q-item-section avatar>
+                  <div class="list-avatar"><q-icon name="badge" size="18px" /></div>
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="list-title">{{ rep.nome }}</q-item-label>
+                  <q-item-label caption>{{ rep.lojistas.length }} {{ rep.lojistas.length === 1 ? 'lojista vinculado' : 'lojistas vinculados' }}</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <span class="id-chip">#{{ rep.id }}</span>
+                </q-item-section>
+              </template>
+
+              <div class="expansion-inner">
+                <div v-if="rep.email || rep.telefone" class="rep-contact-strip">
+                  <div class="rep-contact-info">
+                    <span v-if="rep.email"><q-icon name="mail_outline" size="14px" /> {{ rep.email }}</span>
+                    <span v-if="rep.telefone"><q-icon name="phone" size="14px" /> {{ formatarTelefone(rep.telefone) }}</span>
+                  </div>
+                  <div class="rep-contact-actions">
+                    <q-btn v-if="rep.telefone" flat round dense icon="chat" @click.stop="abrirWhatsApp(rep.telefone, rep.nome)"><q-tooltip>WhatsApp</q-tooltip></q-btn>
+                    <q-btn v-if="rep.email" flat round dense icon="mail" @click.stop="abrirEmail(rep.email, rep.nome)"><q-tooltip>E-mail</q-tooltip></q-btn>
+                  </div>
                 </div>
-                <q-space />
-                <q-btn icon="close" flat round dense v-close-popup />
-            </q-card-section>
 
-            <q-card-section class="q-pa-md">
-                <div v-if="representantesFiltrados.length === 0" class="text-center q-pa-md"
-                    style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
-                    <span class="text-grey-6">Nenhum dado encontrado para os filtros atuais.</span>
-                </div>
+                <q-expansion-item v-for="lojista in rep.lojistas" :key="lojista.id" group="lojistas-representante" class="nested-expansion">
+                  <template #header>
+                    <q-item-section avatar><q-icon name="storefront" size="18px" class="brand-text-color" /></q-item-section>
+                    <q-item-section>
+                      <q-item-label class="nested-title">{{ lojista.nome }}</q-item-label>
+                      <q-item-label caption>{{ lojista.projetos.length }} {{ lojista.projetos.length === 1 ? 'projeto' : 'projetos' }}</q-item-label>
+                    </q-item-section>
+                  </template>
 
-                <q-list v-else bordered class="rounded-borders" :class="isDark ? 'border-grey-8' : 'border-grey-3'">
-                    <!-- Nível 1: Representantes -->
-                    <q-expansion-item v-for="rep in representantesFiltrados" :key="rep.id" group="representantes">
-
-                        <template v-slot:header>
-                            <q-item-section avatar>
-                                <q-icon name="account_circle" color="primary" />
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold text-primary">
-                                    {{ rep.nome }} <span v-if="rep.id !== 'undefined'" class="text-grey-5 q-ml-xs">#{{
-                                        rep.id }}</span>
-                                </q-item-label>
-                                <q-item-label caption>{{ rep.lojistas.length }} Lojista(s) vinculado(s)</q-item-label>
-                            </q-item-section>
-                        </template>
-
-                        <q-separator :dark="isDark" />
-                        <q-card :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
-                            <q-card-section class="q-pa-sm">
-
-                                <!-- Nível 2: Lojistas do Representante -->
-                                <q-list bordered class="rounded-borders"
-                                    :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
-
-                                    <q-expansion-item v-for="lojista in rep.lojistas" :key="lojista.id"
-                                        group="lojistas_rep">
-
-                                        <template v-slot:header>
-                                            <q-item-section avatar>
-                                                <q-icon name="storefront" />
-                                            </q-item-section>
-                                            <q-item-section>
-                                                <q-item-label class="text-weight-medium">
-                                                    {{ lojista.nome }} <span v-if="lojista.id !== 'sem_lojista'"
-                                                        class="text-grey-5 q-ml-xs">#{{ lojista.id }}</span>
-                                                </q-item-label>
-                                                <q-item-label caption>{{ lojista.projetos.length }}
-                                                    Projeto(s)</q-item-label>
-                                            </q-item-section>
-                                        </template>
-
-                                        <q-separator :dark="isDark" />
-                                        <q-card :class="isDark ? 'bg-dark' : 'bg-white'">
-                                            <q-card-section class="q-pa-sm">
-
-                                                <!-- Nível 3: Projetos -->
-                                                <div v-for="projeto in lojista.projetos" :key="projeto.id"
-                                                    class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
-                                                    :class="isDark ? 'bg-grey-10' : 'bg-grey-1'"
-                                                    style="border: 1px solid rgba(128,128,128,0.15);">
-                                                    <div class="col-7 flex column">
-                                                        <span class="text-weight-bold"
-                                                            style="font-size: 13px; line-height: 1.2;">
-                                                            {{ projeto.nome || 'Projeto sem nome' }} <span
-                                                                class="text-grey-5 q-ml-xs">#{{ projeto.id }}</span>
-                                                        </span>
-                                                        <span class="text-caption text-grey-6" style="font-size: 11px;">
-                                                            Cli: {{ projeto.nome_cliente }}
-                                                            <!-- 👉 ESTA LINHA ABAIXO FAZ O ID APARECER NO LOJISTA -->
-                                                            <span v-if="projeto.id_cliente"
-                                                                class="text-weight-bold q-ml-xs">#{{ projeto.id_cliente
-                                                                }}</span>
-                                                        </span>
-                                                    </div>
-                                                    <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
-                                                        <span class="text-weight-bold" style="font-size: 12px;">{{
-                                                            formatMoney(projeto.valor) }}</span>
-                                                        <span class="status-badge"
-                                                            :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
-                                                            {{ projeto.status }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                            </q-card-section>
-                                        </q-card>
-                                    </q-expansion-item>
-
-                                </q-list>
-
-                            </q-card-section>
-                        </q-card>
-                    </q-expansion-item>
-                </q-list>
-            </q-card-section>
-        </q-card>
+                  <div class="projects-mini-list">
+                    <div v-for="projeto in lojista.projetos" :key="projeto.id" class="project-mini-row">
+                      <div class="project-mini-main">
+                        <strong>{{ projeto.nome || 'Projeto sem nome' }}</strong>
+                        <span>{{ projeto.nome_cliente }} <template v-if="projeto.id_cliente">· Cliente #{{ projeto.id_cliente }}</template></span>
+                      </div>
+                      <div class="project-mini-side">
+                        <strong>{{ formatMoney(projeto.valor) }}</strong>
+                        <span class="status-pill mini-status" :style="{ color: projeto.cor, borderColor: projeto.cor + '35', background: projeto.cor + '10' }">{{ projeto.status }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </q-expansion-item>
+              </div>
+            </q-expansion-item>
+          </q-list>
+        </q-card-section>
+      </q-card>
     </q-dialog>
 
-    <!-- ========================================================= -->
-    <!-- Modal de Lojistas (Expandível por Projetos) -->
-    <!-- ========================================================= -->
+    <!-- Modal: Lojistas -> Projetos -->
     <q-dialog v-model="modalLojistas">
-        <q-card style="width: 500px; max-width: 95vw; border-radius: 16px;"
-            :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
-            <q-card-section class="row items-center q-pb-none">
-                <div class="text-h6 text-weight-bold flex items-center">
-                    <q-icon name="storefront" color="purple" class="q-mr-sm" size="24px" />
-                    Rede Lojistas
+      <q-card class="network-dialog network-dialog--small">
+        <q-card-section class="dialog-head">
+          <div class="dialog-title-wrap">
+            <div class="dialog-icon"><q-icon name="storefront" size="21px" /></div>
+            <div>
+              <h3>Rede de lojistas</h3>
+              <p>{{ lojistasFiltrados.length }} lojistas na consulta atual</p>
+            </div>
+          </div>
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="dialog-body">
+          <div v-if="lojistasFiltrados.length === 0" class="empty-state compact-empty">
+            <div class="empty-icon"><q-icon name="storefront" size="25px" /></div>
+            <strong>Nenhum lojista encontrado</strong>
+            <span>Não há dados para os filtros atuais.</span>
+          </div>
+
+          <q-list v-else class="network-list">
+            <q-expansion-item v-for="lojista in lojistasFiltrados" :key="lojista.id" group="lojistas" class="network-expansion">
+              <template #header>
+                <q-item-section avatar>
+                  <div class="list-avatar"><q-icon name="storefront" size="18px" /></div>
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="list-title">{{ lojista.nome }}</q-item-label>
+                  <q-item-label caption>{{ lojista.projetos.length }} {{ lojista.projetos.length === 1 ? 'projeto vinculado' : 'projetos vinculados' }}</q-item-label>
+                </q-item-section>
+                <q-item-section side><span class="id-chip">#{{ lojista.id }}</span></q-item-section>
+              </template>
+
+              <div class="projects-mini-list expansion-inner">
+                <div v-for="projeto in lojista.projetos" :key="projeto.id" class="project-mini-row">
+                  <div class="project-mini-main">
+                    <strong>{{ projeto.nome || 'Projeto sem nome' }}</strong>
+                    <span>{{ projeto.nome_cliente }} <template v-if="projeto.id_cliente">· Cliente #{{ projeto.id_cliente }}</template></span>
+                  </div>
+                  <div class="project-mini-side">
+                    <strong>{{ formatMoney(projeto.valor) }}</strong>
+                    <span class="status-pill mini-status" :style="{ color: projeto.cor, borderColor: projeto.cor + '35', background: projeto.cor + '10' }">{{ projeto.status }}</span>
+                  </div>
                 </div>
-                <q-space />
-                <q-btn icon="close" flat round dense v-close-popup />
-            </q-card-section>
-
-            <q-card-section class="q-pa-md">
-                <div v-if="lojistasFiltrados.length === 0" class="text-center q-pa-md"
-                    style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
-                    <span class="text-grey-6">Nenhum dado encontrado para os filtros atuais.</span>
-                </div>
-
-                <q-list v-else bordered class="rounded-borders" :class="isDark ? 'border-grey-8' : 'border-grey-3'">
-                    <!-- Nível 1: Lojistas -->
-                    <q-expansion-item v-for="lojista in lojistasFiltrados" :key="lojista.id" group="lojistas">
-
-                        <template v-slot:header>
-                            <q-item-section avatar>
-                                <q-icon name="storefront" color="purple" />
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold text-purple">
-                                    {{ lojista.nome }} <span v-if="lojista.id !== 'undefined'"
-                                        class="text-grey-5 q-ml-xs">#{{ lojista.id }}</span>
-                                </q-item-label>
-                                <q-item-label caption>{{ lojista.projetos.length }} Projeto(s)
-                                    vinculado(s)</q-item-label>
-                            </q-item-section>
-                        </template>
-
-                        <q-separator :dark="isDark" />
-                        <q-card :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
-                            <q-card-section class="q-pa-sm">
-
-                                <!-- Nível 2: Projetos -->
-                                <div v-for="projeto in lojista.projetos" :key="projeto.id"
-                                    class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
-                                    :class="isDark ? 'bg-dark' : 'bg-white'"
-                                    style="border: 1px solid rgba(128,128,128,0.15);">
-                                    <div class="col-7 flex column">
-                                        <span class="text-weight-bold text-primary"
-                                            style="font-size: 13px; line-height: 1.2;">
-                                            {{ projeto.nome || 'Projeto sem nome' }} <span
-                                                class="text-grey-5 q-ml-xs">#{{
-                                                    projeto.id }}</span>
-                                        </span>
-                                        <span class="text-caption text-grey-6" style="font-size: 11px;">
-                                            Cli: {{ projeto.nome_cliente }}
-                                            <span v-if="projeto.id_cliente" class="text-weight-bold q-ml-xs">#{{
-                                                projeto.id_cliente }}</span>
-                                        </span>
-                                    </div>
-                                    <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
-                                        <span class="text-weight-bold" style="font-size: 12px;">{{
-                                            formatMoney(projeto.valor) }}</span>
-                                        <span class="status-badge"
-                                            :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
-                                            {{ projeto.status }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                            </q-card-section>
-                        </q-card>
-                    </q-expansion-item>
-                </q-list>
-            </q-card-section>
-        </q-card>
+              </div>
+            </q-expansion-item>
+          </q-list>
+        </q-card-section>
+      </q-card>
     </q-dialog>
-
-    <!-- Modal de Representantes (Admin) -->
-    <q-dialog v-model="modalRepresentantes">
-        <!-- Código mantido igual ao anterior para o Modal -->
-        <q-card style="width: 500px; max-width: 90vw; border-radius: 16px;"
-            :class="isDark ? 'bg-dark text-white' : 'bg-white text-grey-9'">
-            <q-card-section class="row items-center q-pb-none">
-                <div class="text-h6 text-weight-bold">Representantes Cadastrados</div>
-                <q-space />
-                <q-btn icon="close" flat round dense v-close-popup />
-            </q-card-section>
-
-            <q-card-section class="q-pa-md">
-                <div v-if="representantesFiltrados.length === 0" class="text-center q-pa-md"
-                    style="border: 1px dashed rgba(128,128,128,0.3); border-radius: 12px;">
-                    <span class="text-grey-6">Nenhum representante encontrado.</span>
-                </div>
-
-                <template v-else>
-                    <q-card v-for="representante in representantesFiltrados" :key="representante.id" flat bordered
-                        class="q-mb-md" :class="isDark ? 'bg-dark border-grey-8' : 'bg-white border-grey-3'"
-                        style="border-radius: 12px; overflow: hidden;">
-                        <q-card-section class="row items-center q-pb-sm">
-                            <q-avatar color="primary" text-color="white" icon="assignment_ind" size="42px"
-                                class="q-mr-md" />
-                            <div class="col">
-                                <div class="text-weight-bold flex items-center" style="font-size: 15px;">
-                                    {{ representante.nome }}
-                                    <span v-if="representante.id"
-                                        class="text-caption text-grey-6 text-weight-normal q-ml-xs">
-                                        #{{ representante.id }}
-                                    </span>
-                                </div>
-                                <div class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                                    {{ representante.email }}
-                                </div>
-                                <div v-if="representante.telefone" :class="isDark ? 'text-grey-4' : 'text-grey-7'"
-                                    class="text-caption text-weight-medium q-mt-xs flex items-center">
-                                    <q-icon name="phone" size="14px" class="q-mr-xs" />
-                                    {{ formatarTelefone(representante.telefone) }}
-                                </div>
-                            </div>
-                            <div class="col-auto row q-gutter-xs">
-                                <q-btn v-if="representante.telefone" round flat dense color="green" icon="chat"
-                                    size="14px" @click="abrirWhatsApp(representante.telefone, representante.nome)">
-                                    <q-tooltip>Chamar no WhatsApp</q-tooltip>
-                                </q-btn>
-                                <q-btn round flat dense color="primary" icon="mail" size="14px"
-                                    @click="abrirEmail(representante.email, representante.nome)">
-                                    <q-tooltip>Enviar E-mail</q-tooltip>
-                                </q-btn>
-                            </div>
-                        </q-card-section>
-
-                        <q-separator :dark="isDark" />
-
-                        <q-card-section class="q-pt-sm q-pb-sm" :class="isDark ? 'bg-grey-10' : 'bg-grey-1'">
-                            <div class="text-caption text-weight-bold q-mb-xs"
-                                :class="isDark ? 'text-grey-5' : 'text-grey-7'">
-                                <q-icon name="receipt_long" size="14px" class="q-mr-xs" /> Projetos deste representante
-                            </div>
-
-                            <div v-if="representante.projetos.length === 0" class="text-caption text-grey-5 q-pa-sm">
-                                Nenhum projeto vinculado.
-                            </div>
-
-                            <div v-for="projeto in representante.projetos" :key="projeto.id"
-                                class="row items-center justify-between q-mb-xs q-pa-sm rounded-borders"
-                                :class="isDark ? 'bg-dark' : 'bg-white'"
-                                style="border: 1px solid rgba(128,128,128,0.15);">
-                                <div class="col-7 flex column">
-                                    <span class="text-weight-bold text-primary"
-                                        style="font-size: 13px; line-height: 1.2;">
-                                        {{ projeto.nome || 'Projeto sem nome' }}
-                                        <span class="text-grey-6 text-weight-medium q-ml-xs">#{{ projeto.id }}</span>
-                                    </span>
-                                    <span class="text-caption text-grey-6" style="font-size: 11px;">
-                                        Cli: {{ projeto.nome_cliente || 'Não inf.' }}
-                                        <span v-if="projeto.id_cliente" class="text-weight-bold">#{{ projeto.id_cliente
-                                            }}</span>
-                                    </span>
-                                </div>
-                                <div class="col-5 flex row items-center justify-end q-gutter-x-sm">
-                                    <span class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'"
-                                        style="font-size: 12px;">
-                                        {{ formatMoney(projeto.valor) }}
-                                    </span>
-                                    <span class="status-badge"
-                                        :style="{ background: projeto.cor + '15', color: projeto.cor, border: `1px solid ${projeto.cor}30`, padding: '2px 6px', fontSize: '10px' }">
-                                        {{ projeto.status }}
-                                    </span>
-                                </div>
-                            </div>
-                        </q-card-section>
-                    </q-card>
-                </template>
-            </q-card-section>
-        </q-card>
-    </q-dialog>
-
+  </q-page>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
@@ -767,7 +644,7 @@ function mapearStatusDinamico(statusStr) {
         }
     }
 
-    return { ordem: 0, color: '#e74c3c' }
+    return { ordem: 0, cor: '#e74c3c' }
 }
 
 async function carregarDados() {
@@ -857,6 +734,53 @@ const pedidosOrdenados = computed(() =>
 
 const recentOrders = computed(() => pedidosOrdenados.value.slice(0, 3))
 
+const valorTotalPeriodo = computed(() =>
+    meusPedidos.value.reduce((total, pedido) => total + Number(pedido.valor || 0), 0)
+)
+
+const ticketMedio = computed(() =>
+    meusPedidos.value.length > 0 ? valorTotalPeriodo.value / meusPedidos.value.length : 0
+)
+
+const executiveMetrics = computed(() => [
+    {
+        label: 'Projetos',
+        value: String(totalPedidos.value || meusPedidos.value.length),
+        helper: 'na consulta atual',
+        icon: 'inventory_2'
+    },
+    {
+        label: 'Volume financeiro',
+        value: formatMoney(valorTotalPeriodo.value),
+        helper: 'valor total no período',
+        icon: 'account_balance_wallet'
+    },
+    {
+        label: 'Ticket médio',
+        value: formatMoney(ticketMedio.value),
+        helper: 'valor médio por pedido',
+        icon: 'payments'
+    },
+    {
+        label: 'Representantes',
+        value: String(representantesFiltrados.value.length),
+        helper: 'com vendas no período',
+        icon: 'badge'
+    },
+    {
+        label: 'Lojistas',
+        value: String(lojistasFiltrados.value.length),
+        helper: 'com projetos no período',
+        icon: 'storefront'
+    }
+])
+
+function getStatusPercent(value) {
+    const total = meusPedidos.value.length
+    if (!total) return 0
+    return Math.round((Number(value || 0) / total) * 100)
+}
+
 // ==========================================
 // CONFIGURAÇÃO DOS GRÁFICOS (APEXCHARTS)
 // ==========================================
@@ -868,24 +792,26 @@ const defaultThemeConfig = computed(() => ({
 // 1. Gráfico de Área (Evolução de Vendas)
 const chartAreaSeries = computed(() => [{
     name: 'Valor em Vendas (R$)',
-    data: (dadosGraficos.value.area || []).map(item => Number(item.valor_total).toFixed(2))
+    data: (dadosGraficos.value.area || []).map(item => Number(item.valor_total || 0).toFixed(2))
 }])
 
 const chartAreaOptions = computed(() => ({
     theme: defaultThemeConfig.value,
     chart: {
         type: 'area', background: 'transparent', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'inherit',
-        dropShadow: { enabled: true, top: 4, left: 0, blur: 4, color: '#1976D2', opacity: 0.15 }
+        dropShadow: { enabled: true, top: 5, left: 0, blur: 8, color: '#ff7b00', opacity: 0.18 }
     },
-    colors: ['#1976D2'],
-    stroke: { curve: 'smooth', width: 4 },
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.65, opacityTo: 0.15, stops: [0, 90, 100] } },
+    colors: ['#ff7b00'],
+    stroke: { curve: 'smooth', width: 3 },
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.38, opacityTo: 0.03, stops: [0, 92, 100] } },
     xaxis: {
         categories: (dadosGraficos.value.area || []).map(item => item.periodo),
         labels: { hideOverlappingLabels: false, rotate: -45, style: { fontSize: '11px' } }
     },
     yaxis: { labels: { formatter: val => formatMoney(val) } },
-    dataLabels: { enabled: false }
+    grid: { borderColor: isDark.value ? 'rgba(255,255,255,.08)' : 'rgba(21,30,51,.08)', strokeDashArray: 4 },
+    dataLabels: { enabled: false },
+    tooltip: { y: { formatter: val => formatMoney(val) } }
 }))
 
 // 2. Gráfico de Pizza (Status)
@@ -948,14 +874,28 @@ const chartBarSeries = computed(() => [{
 const chartBarOptions = computed(() => ({
     theme: defaultThemeConfig.value,
     chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'inherit' },
-    plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
-    colors: ['#21BA45'],
+    plotOptions: { bar: { horizontal: false, borderRadius: 7, columnWidth: '42%' } },
+    colors: ['#ff7b00'],
+    fill: {
+        type: 'gradient',
+        gradient: {
+            shade: 'light',
+            type: 'vertical',
+            shadeIntensity: 0.18,
+            gradientToColors: ['#ffb04d'],
+            inverseColors: false,
+            opacityFrom: 0.98,
+            opacityTo: 0.82,
+            stops: [0, 100]
+        }
+    },
     dataLabels: { enabled: false },
     xaxis: {
         categories: (dadosGraficos.value.barras_representantes || []).map(item => item.nome_representante || item.nome || 'Representante'),
         labels: { rotate: -45, style: { fontSize: '11px' } }
     },
     yaxis: { labels: { formatter: val => formatMoney(val) } },
+    grid: { borderColor: isDark.value ? 'rgba(255,255,255,.08)' : 'rgba(21,30,51,.08)', strokeDashArray: 4 },
     tooltip: { y: { formatter: val => formatMoney(val) } }
 }))
 
@@ -968,14 +908,28 @@ const chartBarLojistasSeries = computed(() => [{
 const chartBarLojistasOptions = computed(() => ({
     theme: defaultThemeConfig.value,
     chart: { background: 'transparent', toolbar: { show: false }, fontFamily: 'inherit' },
-    plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
-    colors: ['#9C27B0'], // Cor roxa para diferenciar
+    plotOptions: { bar: { horizontal: false, borderRadius: 7, columnWidth: '42%' } },
+    colors: ['#ff7b00'],
+    fill: {
+        type: 'gradient',
+        gradient: {
+            shade: 'light',
+            type: 'vertical',
+            shadeIntensity: 0.18,
+            gradientToColors: ['#ffb04d'],
+            inverseColors: false,
+            opacityFrom: 0.98,
+            opacityTo: 0.82,
+            stops: [0, 100]
+        }
+    },
     dataLabels: { enabled: false },
     xaxis: {
         categories: (dadosGraficos.value.barras_lojistas || []).map(item => item.nome || 'Lojista'),
         labels: { rotate: -45, style: { fontSize: '11px' } }
     },
     yaxis: { labels: { formatter: val => formatMoney(val) } },
+    grid: { borderColor: isDark.value ? 'rgba(255,255,255,.08)' : 'rgba(21,30,51,.08)', strokeDashArray: 4 },
     tooltip: { y: { formatter: val => formatMoney(val) } }
 }))
 
@@ -990,9 +944,15 @@ const representantesFiltrados = computed(() => {
 
         const repKey = String(idRep)
         if (!mapaRep.has(repKey)) {
+            const representanteOficial = todosOsRepresentantes.value.find(
+                representante => String(representante.id) === repKey
+            )
+
             mapaRep.set(repKey, {
                 id: repKey,
-                nome: p.nome_representante || p.representante || 'Representante Não Informado',
+                nome: representanteOficial?.nome || p.nome_representante || p.representante || 'Representante Não Informado',
+                email: representanteOficial?.email || '',
+                telefone: representanteOficial?.telefone || '',
                 lojistas: new Map() // Mapa interno para agrupar os lojistas deste representante
             })
         }
@@ -1015,7 +975,7 @@ const representantesFiltrados = computed(() => {
             nome_cliente: p.nome_cliente || p.cliente || 'Não inf.',
             id_cliente: p.id_cliente || p.cliente_id, // 👉 Alterado aqui para garantir as duas variações!
             status: p.status,
-            cor: p.cor || '#1976D2',
+            cor: p.cor || '#ff7b00',
             valor: p.valor
         })
     })
@@ -1050,7 +1010,7 @@ const lojistasFiltrados = computed(() => {
             nome_cliente: p.nome_cliente || p.cliente || 'Não inf.',
             id_cliente: p.id_cliente || p.cliente_id, // 👉 ESSA LINHA PRECISA ESTAR AQUI TAMBÉM
             status: p.status,
-            cor: p.cor || '#1976D2',
+            cor: p.cor || '#ff7b00',
             valor: p.valor
         })
     })
@@ -1121,7 +1081,7 @@ function toggleTimeline(pedidoId) {
 function getCircleBg(stepOrdem, order, isDark) {
     if (order.ordem_status === 0) return isDark ? '#22272e' : '#f3f4f6'
     if (stepOrdem < order.ordem_status) return '#21BA45'
-    if (stepOrdem === order.ordem_status) return order.cor || 'var(--q-primary)'
+    if (stepOrdem === order.ordem_status) return order.cor || 'var(--brand)'
     return isDark ? '#22272e' : '#f3f4f6'
 }
 
@@ -1144,519 +1104,988 @@ function isTrackPulsing(stepOrdem, currentOrdem) {
 </script>
 
 <style scoped>
-.page {
-    padding: 32px 28px 48px;
+.admin-dashboard {
+  padding: 30px 28px 52px;
+  color: var(--text-base);
 }
 
-@media (max-width: 600px) {
-    .page {
-        padding: 12px 8px 24px;
-    }
+.panel {
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
-.greeting-wrap {
-    margin-bottom: 32px;
+/* HERO */
+.dashboard-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 24px;
 }
 
-.greeting {
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    margin: 0 0 8px;
-    line-height: 1.2;
+.hero-eyebrow,
+.section-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.65px;
+  text-transform: uppercase;
 }
 
-.greeting-name {
-    color: var(--q-primary);
+.eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 5px var(--brand-soft);
 }
 
-.greeting-sub {
-    font-size: 14px;
-    margin: 0;
-    font-weight: 500;
+.hero-title {
+  margin: 8px 0 5px;
+  color: var(--text-strong);
+  font-size: clamp(27px, 3vw, 38px);
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  line-height: 1.05;
 }
 
-.stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    margin-bottom: 28px;
+.hero-title span { color: var(--brand); }
+
+.hero-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
-.stat-card {
-    border-radius: 16px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.2s ease;
+.hero-summary {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  min-width: 390px;
+  padding: 17px 20px;
+  background: var(--surf-1);
+  color: var(--text-strong);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 
-.stat-qty {
-    font-size: 12px;
-    font-weight: 600;
-    margin-top: 2px;
-    letter-spacing: 0.2px;
+.hero-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--brand-gradient);
 }
 
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+.hero-summary::after {
+  content: '';
+  position: absolute;
+  top: -46px;
+  right: -36px;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background: var(--blob-brand);
+  pointer-events: none;
 }
 
-.stat-card--dark {
-    background: #161b22;
-    border: 1px solid rgba(255, 255, 255, .05);
+.hero-summary__item {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.stat-card--light {
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, .04);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .03);
+.hero-summary__label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
 }
 
-.stat-icon-wrap {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+.hero-summary__item strong {
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.stat-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    flex: 1;
+.hero-summary__divider {
+  position: relative;
+  z-index: 1;
+  width: 1px;
+  height: 34px;
+  margin: 0 20px;
+  background: var(--border-soft);
 }
 
-.stat-value {
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 1.2;
-    margin-top: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* HEADINGS */
+.panel-heading,
+.section-heading-row,
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-@media (max-width: 600px) {
-    .stat-card {
-        padding: 12px;
-        gap: 10px;
-    }
-
-    .stat-value {
-        font-size: 16px;
-    }
-
-    .stat-icon-wrap {
-        width: 44px;
-        height: 44px;
-    }
-
-    .stat-qty {
-        font-size: 11px;
-    }
+.section-title {
+  margin: 3px 0 0;
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.25px;
 }
 
-.stat-label {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.section-caption {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
 }
 
-.stat-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    opacity: 0.8;
-    border-radius: 0 0 16px 16px;
+.dashboard-section { margin-top: 26px; }
+.dashboard-section--summary { margin-top: 24px; }
+.dashboard-section--separated {
+  margin-top: 30px;
+  padding-top: 27px;
+  border-top: 1px solid var(--border-soft);
+}
+.section-heading-row { margin-bottom: 14px; }
+
+/* FILTERS — compacto, com cara de barra de consulta */
+.filter-panel {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr);
+  align-items: end;
+  gap: 18px;
+  padding: 15px 17px;
+  overflow: hidden;
 }
 
-.main-grid {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 20px;
+.filter-intro { min-width: 0; }
+.filter-intro .section-title {
+  margin-top: 2px;
+  font-size: 15px;
 }
 
-@media (max-width: 1060px) {
-    .main-grid {
-        grid-template-columns: 1fr;
-    }
+.filter-note {
+  margin: 4px 0 0;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
-.block {
-    border-radius: 20px;
-    padding: 24px;
+.filter-grid {
+  width: 100%;
+  max-width: 880px;
+  min-width: 0;
+  justify-self: end;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr) minmax(0, .92fr) minmax(132px, .76fr);
+  gap: 9px;
+  align-items: end;
 }
 
-@media (max-width: 600px) {
-    .block {
-        padding: 12px;
-    }
+.field-group { min-width: 0; width: 100%; }
+.dashboard-field { min-width: 0; width: 100%; }
+
+.field-label {
+  display: block;
+  margin: 0 0 4px 2px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .7px;
 }
 
-.block--dark {
-    background: #161b22;
-    border: 1px solid rgba(255, 255, 255, .05);
+.field-icon { color: var(--brand); }
+
+:deep(.dashboard-field .q-field__control) {
+  min-height: 38px;
+  height: 38px;
+  background: var(--surf-2);
+  border-radius: 10px !important;
 }
 
-.block--light {
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, .04);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .03);
+:deep(.dashboard-field .q-field__marginal) {
+  height: 38px;
 }
 
-.block-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
+:deep(.dashboard-field .q-field__native),
+:deep(.dashboard-field .q-field__input) {
+  min-height: 38px;
+  padding-top: 0;
+  padding-bottom: 0;
+  color: var(--text-strong);
+  font-size: 11.5px;
+  font-weight: 650;
 }
 
-.block-title {
-    font-size: 16px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
+:deep(.dashboard-field.q-field--outlined .q-field__control:before) {
+  border-color: var(--border-soft);
 }
 
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 16px;
-    text-align: center;
-    background: rgba(128, 128, 128, 0.03);
-    border-radius: 12px;
-    border: 1px dashed rgba(128, 128, 128, 0.2);
+:deep(.dashboard-field.q-field--focused .q-field__control:before) {
+  border-color: var(--brand) !important;
 }
 
-.order-list {
-    display: flex;
-    flex-direction: column;
+.refresh-btn {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  min-height: 38px;
+  color: white;
+  background: var(--brand-gradient) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-brand);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .1px;
 }
 
-.order-row {
-    padding: 16px 12px;
-    border-radius: 12px;
-    transition: all .15s ease;
-    border-bottom: 1px solid transparent;
+.refresh-btn:hover { transform: translateY(-1px); }
+
+.dashboard-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-@media (min-width: 601px) {
-    .order-row {
-        display: grid;
-        grid-template-columns: 2.2fr 1.3fr 1.5fr 1fr;
-        align-items: center;
-        gap: 16px;
-    }
-
-    .order-col-info {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        min-width: 0;
-    }
-
-    .order-col-forecast {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .order-col-status {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .order-col-value {
-        text-align: right;
-    }
+.dashboard-alert--error {
+  color: #d95050;
+  border: 1px solid rgba(217, 80, 80, .2);
+  background: rgba(217, 80, 80, .08);
 }
 
-@media (max-width: 600px) {
-    .order-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    .order-col-info {
-        grid-column: span 2;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .order-col-forecast {
-        grid-column: span 2;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .order-col-status {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-    }
-
-    .order-col-value {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        text-align: right;
-    }
+/* EXECUTIVE METRICS */
+.executive-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 0;
 }
 
-.order-row--light:not(:last-child) {
-    border-bottom-color: rgba(0, 0, 0, 0.06);
+.metric-card {
+  display: flex;
+  gap: 13px;
+  padding: 17px;
+  min-width: 0;
 }
 
-.order-row--light:hover {
-    background: rgba(0, 0, 0, 0.02);
-    border-bottom-color: transparent;
+.metric-card__icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255,123,0,.16);
+  border-radius: 13px;
 }
 
-.order-row--dark:not(:last-child) {
-    border-bottom-color: rgba(255, 255, 255, 0.06);
+.metric-card__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.order-row--dark:hover {
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom-color: transparent;
+.metric-card__label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .55px;
+  text-transform: uppercase;
 }
 
-.forecast-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: #999;
-    margin-bottom: 2px;
+.metric-card__value {
+  margin-top: 2px;
+  color: var(--text-strong);
+  font-size: 18px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.forecast-value {
-    font-size: 12px;
-    font-weight: 600;
+.metric-card__helper {
+  margin-top: 3px;
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-weight: 600;
 }
 
-.status-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
+/* STATUS */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+  gap: 14px;
 }
 
-.timeline-hz-container {
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
+.status-card {
+  position: relative;
+  overflow: hidden;
+  padding: 17px;
+  transition: transform .18s ease, box-shadow .18s ease;
 }
 
-.timeline-hz-container--light {
-    background: #f8f9fa;
-    border: 1px solid rgba(0, 0, 0, 0.04);
+.status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.timeline-hz-container--dark {
-    background: #0f1319;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+.status-card__top,
+.status-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.status-card__icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .15px;
+  line-height: 1.2;
+}
+
+.status-card__value {
+  display: block;
+  margin: 14px 0 9px;
+  color: var(--text-strong);
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.status-card__footer {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-card__percent { color: var(--text-faint); }
+
+.status-card__accent {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  opacity: .85;
+}
+
+/* CHARTS */
+.analytics-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.analytics-grid--primary { grid-template-columns: minmax(0, 1.7fr) minmax(300px, .8fr); }
+.analytics-grid--rankings { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+
+.chart-card {
+  min-width: 0;
+  padding: 19px 19px 10px;
+  overflow: hidden;
+}
+
+.chart-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.chart-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--navy-2);
+  background: var(--navy-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+}
+
+.chart-icon--brand {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: rgba(255,123,0,.16);
+}
+
+.chart-title-wrap h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.chart-title-wrap p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+/* OPERATIONS */
+.operations-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  gap: 16px;
+  margin-top: 30px;
+  align-items: start;
+}
+
+.operations-grid--separated {
+  padding-top: 28px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.recent-panel { padding: 20px; }
+.recent-heading { margin-bottom: 16px; }
+
+.text-btn {
+  color: var(--brand) !important;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.orders-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-card {
+  overflow: hidden;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 15px;
+}
+
+.order-card__main {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 17px;
+}
+
+.order-identity { min-width: 0; }
+
+.order-id-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+
+.order-id {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255,123,0,.14);
+  border-radius: 7px;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.order-date {
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.order-store {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.order-store .q-icon { color: var(--brand); }
+.order-store span { color: var(--text-faint); font-size: 10px; font-weight: 700; }
+
+.order-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 7px;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.order-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+.order-side-data {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  text-align: right;
+}
+
+.order-money {
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.order-status { max-width: 180px; }
+
+.forecast-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.forecast-text--danger { color: #d95050; }
+
+.order-progress {
+  padding: 13px 17px 15px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surf-1);
+}
+
+.order-progress__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.order-progress__head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-progress__head strong {
+  color: var(--text-strong);
+  font-size: 11px;
+}
+
+.order-progress__head span:not(.progress-number) {
+  color: var(--text-muted);
+  font-size: 9.5px;
+}
+
+.progress-number { font-size: 11px; font-weight: 900; }
+.timeline-action-row { display: flex; justify-content: flex-end; margin-top: 3px; }
+
+.timeline-shell {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 14px 10px;
+  overflow: hidden;
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
 }
 
 .timeline-hz-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    width: 100%;
-    max-width: 100%;
-}
-
-.step-connect-line {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    width: 100%;
-    height: 3px;
-    z-index: 1;
-    transition: all 0.5s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .timeline-hz-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    min-width: 0;
-    box-sizing: border-box;
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
-.line-pulsing {
-    height: 3px;
-    background-image: linear-gradient(90deg, rgba(33, 186, 69, 0) 0%, rgba(33, 186, 69, 1) 50%, rgba(33, 186, 69, 0) 100%) !important;
-    background-size: 60px 100% !important;
-    background-repeat: no-repeat !important;
-    animation: light-sweep 2.2s infinite ease-in-out !important;
-}
-
-@keyframes light-sweep {
-    0% {
-        background-position: -60px 0;
-        opacity: 0.3;
-    }
-
-    50% {
-        opacity: 1;
-    }
-
-    100% {
-        background-position: calc(100% + 60px) 0;
-        opacity: 0.3;
-    }
+.step-connect-line {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 100%;
+  height: 3px;
+  z-index: 1;
 }
 
 .step-circle {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    z-index: 2;
+  position: relative;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition: .25s ease;
 }
 
-.step-circle--active {
-    box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
-    animation: pulse 2s infinite;
-}
+.step-circle--active { animation: pulse 2s infinite; }
 
 .step-title {
-    font-size: 11px;
-    line-height: 1.2;
-    margin-top: 6px;
-    max-width: 90px;
-    white-space: normal;
-    word-break: normal;
-    overflow-wrap: normal;
+  max-width: 90px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
+.step-title--active { color: var(--brand); font-weight: 800; }
+
 .step-current-tag {
-    font-size: 9px;
-    text-transform: uppercase;
-    font-weight: 800;
-    background: var(--q-primary);
-    color: #fff;
-    padding: 1px 5px;
-    border-radius: 4px;
-    margin-top: 4px;
+  margin-top: 4px;
+  padding: 2px 5px;
+  color: white;
+  background: var(--brand);
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.line-pulsing {
+  background-image: linear-gradient(90deg, rgba(255,123,0,0), rgba(255,123,0,1), rgba(255,123,0,0)) !important;
+  background-size: 60px 100% !important;
+  background-repeat: no-repeat !important;
+  animation: light-sweep 2.2s infinite ease-in-out !important;
+}
+
+@keyframes light-sweep {
+  0% { background-position: -60px 0; opacity: .3; }
+  50% { opacity: 1; }
+  100% { background-position: calc(100% + 60px) 0; opacity: .3; }
 }
 
 @keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0px rgba(25, 118, 210, 0.3);
-    }
-
-    70% {
-        box-shadow: 0 0 0 5px rgba(25, 118, 210, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0px rgba(25, 118, 210, 0);
-    }
+  0% { box-shadow: 0 0 0 0 rgba(255,123,0,.32); }
+  70% { box-shadow: 0 0 0 6px rgba(255,123,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,123,0,0); }
 }
 
-.support-block {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 32px 24px;
+/* NETWORK */
+.network-column { position: sticky; top: 82px; }
+
+.network-card {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
 }
 
-.support-icon-wrap {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: rgba(25, 118, 210, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
+.network-card::after {
+  content: '';
+  position: absolute;
+  top: -95px;
+  right: -95px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: var(--blob-brand);
+  pointer-events: none;
 }
 
-.support-title {
-    font-size: 18px;
-    font-weight: 800;
-    margin: 0 0 8px;
+.network-card__visual {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
 }
 
-.support-text {
-    font-size: 13px;
-    line-height: 1.5;
-    margin: 0 0 20px;
+.network-main-icon {
+  position: relative;
+  z-index: 3;
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: var(--brand-gradient);
+  border-radius: 15px;
+  box-shadow: var(--shadow-brand);
 }
 
-/* ==========================================
-   ESTILOS DA BARRA DE FILTROS (REFINADO)
-   ========================================== */
-.filter-bar {
-    padding-bottom: 28px !important;
+.network-orbit {
+  position: absolute;
+  border: 1px solid rgba(255,123,0,.2);
+  border-radius: 50%;
+}
+.network-orbit--one { inset: 7px; }
+.network-orbit--two { inset: 0; opacity: .55; }
+
+.network-title {
+  margin: 5px 0 7px;
+  color: var(--text-strong);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -.3px;
 }
 
-.icon-box {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.network-copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  line-height: 1.55;
 }
 
-.filter-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: block;
-    margin-bottom: 4px;
-    padding-left: 2px;
+.network-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 18px 0;
 }
 
-.shadow-btn {
-    transition: all 0.2s ease;
+.network-stats > div {
+  padding: 12px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
 }
 
-.shadow-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+.network-stats strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 17px;
 }
 
-/* Modifica internamente o visual dos inputs do Quasar para ficarem arredondados */
-:deep(.custom-bg-input .q-field__control) {
-    border-radius: 8px !important;
+.network-stats span {
+  color: var(--text-muted);
+  font-size: 9.5px;
+  font-weight: 700;
 }
 
-/* Fundo discreto para os inputs se destacarem do fundo branco/preto do card */
-.block--light :deep(.custom-bg-input .q-field__control) {
-    background: #f8f9fa;
+.network-actions { display: grid; gap: 8px; }
+.network-btn {
+  min-height: 42px;
+  font-size: 11.5px;
+  font-weight: 800;
+  transition: background-color .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.network-btn--primary {
+  color: var(--text-strong) !important;
+  background: var(--surf-2) !important;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-xs);
+}
+.network-btn--primary :deep(.q-icon) { color: var(--brand); }
+.network-btn--primary:hover {
+  background: var(--brand-soft) !important;
+  border-color: rgba(255, 123, 0, .28);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.network-btn--secondary { color: var(--brand) !important; background: var(--brand-soft) !important; }
+.network-btn--secondary:hover { background: rgba(255, 123, 0, .18) !important; }
+
+/* STATES */
+.empty-state,
+.loading-state {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 5px;
+  color: var(--text-muted);
+  background: var(--surf-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
 }
 
-.block--dark :deep(.custom-bg-input .q-field__control) {
-    background: #0f1319;
+.empty-state strong { color: var(--text-strong); font-size: 12px; }
+.empty-state span,
+.loading-state span { font-size: 10.5px; }
+.empty-icon { width: 45px; height: 45px; display: grid; place-items: center; color: var(--brand); background: var(--brand-soft); border-radius: 14px; margin-bottom: 3px; }
+.compact-empty { min-height: 180px; }
+
+/* DIALOGS */
+.network-dialog {
+  width: 720px;
+  max-width: 94vw;
+  max-height: 86vh;
+  background: var(--surf-1) !important;
+  color: var(--text-base);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.network-dialog--small { width: 620px; }
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 20px 22px;
+}
+
+.dialog-title-wrap { display: flex; align-items: center; gap: 12px; }
+.dialog-icon { width: 40px; height: 40px; display: grid; place-items: center; color: var(--brand); background: var(--brand-soft); border-radius: 12px; }
+.dialog-title-wrap h3 { margin: 0; color: var(--text-strong); font-size: 15px; font-weight: 900; }
+.dialog-title-wrap p { margin: 2px 0 0; color: var(--text-muted); font-size: 10.5px; }
+.dialog-body { max-height: 68vh; overflow-y: auto; padding: 16px; }
+
+.network-list { display: grid; gap: 8px; }
+.network-expansion { overflow: hidden; background: var(--surf-2); border: 1px solid var(--border-soft); border-radius: 13px; }
+.list-avatar { width: 34px; height: 34px; display: grid; place-items: center; color: var(--brand); background: var(--brand-soft); border-radius: 10px; }
+.list-title, .nested-title { color: var(--text-strong); font-size: 12px; font-weight: 800; }
+.id-chip { color: var(--text-faint); font-size: 9.5px; font-weight: 800; }
+.expansion-inner { padding: 8px; background: var(--surf-1); border-top: 1px solid var(--border-soft); }
+.rep-contact-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 7px; padding: 9px 10px; color: var(--text-muted); background: var(--surf-2); border: 1px solid var(--border-soft); border-radius: 10px; }
+.rep-contact-info { display: flex; flex-wrap: wrap; gap: 6px 14px; min-width: 0; font-size: 9.5px; font-weight: 600; }
+.rep-contact-info span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.rep-contact-actions { display: flex; flex-shrink: 0; color: var(--brand); }
+.nested-expansion { margin-top: 6px; background: var(--surf-1); border: 1px solid var(--border-soft); border-radius: 11px; }
+.brand-text-color { color: var(--brand); }
+.projects-mini-list { display: grid; gap: 6px; padding: 7px; }
+.project-mini-row { display: flex; justify-content: space-between; gap: 15px; padding: 10px 11px; background: var(--surf-2); border: 1px solid var(--border-soft); border-radius: 10px; }
+.project-mini-main, .project-mini-side { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.project-mini-main strong, .project-mini-side strong { color: var(--text-strong); font-size: 11px; }
+.project-mini-main span { color: var(--text-muted); font-size: 9.5px; }
+.project-mini-side { align-items: flex-end; text-align: right; flex-shrink: 0; }
+.mini-status { padding: 2px 6px; font-size: 8px; }
+
+/* APEX overrides */
+:deep(.apexcharts-text),
+:deep(.apexcharts-legend-text) { font-family: 'DM Sans', sans-serif !important; }
+:deep(.apexcharts-gridline) { stroke: var(--border-soft); }
+
+/* RESPONSIVE */
+/* A sidebar reduz a largura útil bem antes dos breakpoints mobile.
+   Nesta faixa somente o filtro passa para duas linhas, sem alterar o restante da dashboard. */
+@media (max-width: 1360px) {
+  .filter-panel { grid-template-columns: 1fr; gap: 11px; align-items: stretch; }
+  .filter-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+  .filter-note { margin: 0 0 1px; max-width: 320px; text-align: right; }
+  .filter-grid {
+    max-width: none;
+    min-width: 0;
+    justify-self: stretch;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .9fr) minmax(0, .9fr) minmax(132px, .72fr);
+  }
+}
+
+@media (max-width: 1180px) {
+  .executive-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .analytics-grid--primary { grid-template-columns: 1fr; }
+  .operations-grid { grid-template-columns: 1fr; }
+  .network-column { position: static; }
+  .network-card { display: grid; grid-template-columns: auto 1fr; column-gap: 18px; align-items: start; }
+  .network-card__visual { grid-row: 1 / span 4; }
+  .network-stats, .network-actions { grid-column: 2; }
+
+}
+
+@media (max-width: 900px) {
+  .dashboard-hero { align-items: stretch; flex-direction: column; }
+  .hero-summary { min-width: 0; width: 100%; }
+  .executive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filter-grid { max-width: none; justify-self: stretch; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .analytics-grid--rankings { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard { padding: 18px 10px 34px; }
+  .dashboard-hero { margin-bottom: 18px; }
+  .hero-title { font-size: 28px; }
+  .hero-summary { padding: 14px; }
+  .hero-summary__divider { margin: 0 12px; }
+  .hero-summary__item strong { font-size: 13px; }
+  .filter-panel, .recent-panel, .network-card { padding: 14px; }
+  .section-heading-row { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .section-caption { display: none; }
+  .filter-intro { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .filter-intro .section-kicker { display: none; }
+  .filter-intro .section-title { margin: 0; font-size: 14px; }
+  .filter-note { margin: 0; text-align: right; max-width: 190px; }
+  .filter-grid { grid-template-columns: 1fr; gap: 8px; }
+  .dashboard-section--separated { padding-top: 22px; margin-top: 24px; }
+  .operations-grid--separated { padding-top: 22px; margin-top: 24px; }
+  .executive-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .metric-card { padding: 13px; gap: 9px; }
+  .metric-card__icon { width: 36px; height: 36px; flex-basis: 36px; }
+  .metric-card__value { font-size: 15px; }
+  .metric-card__helper { display: none; }
+  .status-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .status-card { padding: 13px; }
+  .status-card__value { font-size: 15px; }
+  .status-pill { font-size: 8.5px; }
+  .chart-card { padding: 15px 10px 8px; }
+  .order-card__main { flex-direction: column; gap: 12px; padding: 14px; }
+  .order-side-data { align-items: flex-start; text-align: left; }
+  .order-progress { padding: 12px 14px 14px; }
+  .timeline-shell { padding: 12px 6px; }
+  .step-title { max-width: 62px; font-size: 8px; line-height: 1.15; }
+  .step-current-tag { margin-top: 3px; padding: 2px 4px; font-size: 7px; }
+  .network-card { display: block; }
+  .network-card__visual { margin-bottom: 15px; }
+  .network-stats, .network-actions { grid-column: auto; }
+  .dialog-head { padding: 16px; }
+  .dialog-body { padding: 10px; }
+  .project-mini-row { flex-direction: column; }
+  .project-mini-side { align-items: flex-start; text-align: left; }
+}
+
+@media (max-width: 420px) {
+  .executive-grid, .status-grid { grid-template-columns: 1fr; }
+  .filter-intro { display: block; }
+  .filter-note { margin-top: 3px; text-align: left; max-width: none; }
+  .hero-summary { flex-direction: column; align-items: stretch; gap: 10px; }
+  .hero-summary__divider { width: 100%; height: 1px; margin: 0; }
+  .timeline-shell { padding: 10px 4px; }
+  .step-circle { width: 20px; height: 20px; }
+  .step-connect-line { top: 9px; }
+  .step-title { max-width: 52px; font-size: 7.4px; }
 }
 </style>
+

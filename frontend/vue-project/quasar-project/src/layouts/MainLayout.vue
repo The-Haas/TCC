@@ -47,8 +47,16 @@
         <div class="sidebar-sep" />
 
         <!-- ── Perfil resumido ── -->
-        <div class="sidebar-profile" :class="{ 'sidebar-profile--collapsed': isCollapsed }">
-          <!-- Avatar com iniciais — div customizada para centralização perfeita -->
+        <div
+          class="sidebar-profile"
+          :class="{ 'sidebar-profile--collapsed': isCollapsed }"
+          role="button"
+          tabindex="0"
+          aria-label="Abrir meu perfil"
+          @click="goToProfile"
+          @keydown.enter.prevent="goToProfile"
+          @keydown.space.prevent="goToProfile"
+        >
           <div class="profile-av" :style="{
             background: roleColor + '22',
             border: `1.5px solid ${roleColor}44`,
@@ -67,8 +75,14 @@
             </div>
           </transition>
 
+          <transition name="fade-text">
+            <div v-if="!isCollapsed" class="profile-action">
+              <q-icon name="edit" size="15px" />
+            </div>
+          </transition>
+
           <q-tooltip v-if="isCollapsed" anchor="center right" self="center left" :offset="[12, 0]">
-            {{ authStore.userName }} — {{ roleLabel }}
+            Meu perfil · {{ authStore.userName }}
           </q-tooltip>
         </div>
 
@@ -124,10 +138,19 @@
         <q-btn class="lt-sm q-mr-xs" flat round dense icon="menu" :color="isDark ? 'grey-4' : 'grey-7'"
           @click="toggleMobileDrawer" />
 
-        <!-- Título da página -->
-        <div class="topbar-title">
-          <q-icon :name="currentPage.icon" size="17px" color="orange" class="q-mr-xs" />
-          <span :class="isDark ? 'text-grey-3' : 'text-grey-8'">{{ currentPage.label }}</span>
+        <!-- Contexto da página atual -->
+        <div class="topbar-context">
+          <div class="topbar-context__icon">
+            <q-icon :name="currentPage.icon" size="17px" />
+          </div>
+
+          <div class="topbar-context__copy gt-xs">
+            <span class="topbar-context__root">Artezza</span>
+            <q-icon name="chevron_right" size="14px" class="topbar-context__chevron" />
+            <span class="topbar-context__page">{{ currentPage.label }}</span>
+          </div>
+
+          <span class="topbar-context__page xs">{{ currentPage.label }}</span>
         </div>
 
         <q-space />
@@ -156,75 +179,183 @@
             <q-tooltip>{{ isDark ? 'Modo claro' : 'Modo escuro' }}</q-tooltip>
           </q-btn>
 
-          <!-- Avatar + menu -->
-          <q-btn flat round dense class="topbar-btn q-ml-xs">
-            <!-- Avatar com iniciais centralizadas -->
+          <!-- Conta do usuário -->
+          <q-btn
+            flat
+            no-caps
+            class="account-trigger q-ml-xs"
+            :class="isDark ? 'account-trigger--dark' : 'account-trigger--light'"
+            aria-label="Abrir menu da minha conta"
+          >
             <div class="topbar-av" :style="{
               background: roleColor + '22',
               border: `1.5px solid ${roleColor}55`,
             }">
               <span :style="{ color: roleColor }">{{ initials }}</span>
             </div>
-            <q-tooltip>Minha conta</q-tooltip>
 
-            <q-menu anchor="bottom right" self="top right" :offset="[0, 8]" :dark="isDark"
-              style="min-width:224px;border-radius:12px;overflow:hidden">
-              <q-list :dark="isDark" class="q-py-sm">
+            <div class="account-trigger__meta gt-xs">
+              <span class="account-trigger__name">{{ firstName }}</span>
+              <span class="account-trigger__role">{{ roleLabel }}</span>
+            </div>
 
-                <!-- Cabeçalho do menu -->
-                <div class="user-menu-head q-px-md q-pb-sm q-pt-md">
-                  <div class="user-menu-av-wrap">
-                    <div class="user-menu-av"
-                      :style="{ background: roleColor + '22', border: `1.5px solid ${roleColor}55` }">
-                      <span :style="{ color: roleColor }">{{ initials }}</span>
-                    </div>
-                    <div class="user-menu-info">
-                      <div class="text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'"
-                        style="font-size:13.5px;line-height:1.2">
-                        {{ authStore.userName }}
-                      </div>
-                      <div class="text-caption q-mb-xs" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-                        {{ authStore.userEmail }}
-                      </div>
-                      <q-badge outline :color="isDark ? 'grey-5' : 'grey-7'" class="q-px-sm q-py-xs"
-                        style="font-size: 11px; display: block !important; text-align: center !important; width: 100% !important;">
-                        {{ roleLabel }}
-                      </q-badge>
+            <q-icon name="keyboard_arrow_down" size="18px" class="account-trigger__chevron gt-xs" />
+            <q-tooltip class="xs">Minha conta</q-tooltip>
+
+            <q-menu
+              anchor="bottom right"
+              self="top right"
+              :offset="[0, 10]"
+              :dark="isDark"
+              transition-show="jump-down"
+              transition-hide="jump-up"
+              style="min-width: 318px; border-radius: 16px; overflow: hidden;"
+            >
+              <div class="account-menu" :class="isDark ? 'account-menu--dark' : 'account-menu--light'">
+                <div class="account-menu__hero">
+                  <div class="user-menu-av"
+                    :style="{ background: roleColor + '22', border: `1.5px solid ${roleColor}55` }">
+                    <span :style="{ color: roleColor }">{{ initials }}</span>
+                  </div>
+
+                  <div class="account-menu__identity">
+                    <div class="account-menu__name">{{ authStore.userName }}</div>
+                    <div class="account-menu__email">{{ authStore.userEmail || 'E-mail não informado' }}</div>
+                    <div
+                      class="account-menu__role"
+                      :style="{
+                        color: roleColor,
+                        background: roleColor + '12',
+                        borderColor: roleColor + '30',
+                      }"
+                    >
+                      <span class="account-menu__role-dot" :style="{ background: roleColor }" />
+                      {{ roleLabel }}
                     </div>
                   </div>
                 </div>
 
-                <q-separator :dark="isDark" class="q-my-xs" />
+                <div class="account-menu__divider" />
 
-                <q-item clickable v-close-popup to="/perfil" class="menu-item">
-                  <q-item-section avatar style="min-width:32px">
-                    <q-icon name="manage_accounts" color="orange" size="18px" />
+                <div class="account-menu__label">Conta</div>
+
+                <q-item clickable v-close-popup to="/perfil" class="account-menu__item">
+                  <q-item-section avatar class="account-menu__item-avatar">
+                    <div class="account-menu__item-icon account-menu__item-icon--brand">
+                      <q-icon name="manage_accounts" size="19px" />
+                    </div>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label :class="isDark ? 'text-grey-2' : 'text-grey-8'" style="font-size:13.5px">Meu
-                      Perfil</q-item-label>
-                    <q-item-label caption>Editar dados pessoais</q-item-label>
+                    <q-item-label class="account-menu__item-title">Meu perfil</q-item-label>
+                    <q-item-label caption class="account-menu__item-caption">
+                      Alterar dados pessoais e da conta
+                    </q-item-label>
                   </q-item-section>
-                </q-item>
-                <q-separator :dark="isDark" class="q-my-xs" />
-
-                <q-item clickable v-close-popup class="menu-item" @click="handleLogout">
-                  <q-item-section avatar style="min-width:32px">
-                    <q-icon name="logout" color="negative" size="18px" />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-negative" style="font-size:13.5px">Sair</q-item-label>
-                    <q-item-label caption>Encerrar sessão</q-item-label>
+                  <q-item-section side>
+                    <q-icon name="chevron_right" size="19px" class="account-menu__item-arrow" />
                   </q-item-section>
                 </q-item>
 
-              </q-list>
+                <div class="account-menu__session">
+                  <div class="account-menu__session-icon">
+                    <q-icon :name="sessionUrgent ? 'timer_off' : 'schedule'" size="17px" />
+                  </div>
+                  <div class="account-menu__session-copy">
+                    <span>Sessão ativa</span>
+                    <small>{{ sessionStatusLabel }}</small>
+                  </div>
+                  <strong
+                    :class="{
+                      'text-warning': sessionWarning && !sessionUrgent,
+                      'text-negative': sessionUrgent,
+                    }"
+                  >
+                    {{ sessionTimeLeft }}
+                  </strong>
+                </div>
+
+                <div class="account-menu__divider" />
+
+                <q-item clickable v-close-popup class="account-menu__item account-menu__item--logout" @click="handleLogout">
+                  <q-item-section avatar class="account-menu__item-avatar">
+                    <div class="account-menu__item-icon account-menu__item-icon--danger">
+                      <q-icon name="logout" size="19px" />
+                    </div>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="account-menu__item-title text-negative">Sair do sistema</q-item-label>
+                    <q-item-label caption class="account-menu__item-caption">
+                      Encerrar esta sessão com segurança
+                    </q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-icon name="chevron_right" size="19px" class="text-negative" />
+                  </q-item-section>
+                </q-item>
+              </div>
             </q-menu>
           </q-btn>
 
         </div>
       </q-toolbar>
     </q-header>
+
+
+    <!-- ══════════════════════════════════════════════
+         CONFIRMAÇÃO DE SAÍDA
+         ══════════════════════════════════════════════ -->
+    <q-dialog v-model="logoutDialog" persistent>
+      <q-card class="logout-dialog" :class="isDark ? 'logout-dialog--dark' : 'logout-dialog--light'">
+        <div class="logout-dialog__accent" />
+
+        <q-card-section class="logout-dialog__body">
+          <div class="logout-dialog__icon">
+            <q-icon name="logout" size="25px" />
+          </div>
+
+          <div class="logout-dialog__content">
+            <div class="logout-dialog__eyebrow">Sessão</div>
+            <h3>Encerrar sessão?</h3>
+            <p>
+              Você será desconectado da Artezza e precisará entrar novamente para continuar.
+            </p>
+
+            <div class="logout-dialog__user">
+              <div class="logout-dialog__avatar" :style="{
+                background: roleColor + '22',
+                border: `1px solid ${roleColor}44`,
+                color: roleColor,
+              }">
+                {{ initials }}
+              </div>
+              <div>
+                <strong>{{ authStore.userName }}</strong>
+                <span>{{ authStore.userEmail || roleLabel }}</span>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions class="logout-dialog__actions" align="right">
+          <q-btn
+            flat
+            no-caps
+            label="Continuar no sistema"
+            class="logout-dialog__cancel"
+            @click="logoutDialog = false"
+          />
+          <q-btn
+            unelevated
+            no-caps
+            color="negative"
+            icon="logout"
+            label="Sair do sistema"
+            class="logout-dialog__confirm"
+            @click="confirmLogout"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- ══════════════════════════════════════════════
          CONTEÚDO
@@ -291,6 +422,10 @@ const initials = computed(() =>
     .join('')
 )
 
+const firstName = computed(() =>
+  (authStore.userName || 'Usuário').trim().split(/\s+/)[0] || 'Usuário'
+)
+
 // ── Menu por perfil ────────────────────────────────────────────────
 const allMenu = [
   {
@@ -320,7 +455,7 @@ const allMenu = [
     ],
   },
   {
-    key: 'admin',
+    key: 'config',
     label: 'Configurações',
     items: [
       { label: 'Configurações', icon: 'settings', to: '/configuracoes', roles: ['admin'] },
@@ -336,22 +471,32 @@ const visibleMenu = computed(() => {
 })
 
 // ── Título da página atual ─────────────────────────────────────────
-const allItems = allMenu.flatMap(s => s.items)
-
 const currentPage = computed(() => {
-  const match = allItems.find(i => route.path.startsWith(i.to) && i.to !== '/')
-  if (match) return match
-  if (route.path === '/perfil') return { label: 'Meu Perfil', icon: 'manage_accounts' }
-  return { label: 'Artezza', icon: 'home' }
+  if (route.path === '/perfil' || route.path.startsWith('/perfil/')) {
+    return { label: 'Meu Perfil', icon: 'manage_accounts' }
+  }
+
+  const items = visibleMenu.value.flatMap(section => section.items)
+  const match = items
+    .filter(item => route.path === item.to || route.path.startsWith(`${item.to}/`))
+    .sort((a, b) => b.to.length - a.to.length)[0]
+
+  return match || { label: 'Artezza', icon: 'home' }
 })
 
 // ── Timer de sessão REGRESSIVO ─────────────────────────────────────
 const SESSION_DURATION = 1 * 60 * 60 // 1 hora em segundos
 
-const sessionTimeLeft = ref('08:00:00')
+const sessionTimeLeft = ref('01:00:00')
 const sessionWarning = ref(false) // < 30 min
 const sessionUrgent = ref(false) // < 5 min
 let timerInterval = null
+
+const sessionStatusLabel = computed(() => {
+  if (sessionUrgent.value) return 'Expirando agora'
+  if (sessionWarning.value) return 'Expira em breve'
+  return 'Tempo restante'
+})
 
 function tickSession() {
   const loginTs = parseInt(localStorage.getItem('horus_login_ts') || '0')
@@ -362,10 +507,7 @@ function tickSession() {
 
   if (remaining <= 0) {
     // Sessão expirou — desloga automaticamente
-    clearInterval(timerInterval)
-    $q.notify({ type: 'negative', message: 'Sua sessão expirou. Faça login novamente.' })
-    authStore.logout()
-    router.push('/login')
+    performLogout({ expired: true })
     return
   }
 
@@ -385,41 +527,37 @@ function toggleMobileDrawer() {
   drawerOpen.value = !drawerOpen.value
 }
 
-// ── Logout ─────────────────────────────────────────────────────────
+// ── Perfil / Logout ────────────────────────────────────────────────
+const logoutDialog = ref(false)
+
+function goToProfile() {
+  if ($q.screen.lt.sm) drawerOpen.value = false
+  router.push('/perfil')
+}
+
 function handleLogout() {
-  $q.dialog({
-    title: 'Encerrar sessão',
-    message: 'Deseja realmente sair do sistema e encerrar suas atividades?',
+  logoutDialog.value = true
+}
 
-    // Classes de cor dinâmicas (Claro / Escuro)
-    class: isDark.value ? 'bg-dark text-white' : 'bg-white text-grey-9',
+function performLogout({ expired = false } = {}) {
+  clearInterval(timerInterval)
+  localStorage.removeItem('horus_login_ts')
+  logoutDialog.value = false
+  authStore.logout()
 
-    // O pulo do gato: Borda superior fina vermelha, arredondamento médio e sombra suave
-    style: 'border-radius: 16px; border-top: 4px solid var(--q-negative); box-shadow: 0 10px 30px rgba(0,0,0,0.1);',
+  if (expired) {
+    $q.notify({
+      type: 'negative',
+      message: 'Sua sessão expirou. Faça login novamente.',
+      icon: 'timer_off',
+    })
+  }
 
-    cancel: {
-      label: 'Cancelar',
-      color: 'grey-6',
-      flat: true,
-      noCaps: true,
-      class: 'text-weight-medium q-px-md' // Deixa o texto com peso médio
-    },
-    ok: {
-      label: 'Sair do sistema',
-      color: 'negative',
-      unelevated: true,
-      noCaps: true,
-      icon: 'logout', // Ícone no botão, porém mais sutil e à esquerda
-      class: 'text-weight-bold q-px-md' // Negrito no botão de ação principal
-    },
-    persistent: true // Evita fechar o modal se o usuário clicar fora por acidente
+  router.push('/login')
+}
 
-  }).onOk(() => {
-    clearInterval(timerInterval)
-    localStorage.removeItem('horus_login_ts')
-    authStore.logout()
-    router.push('/login')
-  })
+function confirmLogout() {
+  performLogout()
 }
 
 onMounted(() => {
@@ -779,57 +917,74 @@ onUnmounted(() => clearInterval(timerInterval))
 /* ══════════════════════════════════════════════
    TOPBAR
    ══════════════════════════════════════════════ */
-.topbar-dark {
+.topbar-dark,
+.topbar-light {
   background: var(--surf-topbar) !important;
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border-bottom: none !important;
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  border-bottom: 1px solid var(--border-soft) !important;
   box-shadow: none !important;
 }
 
-.topbar-light {
-  background: var(--surf-topbar) !important;
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border-bottom: none !important;
-  box-shadow: var(--shadow-xs) !important;
-}
-
-.topbar-dark::after,
-.topbar-light::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2.5px;
-  background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 35%, transparent 75%);
-  opacity: .8;
-}
-
 .topbar-toolbar {
-  padding: 0 16px;
-  min-height: 62px;
+  padding: 0 14px;
+  min-height: 56px;
   flex-wrap: nowrap;
 }
 
-.topbar-title {
+/* ── Contexto / breadcrumb da página ── */
+.topbar-context {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: .2px;
-  margin-left: 4px;
+  gap: 8px;
   min-width: 0;
-  overflow: hidden;
   flex-shrink: 1;
+  margin-left: 2px;
 }
 
-.topbar-title span {
+.topbar-context__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255, 123, 0, .18);
+}
+
+.topbar-context__copy {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.topbar-context__root {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+  letter-spacing: .2px;
+}
+
+.topbar-context__chevron {
+  color: var(--text-faint);
+  opacity: .7;
+  flex-shrink: 0;
+}
+
+.topbar-context__page {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-strong);
+  letter-spacing: .1px;
 }
 
 .topbar-right {
@@ -958,6 +1113,534 @@ onUnmounted(() => clearInterval(timerInterval))
 .menu-item {
   transition: background .12s;
   min-height: 44px;
+}
+
+
+/* ══════════════════════════════════════════════
+   PERFIL INTERATIVO / CONTA
+   ══════════════════════════════════════════════ */
+.sidebar-profile {
+  cursor: pointer;
+  outline: none;
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    transform .18s ease,
+    box-shadow .18s ease;
+}
+
+.sidebar-profile:hover,
+.sidebar-profile:focus-visible {
+  background: var(--brand-soft);
+  border-color: rgba(255, 123, 0, .24);
+  box-shadow: var(--shadow-xs);
+}
+
+.sidebar-profile:hover {
+  transform: translateY(-1px);
+}
+
+.sidebar-profile:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 123, 0, .14);
+}
+
+.profile-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-action {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.sidebar-profile:hover .profile-action {
+  color: var(--brand);
+  border-color: rgba(255, 123, 0, .28);
+  background: var(--brand-soft);
+}
+
+/* ── Gatilho da conta no topo ── */
+.account-trigger {
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 4px 8px 4px 5px;
+  color: var(--text-base);
+  border: 1px solid transparent;
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease;
+}
+
+.account-trigger :deep(.q-btn__content) {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.account-trigger--light:hover,
+.account-trigger--dark:hover {
+  background: var(--surf-2);
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-xs);
+}
+
+.account-trigger__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 142px;
+  line-height: 1.15;
+}
+
+.account-trigger__name {
+  max-width: 100%;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-trigger__role {
+  max-width: 100%;
+  margin-top: 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-trigger__chevron {
+  color: var(--text-faint);
+  transition: transform .18s ease, color .18s ease;
+}
+
+.account-trigger:hover .account-trigger__chevron {
+  color: var(--brand);
+  transform: translateY(1px);
+}
+
+/* ── Popover da conta ── */
+.account-menu {
+  width: 318px;
+  padding: 10px;
+  background: var(--surf-1);
+  color: var(--text-base);
+}
+
+.account-menu--dark,
+.account-menu--light {
+  background: var(--surf-1);
+}
+
+.account-menu__hero {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 10px 12px;
+}
+
+.user-menu-av {
+  width: 46px;
+  height: 46px;
+  box-shadow: var(--shadow-xs);
+}
+
+.user-menu-av span {
+  font-size: 15px;
+}
+
+.account-menu__identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-menu__name {
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 850;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-menu__email {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-menu__role {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .35px;
+  text-transform: uppercase;
+}
+
+.account-menu__role-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.account-menu__divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-soft);
+}
+
+.account-menu__label {
+  padding: 10px 10px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.account-menu__item {
+  min-height: 58px;
+  margin: 2px 0;
+  padding: 7px 8px;
+  border-radius: 11px;
+  color: var(--text-base);
+  transition: background .16s ease, transform .16s ease;
+}
+
+.account-menu__item:hover {
+  background: var(--surf-2);
+}
+
+.account-menu__item-avatar {
+  min-width: 44px !important;
+  padding-right: 8px;
+}
+
+.account-menu__item-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.account-menu__item-icon--brand {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255, 123, 0, .18);
+}
+
+.account-menu__item-icon--danger {
+  color: var(--q-negative);
+  background: rgba(229, 57, 53, .09);
+  border: 1px solid rgba(229, 57, 53, .14);
+}
+
+.account-menu__item-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.account-menu__item-caption {
+  margin-top: 2px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--text-muted) !important;
+}
+
+.account-menu__item-arrow {
+  color: var(--text-faint);
+}
+
+.account-menu__item--logout:hover {
+  background: rgba(229, 57, 53, .06);
+}
+
+.account-menu__session {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 8px 2px;
+  padding: 10px;
+  border-radius: 11px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+}
+
+.account-menu__session-icon {
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  flex-shrink: 0;
+}
+
+.account-menu__session-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.account-menu__session-copy span {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.account-menu__session-copy small {
+  margin-top: 2px;
+  font-size: 9.5px;
+  color: var(--text-faint);
+}
+
+.account-menu__session strong {
+  font-size: 11.5px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-base);
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════
+   MODAL DE LOGOUT
+   ══════════════════════════════════════════════ */
+.logout-dialog {
+  width: 460px;
+  max-width: calc(100vw - 28px);
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
+  color: var(--text-base);
+}
+
+.logout-dialog--dark,
+.logout-dialog--light {
+  background: var(--surf-1);
+}
+
+.logout-dialog__accent {
+  height: 4px;
+  background: linear-gradient(90deg, var(--q-negative), #ff6b5f 52%, rgba(255, 107, 95, .16));
+}
+
+.logout-dialog__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 24px 18px;
+}
+
+.logout-dialog__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 14px;
+  color: var(--q-negative);
+  background: rgba(229, 57, 53, .09);
+  border: 1px solid rgba(229, 57, 53, .16);
+}
+
+.logout-dialog__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.logout-dialog__eyebrow {
+  margin-bottom: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--q-negative);
+}
+
+.logout-dialog__content h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 900;
+  color: var(--text-strong);
+}
+
+.logout-dialog__content p {
+  margin: 8px 0 16px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.logout-dialog__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+}
+
+.logout-dialog__avatar {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.logout-dialog__user > div:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.logout-dialog__user strong {
+  font-size: 11.5px;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-dialog__user span {
+  margin-top: 1px;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-dialog__actions {
+  gap: 8px;
+  padding: 0 24px 22px;
+}
+
+.logout-dialog__cancel,
+.logout-dialog__confirm {
+  min-height: 40px;
+  border-radius: 10px;
+  font-weight: 800;
+  padding: 0 14px;
+}
+
+.logout-dialog__cancel {
+  color: var(--text-muted);
+}
+
+@media (max-width: 1023px) {
+  .account-trigger__meta {
+    max-width: 110px;
+  }
+}
+
+@media (max-width: 599px) {
+  .topbar-toolbar {
+    min-height: 54px;
+    padding: 0 8px;
+  }
+
+  .topbar-context {
+    gap: 6px;
+    margin-left: 0;
+  }
+
+  .topbar-context__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .topbar-context__page {
+    max-width: 104px;
+    font-size: 12px;
+  }
+
+  .session-timer {
+    margin-right: 2px;
+    padding: 5px 7px;
+  }
+
+  .account-trigger {
+    width: 40px;
+    min-width: 40px;
+    padding: 3px;
+    border-radius: 50%;
+  }
+
+  .account-trigger :deep(.q-btn__content) {
+    gap: 0;
+  }
+
+  .topbar-av {
+    width: 32px;
+    height: 32px;
+  }
+
+  .account-menu {
+    width: min(318px, calc(100vw - 20px));
+  }
+
+  .logout-dialog__body {
+    padding: 20px 18px 16px;
+    gap: 12px;
+  }
+
+  .logout-dialog__actions {
+    padding: 0 18px 18px;
+    flex-direction: column-reverse;
+    align-items: stretch !important;
+  }
+
+  .logout-dialog__cancel,
+  .logout-dialog__confirm {
+    width: 100%;
+    margin: 0 !important;
+  }
 }
 
 /* ══════════════════════════════════════════════
