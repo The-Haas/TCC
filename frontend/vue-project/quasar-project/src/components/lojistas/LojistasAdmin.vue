@@ -1,238 +1,1702 @@
 <template>
-  <div class="column fit">
-    <!-- Filtros e Ações -->
-    <q-card class="filter-card q-mb-lg"
-      :class="isDark ? 'bg-dark-card border-dark-sharp' : 'bg-white border-light-sharp'" flat>
-      <q-card-section class="row q-col-gutter-md items-center justify-between">
-        <div class="col-12 col-md-5">
-          <q-input v-model="busca" dense outlined :dark="isDark" debounce="300"
-            placeholder="Pesquisar por nome, email ou telefone..." clearable>
-            <template v-slot:prepend>
-              <q-icon name="search" color="grey-6" />
+  <q-page class="lojistas-page">
+    <!-- HERO -->
+    <section class="page-hero">
+      <div class="page-hero__copy">
+        <div class="eyebrow">
+          <span class="eyebrow__dot"></span>
+          Rede comercial
+        </div>
+
+        <h1>
+          Lojistas <span>parceiros</span>
+        </h1>
+
+        <p>
+          Gerencie os cadastros das lojas, seus representantes responsáveis,
+          projetos enviados e clientes atendidos em uma única ficha administrativa.
+        </p>
+      </div>
+
+      <div class="hero-summary">
+        <div class="hero-summary__item">
+          <span>Lojistas</span>
+          <strong>{{ lojistas.length }}</strong>
+        </div>
+
+        <div class="hero-summary__divider"></div>
+
+        <div class="hero-summary__item">
+          <span>Projetos</span>
+          <strong>{{ todosPedidos.length }}</strong>
+        </div>
+
+        <div class="hero-summary__divider"></div>
+
+        <div class="hero-summary__item">
+          <span>Clientes atendidos</span>
+          <strong>{{ totalClientesAtendidos }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- LISTAGEM -->
+    <section class="panel lojistas-panel">
+      <div class="list-toolbar">
+        <div>
+          <div class="section-kicker">Cadastros</div>
+          <h2>Lojistas cadastrados</h2>
+          <p>
+            Clique em uma loja para acessar cadastro, representante, projetos e clientes.
+          </p>
+        </div>
+
+        <div class="list-toolbar__actions">
+          <q-input
+            v-model="busca"
+            debounce="300"
+            outlined
+            dense
+            clearable
+            class="search-field"
+            placeholder="Pesquisar nome, e-mail ou telefone..."
+          >
+            <template #prepend>
+              <q-icon name="search" size="18px" />
             </template>
           </q-input>
+
+          <q-btn
+            unelevated
+            no-caps
+            icon="add_business"
+            label="Novo lojista"
+            class="primary-btn"
+            @click="abrirNovo"
+          />
         </div>
+      </div>
 
-        <!-- Botão Novo Lojista (Sempre visível pro Admin) -->
-        <div class="col-12 col-md-auto text-right">
-          <q-btn color="primary" icon="add" label="Novo Lojista" no-caps unevaluated class="text-weight-bold radius-8"
-            @click="abrirNovo" />
-        </div>
-      </q-card-section>
-    </q-card>
-
-    <!-- Container da Tabela -->
-    <div class="clientes-container col-grow">
-      <q-card flat class="modern-card fit"
-        :class="isDark ? 'bg-dark-card border-dark-sharp' : 'bg-white border-light-sharp'">
-        <q-table hide-bottom flat :rows="lojistas" :columns="colunasVisiveis" row-key="id" :loading="loading"
-          :filter="busca" :dark="isDark" v-model:pagination="paginacao"
-          no-data-label="Nenhum lojista cadastrado no sistema."
-          no-results-label="Nenhum registro corresponde à sua busca." card-class="transparent"
-          table-class="modern-table" table-header-class="modern-header" @row-click="handleRowClick">
-          <!-- Célula: ID -->
-          <template v-slot:body-cell-id="props">
-            <q-td :props="props" class="text-mono text-weight-bold" :class="isDark ? 'text-grey-5' : 'text-grey-6'"
-              style="font-size: 13px;">
-              #{{ props.row.id }}
-            </q-td>
+      <!-- DESKTOP -->
+      <div class="desktop-list">
+        <q-table
+          flat
+          hide-bottom
+          row-key="id"
+          :rows="lojistasFiltrados"
+          :columns="colunasLojistas"
+          :loading="loading"
+          v-model:pagination="paginacao"
+          class="data-table"
+          table-class="data-table__body"
+          table-header-class="data-table__header"
+          @row-click="handleRowClick"
+        >
+          <template #loading>
+            <q-inner-loading showing color="orange" />
           </template>
 
-          <!-- Célula: Nome -->
-          <template v-slot:body-cell-nome="props">
+          <template #body-cell-id="props">
             <q-td :props="props">
-              <div class="text-weight-bold text-subtitle2" :class="isDark ? 'text-white' : 'text-slate-main'">
-                {{ props.row.nome }}
-              </div>
+              <span class="id-badge">#{{ props.row.id }}</span>
             </q-td>
           </template>
 
-          <!-- Célula: Contato -->
-          <template v-slot:body-cell-contato="props">
+          <template #body-cell-lojista="props">
             <q-td :props="props">
-              <div class="text-weight-semibold text-slate-main font-13 flex items-center">
-                <q-icon name="phone" size="14px" class="q-mr-xs text-grey-5" />
-                {{ formatarTelefone(props.row.telefone) }}
-              </div>
-              <div class="text-caption text-grey-5 font-12 flex items-center q-mt-xs">
-                <q-icon name="mail" size="14px" class="q-mr-xs text-grey-5" />
-                {{ props.row.email || '---' }}
+              <div class="person-cell">
+                <div class="store-avatar">
+                  <q-icon name="storefront" size="19px" />
+                </div>
+
+                <div>
+                  <strong>{{ props.row.nome }}</strong>
+                  <span>Lojista parceiro</span>
+                </div>
               </div>
             </q-td>
           </template>
 
-          <!-- Célula: Representante (Exclusivo Admin) -->
-          <template v-slot:body-cell-representante="props">
+          <template #body-cell-contato="props">
             <q-td :props="props">
-              <div class="flex items-center text-caption" :class="isDark ? 'text-grey-4' : 'text-grey-7'">
-                <q-icon name="badge" size="14px" class="q-mr-xs"
-                  :color="props.row.nome_representante ? 'primary' : 'grey-5'" />
-                {{ props.row.nome_representante || 'Não vinculado' }}
+              <div class="contact-cell">
+                <div>
+                  <q-icon name="mail_outline" size="15px" />
+                  <span>{{ props.row.email || 'Não informado' }}</span>
+                </div>
+
+                <div>
+                  <q-icon name="phone" size="15px" />
+                  <span>{{ formatarTelefone(props.row.telefone) }}</span>
+                </div>
               </div>
             </q-td>
           </template>
 
-          <!-- Célula: Ações -->
-          <template v-slot:body-cell-acoes="props" v-if="podeEditar || true">
+          <template #body-cell-representante="props">
+            <q-td :props="props">
+              <div class="representative-cell">
+                <div class="representative-cell__icon">
+                  <q-icon name="badge" size="16px" />
+                </div>
+
+                <div>
+                  <strong>
+                    {{ props.row.nome_representante || representanteNome(props.row.id_representante) }}
+                  </strong>
+                  <span>Responsável comercial</span>
+                </div>
+              </div>
+            </q-td>
+          </template>
+
+          <template #body-cell-atividade="props">
+            <q-td :props="props">
+              <div class="activity-cell">
+                <span>
+                  <q-icon name="inventory_2" size="15px" />
+                  {{ props.row.total_pedidos }}
+                  {{ props.row.total_pedidos === 1 ? 'projeto' : 'projetos' }}
+                </span>
+
+                <span>
+                  <q-icon name="groups" size="15px" />
+                  {{ props.row.total_clientes }}
+                  {{ props.row.total_clientes === 1 ? 'cliente' : 'clientes' }}
+                </span>
+              </div>
+            </q-td>
+          </template>
+
+          <template #body-cell-acoes="props">
             <q-td :props="props" class="text-right">
-              <!-- Botão de Editar -->
-              <q-btn flat round dense icon="edit" color="primary" size="sm" class="action-btn"
-                @click.stop="abrirEdicao(props.row)" />
+              <div class="row-actions">
+                <q-btn
+                  flat
+                  round
+                  dense
+                  icon="visibility"
+                  class="table-action-btn"
+                  @click.stop="abrirEdicao(props.row)"
+                >
+                  <q-tooltip>Abrir cadastro</q-tooltip>
+                </q-btn>
 
-              <!-- Novo: Botão de Excluir -->
-              <q-btn flat round dense icon="delete" color="negative" size="sm" class="action-btn q-ml-sm"
-                @click.stop="confirmarExclusao(props.row)" />
+                <q-btn
+                  flat
+                  round
+                  dense
+                  icon="delete_outline"
+                  class="table-action-btn table-action-btn--danger"
+                  @click.stop="confirmarExclusao(props.row)"
+                >
+                  <q-tooltip>Excluir lojista</q-tooltip>
+                </q-btn>
+              </div>
             </q-td>
+          </template>
+
+          <template #no-data>
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <q-icon name="storefront" size="29px" />
+              </div>
+
+              <strong>
+                {{
+                  busca
+                    ? 'Nenhum lojista encontrado'
+                    : 'Nenhum lojista cadastrado'
+                }}
+              </strong>
+
+              <span>
+                {{
+                  busca
+                    ? 'Tente pesquisar utilizando outro termo.'
+                    : 'Cadastre o primeiro lojista para começar.'
+                }}
+              </span>
+            </div>
           </template>
         </q-table>
-      </q-card>
-    </div>
-
-    <!-- Rodapé de Paginação Independente -->
-    <div class="pagination-footer q-mt-md q-pt-md row full-width justify-between items-center mt-auto">
-      <div class="row items-center q-gutter-x-sm">
-        <span class="text-caption text-weight-medium gt-xs"
-          :class="isDark ? 'text-grey-5' : 'text-grey-6'">Mostrar</span>
-        <q-select v-model="paginacao.rowsPerPage" :options="[5, 10, 20, 50]" dense outlined :dark="isDark"
-          style="min-width: 65px" />
-        <span class="text-caption text-weight-medium" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-          <span class="gt-xs">por página</span>
-          <span class="lt-sm">itens</span>
-        </span>
       </div>
-      <q-pagination v-model="paginacao.page" :max="numeroDePaginas" :max-pages="5" direction-links boundary-numbers
-        round flat :color="isDark ? 'grey-4' : 'grey-8'" active-color="primary" active-text-color="white" size="14px" />
-    </div>
 
-    <!-- Modal de Formulário (Edição / Criação) -->
-    <q-dialog v-model="modalEdicao" transition-show="scale" transition-hide="scale">
-      <q-card style="width: 100%; max-width: 650px; border-radius: 14px;"
-        :class="isDark ? 'bg-dark-modal text-white' : 'bg-white text-grey-9'">
-        <q-card-section class="row items-center q-px-xl q-py-lg header-border">
-          <div>
-            <div class="text-h6 text-weight-bold tracking-tight text-slate-main flex items-center">
-              <q-icon :name="lojistaEditando.id ? 'manage_accounts' : 'person_add'" color="primary" size="24px"
-                class="q-mr-sm" />
-              {{ lojistaEditando.id ? 'Atualizar Lojista' : 'Novo Lojista' }}
-            </div>
-            <div v-if="lojistaEditando.id" class="text-caption text-grey-5 font-12 q-mt-xs">Registro único: #{{
-              lojistaEditando.id }}</div>
-            <div v-else class="text-caption text-grey-5 font-12 q-mt-xs">Preencha os dados gerais do novo lojista</div>
+      <!-- MOBILE -->
+      <div class="mobile-list">
+        <div v-if="loading" class="mobile-loading">
+          <q-spinner color="orange" size="28px" />
+          <span>Carregando lojistas...</span>
+        </div>
+
+        <div
+          v-else-if="lojistasPaginadosMobile.length === 0"
+          class="empty-state"
+        >
+          <div class="empty-state__icon">
+            <q-icon name="storefront" size="29px" />
           </div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup :disable="salvando" class="text-grey-4" />
+
+          <strong>Nenhum lojista encontrado</strong>
+        </div>
+
+        <article
+          v-for="lojista in lojistasPaginadosMobile"
+          :key="lojista.id"
+          class="mobile-card"
+          @click="abrirEdicao(lojista)"
+        >
+          <div class="mobile-card__head">
+            <div class="store-avatar store-avatar--mobile">
+              <q-icon name="storefront" size="20px" />
+            </div>
+
+            <div class="mobile-card__identity">
+              <strong>{{ lojista.nome }}</strong>
+              <span>#{{ lojista.id }} · Lojista</span>
+            </div>
+
+            <q-icon name="chevron_right" size="20px" />
+          </div>
+
+          <div class="mobile-card__representative">
+            <q-icon name="badge" size="16px" />
+
+            <div>
+              <span>Representante</span>
+              <strong>
+                {{ lojista.nome_representante || representanteNome(lojista.id_representante) }}
+              </strong>
+            </div>
+          </div>
+
+          <div class="mobile-card__stats">
+            <span>
+              <q-icon name="inventory_2" size="15px" />
+              {{ lojista.total_pedidos }} projetos
+            </span>
+
+            <span>
+              <q-icon name="groups" size="15px" />
+              {{ lojista.total_clientes }} clientes
+            </span>
+          </div>
+        </article>
+      </div>
+
+      <div class="pagination-footer">
+        <div class="pagination-footer__left">
+          <span>Mostrar</span>
+
+          <q-select
+            v-model="paginacao.rowsPerPage"
+            :options="[5, 10, 20, 50]"
+            outlined
+            dense
+            class="rows-select"
+          />
+
+          <span>por página</span>
+        </div>
+
+        <q-pagination
+          v-model="paginacao.page"
+          :max="numeroDePaginas"
+          :max-pages="5"
+          direction-links
+          boundary-numbers
+          round
+          flat
+          color="grey-7"
+          active-color="orange"
+          active-text-color="white"
+          size="13px"
+        />
+      </div>
+    </section>
+
+    <!-- WORKSPACE LOJISTA -->
+    <q-dialog
+      v-model="modalEdicao"
+      persistent
+    >
+      <q-card class="lojista-dialog">
+        <!-- CABEÇALHO -->
+        <q-card-section class="workspace-head">
+          <div class="workspace-identity">
+            <div class="workspace-avatar">
+              <q-icon name="storefront" size="23px" />
+            </div>
+
+            <div>
+              <div class="section-kicker">
+                {{
+                  lojistaEditando.id
+                    ? `Lojista #${lojistaEditando.id}`
+                    : 'Novo lojista'
+                }}
+              </div>
+
+              <h2>
+                {{
+                  lojistaEditando.nome ||
+                  'Cadastrar lojista'
+                }}
+              </h2>
+
+              <p>
+                {{
+                  lojistaEditando.email ||
+                  'Preencha os dados para criar o novo acesso.'
+                }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            v-if="lojistaEditando.id"
+            class="workspace-summary"
+          >
+            <div>
+              <span>Projetos</span>
+              <strong>{{ pedidosDoLojista.length }}</strong>
+            </div>
+
+            <div>
+              <span>Clientes</span>
+              <strong>{{ clientesAtendidos.length }}</strong>
+            </div>
+          </div>
+
+          <q-btn
+            flat
+            round
+            dense
+            icon="close"
+            :disable="salvando || trocandoRepresentante"
+            class="workspace-close"
+            @click="fecharModal"
+          />
         </q-card-section>
 
-        <q-card-section class="q-px-xl q-py-lg scroll layout-body">
-          <q-form @submit.prevent="salvarLojista" ref="formLojista" class="row q-col-gutter-lg">
+        <!-- TABS PREMIUM -->
+        <div class="workspace-tabbar-shell">
+          <nav
+            class="workspace-tabbar workspace-tabbar--four"
+            aria-label="Seções do lojista"
+          >
+            <button
+              type="button"
+              class="workspace-tab-card"
+              :class="{ 'workspace-tab-card--active': tabEdicao === 'dados' }"
+              @click="tabEdicao = 'dados'"
+            >
+              <span class="workspace-tab-card__icon">
+                <q-icon name="storefront" size="21px" />
+              </span>
 
-            <!-- Dados de Contato / Identificação -->
-            <div class="col-12">
-              <div class="inner-section-card" :class="isDark ? 'bg-dark-inner' : 'bg-slate-light'">
-                <div class="form-section-title q-mb-md">Informações Básicas</div>
-                <div class="row q-col-gutter-md">
+              <span class="workspace-tab-card__copy">
+                <strong>Dados cadastrais</strong>
+                <small>Identificação e acesso</small>
+              </span>
 
-                  <!-- NOME -->
-                  <div class="col-12">
-                    <q-input v-model="lojistaEditando.nome" label="Nome do Lojista *" outlined dense :dark="isDark"
-                      :rules="[val => !!val || 'Campo obrigatório', val => val.trim().length >= 3 || 'O nome é muito curto']"
-                      hide-bottom-space class="premium-field" />
+              <span
+                v-if="tabEdicao === 'dados'"
+                class="workspace-tab-card__active-mark"
+              >
+                <q-icon name="check" size="13px" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="workspace-tab-card"
+              :class="{ 'workspace-tab-card--active': tabEdicao === 'representante' }"
+              @click="tabEdicao = 'representante'"
+            >
+              <span class="workspace-tab-card__icon">
+                <q-icon name="badge" size="21px" />
+              </span>
+
+              <span class="workspace-tab-card__copy">
+                <strong>Representante</strong>
+                <small>
+                  {{
+                    lojistaEditando.id
+                      ? 'Responsável comercial'
+                      : 'Vínculo obrigatório'
+                  }}
+                </small>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="workspace-tab-card"
+              :class="{
+                'workspace-tab-card--active': tabEdicao === 'pedidos',
+                'workspace-tab-card--disabled': !lojistaEditando.id
+              }"
+              :disabled="!lojistaEditando.id"
+              @click="lojistaEditando.id && (tabEdicao = 'pedidos')"
+            >
+              <span class="workspace-tab-card__icon">
+                <q-icon name="inventory_2" size="21px" />
+              </span>
+
+              <span class="workspace-tab-card__copy">
+                <span class="workspace-tab-card__title-row">
+                  <strong>Projetos</strong>
+
+                  <span
+                    v-if="lojistaEditando.id"
+                    class="workspace-tab-count"
+                  >
+                    {{ pedidosDoLojista.length }}
+                  </span>
+                </span>
+
+                <small>
+                  {{
+                    lojistaEditando.id
+                      ? 'Consulta dos projetos'
+                      : 'Disponível após salvar'
+                  }}
+                </small>
+              </span>
+
+              <q-icon
+                v-if="!lojistaEditando.id"
+                name="lock_outline"
+                size="15px"
+                class="workspace-tab-lock"
+              />
+            </button>
+
+            <button
+              type="button"
+              class="workspace-tab-card"
+              :class="{
+                'workspace-tab-card--active': tabEdicao === 'clientes',
+                'workspace-tab-card--disabled': !lojistaEditando.id
+              }"
+              :disabled="!lojistaEditando.id"
+              @click="lojistaEditando.id && (tabEdicao = 'clientes')"
+            >
+              <span class="workspace-tab-card__icon">
+                <q-icon name="groups" size="21px" />
+              </span>
+
+              <span class="workspace-tab-card__copy">
+                <span class="workspace-tab-card__title-row">
+                  <strong>Clientes</strong>
+
+                  <span
+                    v-if="lojistaEditando.id"
+                    class="workspace-tab-count"
+                  >
+                    {{ clientesAtendidos.length }}
+                  </span>
+                </span>
+
+                <small>
+                  {{
+                    lojistaEditando.id
+                      ? 'Histórico de atendimento'
+                      : 'Disponível após salvar'
+                  }}
+                </small>
+              </span>
+
+              <q-icon
+                v-if="!lojistaEditando.id"
+                name="lock_outline"
+                size="15px"
+                class="workspace-tab-lock"
+              />
+            </button>
+          </nav>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <q-card-section class="workspace-body">
+          <q-tab-panels
+            v-model="tabEdicao"
+            class="workspace-panels"
+          >
+            <!-- DADOS -->
+            <q-tab-panel
+              name="dados"
+              class="workspace-panel"
+            >
+              <q-form
+                ref="formLojista"
+                @submit.prevent="salvarLojista"
+              >
+                <div class="tab-heading">
+                  <div>
+                    <div class="section-kicker">Cadastro</div>
+                    <h3>Dados do lojista</h3>
+                    <p>
+                      Informações de identificação e contato utilizadas no sistema.
+                    </p>
                   </div>
 
-                  <!-- TELEFONE -->
-                  <div class="col-12 col-sm-6">
-                    <q-input v-model="lojistaEditando.telefone" label="Telefone (Apenas números) *" outlined dense
-                      :dark="isDark" maxlength="11"
-                      @update:model-value="val => lojistaEditando.telefone = val ? val.replace(/\D/g, '') : ''"
-                      :rules="[val => !!val || 'Telefone é obrigatório', validarTelefone]" hide-bottom-space
-                      class="premium-field" />
+                  <span
+                    v-if="lojistaEditando.id"
+                    class="record-badge"
+                  >
+                    Registro #{{ lojistaEditando.id }}
+                  </span>
+                </div>
+
+                <section class="form-card">
+                  <div class="form-card__head">
+                    <div class="form-card__number">01</div>
+
+                    <div>
+                      <strong>Identificação e contato</strong>
+                      <span>Dados principais da loja e do acesso.</span>
+                    </div>
                   </div>
 
-                  <!-- E-MAIL -->
-                  <div class="col-12 col-sm-6">
-                    <q-input v-model="lojistaEditando.email" label="E-mail *" outlined dense :dark="isDark" type="email"
-                      :rules="[val => !!val || 'E-mail é obrigatório', validarEmail]" hide-bottom-space
-                      class="premium-field" />
+                  <div class="form-grid">
+                    <div class="field-block field-block--full">
+                      <span class="field-label">Nome do lojista *</span>
+
+                      <q-input
+                        v-model="lojistaEditando.nome"
+                        outlined
+                        dense
+                        color="orange"
+                        class="premium-field"
+                        placeholder="Nome da loja ou lojista"
+                        :rules="[
+                          val => !!String(val || '').trim() || 'Informe o nome',
+                          val => String(val || '').trim().length >= 3 || 'O nome é muito curto'
+                        ]"
+                      >
+                        <template #prepend>
+                          <q-icon name="storefront" size="18px" />
+                        </template>
+                      </q-input>
+                    </div>
+
+                    <div class="field-block">
+                      <span class="field-label">E-mail *</span>
+
+                      <q-input
+                        v-model="lojistaEditando.email"
+                        outlined
+                        dense
+                        type="email"
+                        color="orange"
+                        class="premium-field"
+                        placeholder="lojista@empresa.com"
+                        :rules="[
+                          val => !!String(val || '').trim() || 'Informe o e-mail',
+                          validarEmail
+                        ]"
+                      >
+                        <template #prepend>
+                          <q-icon name="mail_outline" size="18px" />
+                        </template>
+                      </q-input>
+                    </div>
+
+                    <div class="field-block">
+                      <span class="field-label">Telefone *</span>
+
+                      <q-input
+                        v-model="lojistaEditando.telefone"
+                        outlined
+                        dense
+                        color="orange"
+                        class="premium-field"
+                        mask="(##) #####-####"
+                        unmasked-value
+                        placeholder="(00) 00000-0000"
+                        :rules="[
+                          val => !!String(val || '').trim() || 'Informe o telefone',
+                          validarTelefone
+                        ]"
+                      >
+                        <template #prepend>
+                          <q-icon name="phone" size="18px" />
+                        </template>
+                      </q-input>
+                    </div>
+                  </div>
+                </section>
+
+                <section
+                  v-if="!lojistaEditando.id"
+                  class="form-card"
+                >
+                  <div class="form-card__head">
+                    <div class="form-card__number">02</div>
+
+                    <div>
+                      <strong>Senha inicial</strong>
+                      <span>Utilizada no primeiro acesso do lojista.</span>
+                    </div>
                   </div>
 
-                  <!-- REPRESENTANTE RESPONSÁVEL -->
-                  <div class="col-12" :class="!lojistaEditando.id ? 'col-sm-6' : ''">
-                    <q-select v-model="lojistaEditando.id_representante" :options="listaRepresentantes"
+                  <div class="password-layout">
+                    <div class="password-fields">
+                      <div class="password-field-block">
+                        <span class="field-label">Senha de acesso *</span>
+
+                        <q-input
+                          v-model="lojistaEditando.senha"
+                          outlined
+                          dense
+                          color="orange"
+                          class="premium-field premium-field--no-bottom"
+                          :type="ocultarSenha ? 'password' : 'text'"
+                          placeholder="••••••••"
+                        >
+                          <template #prepend>
+                            <q-icon name="key" size="18px" />
+                          </template>
+
+                          <template #append>
+                            <q-icon
+                              :name="ocultarSenha ? 'visibility_off' : 'visibility'"
+                              class="cursor-pointer"
+                              @click="ocultarSenha = !ocultarSenha"
+                            />
+                          </template>
+                        </q-input>
+
+                        <div
+                          class="validation-slot"
+                          :class="{
+                            'validation-slot--error':
+                              lojistaEditando.senha && !senhaValida
+                          }"
+                        >
+                          <template v-if="lojistaEditando.senha && !senhaValida">
+                            <q-icon name="error_outline" size="14px" />
+                            <span>A senha ainda não atende a todos os requisitos.</span>
+                          </template>
+                        </div>
+                      </div>
+
+                      <div class="password-field-block">
+                        <span class="field-label">Confirmar senha *</span>
+
+                        <q-input
+                          v-model="confirmarSenha"
+                          outlined
+                          dense
+                          color="orange"
+                          class="premium-field premium-field--no-bottom"
+                          :type="ocultarConfirmacao ? 'password' : 'text'"
+                          placeholder="••••••••"
+                        >
+                          <template #prepend>
+                            <q-icon name="lock_outline" size="18px" />
+                          </template>
+
+                          <template #append>
+                            <q-icon
+                              :name="ocultarConfirmacao ? 'visibility_off' : 'visibility'"
+                              class="cursor-pointer"
+                              @click="ocultarConfirmacao = !ocultarConfirmacao"
+                            />
+                          </template>
+                        </q-input>
+
+                        <div
+                          class="validation-slot"
+                          :class="{
+                            'validation-slot--error':
+                              confirmarSenha && !senhasConferem
+                          }"
+                        >
+                          <template v-if="confirmarSenha && !senhasConferem">
+                            <q-icon name="error_outline" size="14px" />
+                            <span>As senhas não coincidem.</span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+
+                    <aside class="password-rules">
+                      <div class="password-rules__head">
+                        <q-icon name="verified_user" size="19px" />
+                        <strong>Senha segura</strong>
+                      </div>
+
+                      <ul>
+                        <li :class="{ 'rule-ok': regraSenha.tamanho }">
+                          <q-icon
+                            :name="regraSenha.tamanho ? 'check_circle' : 'radio_button_unchecked'"
+                          />
+                          8 ou mais caracteres
+                        </li>
+
+                        <li :class="{ 'rule-ok': regraSenha.maiuscula }">
+                          <q-icon
+                            :name="regraSenha.maiuscula ? 'check_circle' : 'radio_button_unchecked'"
+                          />
+                          Uma letra maiúscula
+                        </li>
+
+                        <li :class="{ 'rule-ok': regraSenha.minuscula }">
+                          <q-icon
+                            :name="regraSenha.minuscula ? 'check_circle' : 'radio_button_unchecked'"
+                          />
+                          Uma letra minúscula
+                        </li>
+
+                        <li :class="{ 'rule-ok': regraSenha.numero }">
+                          <q-icon
+                            :name="regraSenha.numero ? 'check_circle' : 'radio_button_unchecked'"
+                          />
+                          Um número
+                        </li>
+
+                        <li :class="{ 'rule-ok': regraSenha.simbolo }">
+                          <q-icon
+                            :name="regraSenha.simbolo ? 'check_circle' : 'radio_button_unchecked'"
+                          />
+                          Um símbolo
+                        </li>
+                      </ul>
+                    </aside>
+                  </div>
+                </section>
+
+                <div
+                  v-else
+                  class="info-banner"
+                >
+                  <q-icon name="info_outline" size="19px" />
+
+                  <div>
+                    <strong>Senha preservada</strong>
+                    <span>
+                      A edição administrativa mantém a senha atual do lojista.
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  v-if="lojistaEditando.id"
+                  class="metadata-card"
+                >
+                  <div>
+                    <span>Criado em</span>
+                    <strong>{{ formatarData(lojistaEditando.created_at) }}</strong>
+                  </div>
+
+                  <div>
+                    <span>Última modificação</span>
+                    <strong>{{ formatarData(lojistaEditando.updated_at) }}</strong>
+                  </div>
+                </div>
+
+                <div class="tab-actions">
+                  <q-btn
+                    flat
+                    no-caps
+                    label="Fechar"
+                    class="secondary-btn"
+                    :disable="salvando"
+                    @click="fecharModal"
+                  />
+
+                  <q-btn
+                    unelevated
+                    no-caps
+                    type="submit"
+                    icon="save"
+                    :label="
+                      lojistaEditando.id
+                        ? 'Salvar alterações'
+                        : 'Continuar cadastro'
+                    "
+                    :loading="salvando"
+                    class="save-btn"
+                  />
+                </div>
+              </q-form>
+            </q-tab-panel>
+
+            <!-- REPRESENTANTE -->
+            <q-tab-panel
+              name="representante"
+              class="workspace-panel"
+            >
+              <div class="tab-heading">
+                <div>
+                  <div class="section-kicker">Carteira comercial</div>
+                  <h3>Representante responsável</h3>
+                  <p>
+                    O administrador pode definir ou transferir este lojista para outro representante.
+                  </p>
+                </div>
+              </div>
+
+              <!-- NOVO CADASTRO -->
+              <template v-if="!lojistaEditando.id">
+                <section class="representative-selection-card">
+                  <div class="representative-selection-card__head">
+                    <div class="representative-big-icon">
+                      <q-icon name="badge" size="25px" />
+                    </div>
+
+                    <div>
+                      <strong>Escolha o representante</strong>
+                      <span>
+                        O vínculo é obrigatório para concluir o cadastro do lojista.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="field-block">
+                    <span class="field-label">Representante responsável *</span>
+
+                    <q-select
+                      v-model="lojistaEditando.id_representante"
+                      :options="listaRepresentantes"
                       option-value="id"
-                      :option-label="(item) => item.nome || item.razao_social || `Representante #${item.id}`"
-                      label="Vincular Representante" outlined dense :dark="isDark" emit-value map-options clearable
-                      :loading="loadingRepresentantes" class="premium-field">
-                      <template v-slot:prepend>
-                        <q-icon name="badge" size="20px" class="text-grey-6" />
+                      :option-label="item => item.nome || `Representante #${item.id}`"
+                      emit-value
+                      map-options
+                      outlined
+                      dense
+                      color="orange"
+                      class="premium-field"
+                      :loading="loadingRepresentantes"
+                      placeholder="Selecione um representante"
+                    >
+                      <template #prepend>
+                        <q-icon name="badge" size="18px" />
                       </template>
                     </q-select>
                   </div>
 
-                  <!-- Senha (Aparece apenas na criação de um novo lojista) -->
-                  <div class="col-12 col-sm-6" v-if="!lojistaEditando.id">
-                    <q-input v-model="lojistaEditando.senha" label="Senha de Acesso *" outlined dense :dark="isDark"
-                      :type="ocultarSenha ? 'password' : 'text'" :rules="[
-                        val => !!val || 'A senha é obrigatória para novos cadastros',
-                        validarSenhaForte
-                      ]" hide-bottom-space class="premium-field">
-                      <template v-slot:append>
-                        <q-icon :name="ocultarSenha ? 'visibility_off' : 'visibility'"
-                          class="cursor-pointer text-grey-5" @click="ocultarSenha = !ocultarSenha" />
-                      </template>
-                    </q-input>
+                  <div class="representative-create-note">
+                    <q-icon name="info_outline" size="18px" />
+                    <span>
+                      Depois de cadastrar, essa mesma aba permitirá alterar o responsável comercial.
+                    </span>
+                  </div>
+                </section>
+
+                <div class="tab-actions">
+                  <q-btn
+                    flat
+                    no-caps
+                    label="Voltar aos dados"
+                    icon="arrow_back"
+                    class="secondary-btn"
+                    @click="tabEdicao = 'dados'"
+                  />
+
+                  <q-btn
+                    unelevated
+                    no-caps
+                    icon="person_add"
+                    label="Cadastrar lojista"
+                    :loading="salvando"
+                    class="save-btn"
+                    @click="salvarLojista"
+                  />
+                </div>
+              </template>
+
+              <!-- EDIÇÃO -->
+              <template v-else>
+                <section class="current-representative-card">
+                  <div class="current-representative-card__top">
+                    <div class="representative-avatar">
+                      {{ iniciais(representanteAtual?.nome) }}
+                    </div>
+
+                    <div class="current-representative-card__identity">
+                      <span>Representante atual</span>
+                      <h4>{{ representanteAtual?.nome || 'Representante não encontrado' }}</h4>
+                      <p>#{{ representanteAtual?.id || lojistaEditando.id_representante }}</p>
+                    </div>
+
+                    <span class="current-badge">
+                      <q-icon name="check_circle" size="14px" />
+                      Vínculo atual
+                    </span>
                   </div>
 
+                  <div class="current-representative-card__contacts">
+                    <div>
+                      <q-icon name="mail_outline" size="17px" />
+                      <span>{{ representanteAtual?.email || 'E-mail não informado' }}</span>
+                    </div>
+
+                    <div>
+                      <q-icon name="phone" size="17px" />
+                      <span>{{ formatarTelefone(representanteAtual?.telefone) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="current-representative-card__actions">
+                    <div>
+                      <strong>Alterar responsável comercial</strong>
+                      <span>
+                        A troca não altera os projetos existentes; muda apenas a carteira atual do lojista.
+                      </span>
+                    </div>
+
+                    <q-btn
+                      unelevated
+                      no-caps
+                      icon="swap_horiz"
+                      label="Trocar representante"
+                      class="primary-btn"
+                      @click="abrirTrocaRepresentante"
+                    />
+                  </div>
+                </section>
+              </template>
+            </q-tab-panel>
+
+            <!-- PROJETOS -->
+            <q-tab-panel
+              name="pedidos"
+              class="workspace-panel"
+            >
+              <div class="tab-heading">
+                <div>
+                  <div class="section-kicker">Somente leitura</div>
+                  <h3>Projetos do lojista</h3>
+                  <p>
+                    Visualização resumida dos projetos enviados por esta loja.
+                  </p>
                 </div>
               </div>
-            </div>
 
-            <!-- Metadados de Data (Ocultos se for novo cadastro) -->
-            <div v-if="lojistaEditando.id" class="col-12 row justify-between items-center metadata-row q-pt-sm">
-              <div class="text-caption text-grey-5 font-11">
-                Criado em: <span class="text-weight-medium" :class="isDark ? 'text-grey-3' : 'text-grey-7'">{{
-                  formatarData(lojistaEditando.created_at) }}</span>
-              </div>
-              <div class="text-caption text-grey-5 font-11">
-                Última modificação: <span class="text-weight-medium" :class="isDark ? 'text-grey-3' : 'text-grey-7'">{{
-                  formatarData(lojistaEditando.updated_at) }}</span>
-              </div>
-            </div>
+              <div class="related-summary related-summary--three">
+                <article>
+                  <div class="related-summary__icon">
+                    <q-icon name="inventory_2" size="20px" />
+                  </div>
 
-            <!-- Botões -->
-            <div class="col-12 row justify-end q-gutter-x-md q-mt-lg">
-              <q-btn label="Cancelar" color="grey-6" flat v-close-popup :disable="salvando" no-caps
-                class="text-weight-bold font-14" />
-              <q-btn :label="lojistaEditando.id ? 'Salvar Alterações' : 'Cadastrar Lojista'" color="primary"
-                type="submit" :loading="salvando" unevaluated no-caps class="text-weight-bold px-xl font-14 radius-8" />
-            </div>
-          </q-form>
+                  <div>
+                    <span>Total de projetos</span>
+                    <strong>{{ pedidosDoLojista.length }}</strong>
+                  </div>
+                </article>
+
+                <article>
+                  <div class="related-summary__icon">
+                    <q-icon name="payments" size="20px" />
+                  </div>
+
+                  <div>
+                    <span>Volume financeiro</span>
+                    <strong>{{ formatarMoeda(valorTotalPedidos) }}</strong>
+                  </div>
+                </article>
+
+                <article>
+                  <div class="related-summary__icon">
+                    <q-icon name="groups" size="20px" />
+                  </div>
+
+                  <div>
+                    <span>Clientes atendidos</span>
+                    <strong>{{ clientesAtendidos.length }}</strong>
+                  </div>
+                </article>
+              </div>
+
+              <div class="related-toolbar related-toolbar--orders">
+                <q-input
+                  v-model="buscaPedidos"
+                  outlined
+                  dense
+                  clearable
+                  debounce="250"
+                  class="search-field search-field--related"
+                  placeholder="Pesquisar projeto ou cliente..."
+                >
+                  <template #prepend>
+                    <q-icon name="search" size="18px" />
+                  </template>
+                </q-input>
+
+                <q-select
+                  v-model="filtroStatusPedido"
+                  :options="opcoesStatusPedido"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  class="status-filter"
+                  label="Status"
+                />
+              </div>
+
+              <!-- DESKTOP -->
+              <div class="orders-desktop">
+                <q-table
+                  flat
+                  hide-bottom
+                  row-key="id"
+                  :rows="pedidosFiltrados"
+                  :columns="colunasPedidos"
+                  v-model:pagination="paginacaoPedidos"
+                  class="related-table"
+                  table-class="related-table__body"
+                  table-header-class="related-table__header"
+                >
+                  <template #body-cell-projeto="props">
+                    <q-td :props="props">
+                      <div class="project-cell">
+                        <div class="project-icon">
+                          <q-icon name="inventory_2" size="18px" />
+                        </div>
+
+                        <div>
+                          <strong>{{ props.row.nome_projeto || 'Projeto sem nome' }}</strong>
+                          <span>#{{ props.row.id }}</span>
+                        </div>
+                      </div>
+                    </q-td>
+                  </template>
+
+                  <template #body-cell-cliente="props">
+                    <q-td :props="props">
+                      <div class="client-cell">
+                        <strong>{{ props.row.cliente || 'Cliente não informado' }}</strong>
+                        <span>Cliente #{{ props.row.id_cliente }}</span>
+                      </div>
+                    </q-td>
+                  </template>
+
+                  <template #body-cell-status="props">
+                    <q-td :props="props">
+                      <span
+                        class="status-badge"
+                        :style="{
+                          color: props.row.cor || '#ff7b00',
+                          borderColor: (props.row.cor || '#ff7b00') + '35',
+                          background: (props.row.cor || '#ff7b00') + '12'
+                        }"
+                      >
+                        <span
+                          class="status-badge__dot"
+                          :style="{ background: props.row.cor || '#ff7b00' }"
+                        ></span>
+
+                        {{ props.row.status || 'Sem status' }}
+                      </span>
+                    </q-td>
+                  </template>
+
+                  <template #body-cell-valor="props">
+                    <q-td :props="props">
+                      <strong class="money-cell">
+                        {{ formatarMoeda(props.row.valor) }}
+                      </strong>
+                    </q-td>
+                  </template>
+
+                  <template #body-cell-datas="props">
+                    <q-td :props="props">
+                      <div class="dates-cell">
+                        <span>
+                          Pedido: {{ formatarDataCurta(props.row.data_pedido) }}
+                        </span>
+
+                        <span>
+                          Previsão:
+                          {{ formatarDataCurta(props.row.data_previsao_pedido) }}
+                        </span>
+                      </div>
+                    </q-td>
+                  </template>
+
+                  <template #no-data>
+                    <div class="empty-state empty-state--related">
+                      <div class="empty-state__icon">
+                        <q-icon name="inventory_2" size="28px" />
+                      </div>
+
+                      <strong>Nenhum projeto encontrado</strong>
+                      <span>Não há projetos para os filtros informados.</span>
+                    </div>
+                  </template>
+                </q-table>
+              </div>
+
+              <!-- MOBILE -->
+              <div class="orders-mobile">
+                <article
+                  v-for="pedido in pedidosPaginadosMobile"
+                  :key="pedido.id"
+                  class="order-mobile-card"
+                >
+                  <div class="order-mobile-card__top">
+                    <div class="project-icon">
+                      <q-icon name="inventory_2" size="18px" />
+                    </div>
+
+                    <div>
+                      <strong>{{ pedido.nome_projeto || 'Projeto sem nome' }}</strong>
+                      <span>#{{ pedido.id }}</span>
+                    </div>
+                  </div>
+
+                  <span
+                    class="status-badge"
+                    :style="{
+                      color: pedido.cor || '#ff7b00',
+                      borderColor: (pedido.cor || '#ff7b00') + '35',
+                      background: (pedido.cor || '#ff7b00') + '12'
+                    }"
+                  >
+                    <span
+                      class="status-badge__dot"
+                      :style="{ background: pedido.cor || '#ff7b00' }"
+                    ></span>
+
+                    {{ pedido.status || 'Sem status' }}
+                  </span>
+
+                  <div class="order-mobile-card__grid">
+                    <div>
+                      <span>Cliente</span>
+                      <strong>{{ pedido.cliente || '—' }}</strong>
+                    </div>
+
+                    <div>
+                      <span>Valor</span>
+                      <strong>{{ formatarMoeda(pedido.valor) }}</strong>
+                    </div>
+
+                    <div>
+                      <span>Pedido</span>
+                      <strong>{{ formatarDataCurta(pedido.data_pedido) }}</strong>
+                    </div>
+
+                    <div>
+                      <span>Previsão</span>
+                      <strong>{{ formatarDataCurta(pedido.data_previsao_pedido) }}</strong>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <div
+                v-if="pedidosFiltrados.length"
+                class="related-pagination"
+              >
+                <q-pagination
+                  v-model="paginacaoPedidos.page"
+                  :max="numeroPaginasPedidos"
+                  :max-pages="5"
+                  direction-links
+                  round
+                  flat
+                  color="grey-7"
+                  active-color="orange"
+                  active-text-color="white"
+                  size="12px"
+                />
+              </div>
+            </q-tab-panel>
+
+            <!-- CLIENTES -->
+            <q-tab-panel
+              name="clientes"
+              class="workspace-panel"
+            >
+              <div class="tab-heading">
+                <div>
+                  <div class="section-kicker">Relacionamento</div>
+                  <h3>Clientes atendidos</h3>
+                  <p>
+                    Clientes que já possuem pelo menos um projeto vinculado a este lojista.
+                  </p>
+                </div>
+              </div>
+
+              <div class="related-summary related-summary--three">
+                <article>
+                  <div class="related-summary__icon">
+                    <q-icon name="groups" size="20px" />
+                  </div>
+
+                  <div>
+                    <span>Clientes únicos</span>
+                    <strong>{{ clientesAtendidos.length }}</strong>
+                  </div>
+                </article>
+
+                <article>
+                  <div class="related-summary__icon">
+                    <q-icon name="inventory_2" size="20px" />
+                  </div>
+
+                  <div>
+                    <span>Projetos realizados</span>
+                    <strong>{{ pedidosDoLojista.length }}</strong>
+                  </div>
+                </article>
+
+                <article>
+                  <div class="related-summary__icon">
+                    <q-icon name="payments" size="20px" />
+                  </div>
+
+                  <div>
+                    <span>Volume da carteira</span>
+                    <strong>{{ formatarMoeda(valorTotalPedidos) }}</strong>
+                  </div>
+                </article>
+              </div>
+
+              <div class="related-toolbar">
+                <q-input
+                  v-model="buscaClientes"
+                  outlined
+                  dense
+                  clearable
+                  debounce="250"
+                  class="search-field search-field--related"
+                  placeholder="Pesquisar cliente..."
+                >
+                  <template #prepend>
+                    <q-icon name="search" size="18px" />
+                  </template>
+                </q-input>
+
+                <span class="related-count">
+                  {{ clientesFiltrados.length }}
+                  {{ clientesFiltrados.length === 1 ? 'cliente' : 'clientes' }}
+                </span>
+              </div>
+
+              <!-- DESKTOP -->
+              <div class="clients-desktop">
+                <q-table
+                  flat
+                  hide-bottom
+                  row-key="id"
+                  :rows="clientesFiltrados"
+                  :columns="colunasClientes"
+                  v-model:pagination="paginacaoClientes"
+                  class="related-table"
+                  table-class="related-table__body"
+                  table-header-class="related-table__header"
+                >
+                  <template #body-cell-cliente="props">
+                    <q-td :props="props">
+                      <div class="person-cell">
+                        <div class="client-avatar">
+                          {{ iniciais(props.row.nome) }}
+                        </div>
+
+                        <div>
+                          <strong>{{ props.row.nome }}</strong>
+                          <span>Cliente #{{ props.row.id }}</span>
+                        </div>
+                      </div>
+                    </q-td>
+                  </template>
+
+                  <template #body-cell-contato="props">
+                    <q-td :props="props">
+                      <div class="contact-cell">
+                        <div>
+                          <q-icon name="mail_outline" size="15px" />
+                          <span>{{ props.row.email || 'Não informado' }}</span>
+                        </div>
+
+                        <div>
+                          <q-icon name="phone" size="15px" />
+                          <span>{{ formatarTelefone(props.row.telefone) }}</span>
+                        </div>
+                      </div>
+                    </q-td>
+                  </template>
+
+                  <template #body-cell-relacionamento="props">
+                    <q-td :props="props">
+                      <div class="relationship-cell">
+                        <strong>
+                          {{ props.row.total_pedidos }}
+                          {{ props.row.total_pedidos === 1 ? 'projeto' : 'projetos' }}
+                        </strong>
+
+                        <span>
+                          {{ formatarMoeda(props.row.valor_total) }}
+                        </span>
+                      </div>
+                    </q-td>
+                  </template>
+
+                  <template #body-cell-ultimo="props">
+                    <q-td :props="props">
+                      <div class="dates-cell">
+                        <span>Último projeto</span>
+                        <strong>{{ formatarDataCurta(props.row.ultimo_pedido) }}</strong>
+                      </div>
+                    </q-td>
+                  </template>
+
+                  <template #no-data>
+                    <div class="empty-state empty-state--related">
+                      <div class="empty-state__icon">
+                        <q-icon name="groups" size="28px" />
+                      </div>
+
+                      <strong>Nenhum cliente encontrado</strong>
+                      <span>
+                        Este lojista ainda não possui clientes com projetos vinculados.
+                      </span>
+                    </div>
+                  </template>
+                </q-table>
+              </div>
+
+              <!-- MOBILE -->
+              <div class="clients-mobile">
+                <article
+                  v-for="cliente in clientesPaginadosMobile"
+                  :key="cliente.id"
+                  class="client-mobile-card"
+                >
+                  <div class="client-mobile-card__head">
+                    <div class="client-avatar">
+                      {{ iniciais(cliente.nome) }}
+                    </div>
+
+                    <div>
+                      <strong>{{ cliente.nome }}</strong>
+                      <span>Cliente #{{ cliente.id }}</span>
+                    </div>
+                  </div>
+
+                  <div class="client-mobile-card__contacts">
+                    <span>
+                      <q-icon name="mail_outline" size="15px" />
+                      {{ cliente.email || 'Não informado' }}
+                    </span>
+
+                    <span>
+                      <q-icon name="phone" size="15px" />
+                      {{ formatarTelefone(cliente.telefone) }}
+                    </span>
+                  </div>
+
+                  <div class="client-mobile-card__stats">
+                    <div>
+                      <span>Projetos</span>
+                      <strong>{{ cliente.total_pedidos }}</strong>
+                    </div>
+
+                    <div>
+                      <span>Volume</span>
+                      <strong>{{ formatarMoeda(cliente.valor_total) }}</strong>
+                    </div>
+
+                    <div>
+                      <span>Último</span>
+                      <strong>{{ formatarDataCurta(cliente.ultimo_pedido) }}</strong>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <div
+                v-if="clientesFiltrados.length"
+                class="related-pagination"
+              >
+                <q-pagination
+                  v-model="paginacaoClientes.page"
+                  :max="numeroPaginasClientes"
+                  :max-pages="5"
+                  direction-links
+                  round
+                  flat
+                  color="grey-7"
+                  active-color="orange"
+                  active-text-color="white"
+                  size="12px"
+                />
+              </div>
+            </q-tab-panel>
+          </q-tab-panels>
         </q-card-section>
       </q-card>
     </q-dialog>
-  </div>
+
+    <!-- TROCAR REPRESENTANTE -->
+    <q-dialog
+      v-model="modalTrocaRepresentante"
+      persistent
+    >
+      <q-card class="representative-dialog">
+        <q-card-section class="representative-dialog__head">
+          <div>
+            <div class="section-kicker">Alterar carteira</div>
+            <h3>Trocar representante</h3>
+            <p>
+              Selecione o novo responsável comercial por
+              <strong>{{ lojistaEditando.nome }}</strong>.
+            </p>
+          </div>
+
+          <q-btn
+            flat
+            round
+            dense
+            icon="close"
+            :disable="trocandoRepresentante"
+            @click="modalTrocaRepresentante = false"
+          />
+        </q-card-section>
+
+        <q-card-section class="representative-dialog__toolbar">
+          <q-input
+            v-model="buscaRepresentante"
+            outlined
+            dense
+            clearable
+            debounce="250"
+            class="search-field search-field--modal"
+            placeholder="Pesquisar representante..."
+          >
+            <template #prepend>
+              <q-icon name="search" size="18px" />
+            </template>
+          </q-input>
+        </q-card-section>
+
+        <q-card-section class="representative-dialog__body">
+          <article
+            v-for="rep in representantesDisponiveis"
+            :key="rep.id"
+            class="representative-option"
+          >
+            <div class="representative-avatar representative-avatar--small">
+              {{ iniciais(rep.nome) }}
+            </div>
+
+            <div class="representative-option__copy">
+              <strong>{{ rep.nome }}</strong>
+              <span>{{ rep.email || formatarTelefone(rep.telefone) }}</span>
+            </div>
+
+            <q-btn
+              unelevated
+              no-caps
+              icon="swap_horiz"
+              label="Selecionar"
+              class="select-representative-btn"
+              :loading="
+                trocandoRepresentante &&
+                representanteDestinoId === rep.id
+              "
+              @click="confirmarTrocaRepresentante(rep)"
+            />
+          </article>
+
+          <div
+            v-if="representantesDisponiveis.length === 0"
+            class="empty-state empty-state--related"
+          >
+            <div class="empty-state__icon">
+              <q-icon name="badge" size="28px" />
+            </div>
+
+            <strong>Nenhum representante encontrado</strong>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- CONFIRMAR TROCA -->
+    <q-dialog
+      v-model="modalConfirmarTroca"
+      persistent
+    >
+      <q-card class="confirm-dialog">
+        <q-card-section class="confirm-dialog__head">
+          <div class="confirm-dialog__icon">
+            <q-icon name="swap_horiz" size="22px" />
+          </div>
+
+          <div>
+            <div class="section-kicker">Transferência de carteira</div>
+            <h3>Confirmar novo representante?</h3>
+          </div>
+        </q-card-section>
+
+        <q-card-section class="confirm-dialog__body">
+          <div class="transfer-summary">
+            <div>
+              <span>Atual</span>
+              <strong>{{ representanteAtual?.nome || '—' }}</strong>
+            </div>
+
+            <q-icon name="arrow_forward" size="20px" />
+
+            <div>
+              <span>Novo</span>
+              <strong>{{ representanteDestino?.nome || '—' }}</strong>
+            </div>
+          </div>
+
+          <div class="confirm-note">
+            <q-icon name="info_outline" size="18px" />
+
+            <span>
+              Os projetos e clientes já vinculados ao lojista serão preservados.
+              Apenas o responsável comercial da loja será alterado.
+            </span>
+          </div>
+        </q-card-section>
+
+        <q-card-actions class="confirm-dialog__actions">
+          <q-btn
+            flat
+            no-caps
+            label="Cancelar"
+            class="secondary-btn"
+            :disable="trocandoRepresentante"
+            @click="modalConfirmarTroca = false"
+          />
+
+          <q-btn
+            unelevated
+            no-caps
+            icon="check"
+            label="Confirmar troca"
+            :loading="trocandoRepresentante"
+            class="save-btn"
+            @click="trocarRepresentante"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- EXCLUSÃO -->
+    <q-dialog
+      v-model="modalExclusao"
+      persistent
+    >
+      <q-card class="confirm-dialog">
+        <q-card-section class="confirm-dialog__head">
+          <div class="confirm-dialog__icon confirm-dialog__icon--danger">
+            <q-icon name="delete_outline" size="22px" />
+          </div>
+
+          <div>
+            <div class="section-kicker section-kicker--danger">
+              Ação irreversível
+            </div>
+
+            <h3>Excluir lojista?</h3>
+          </div>
+        </q-card-section>
+
+        <q-card-section class="confirm-dialog__body">
+          <p>
+            O cadastro de
+            <strong>{{ lojistaParaExcluir?.nome }}</strong>
+            será removido.
+          </p>
+
+          <div class="confirm-note confirm-note--warning">
+            <q-icon name="warning_amber" size="18px" />
+
+            <span>
+              O backend bloqueará a exclusão caso este lojista possua projetos vinculados.
+            </span>
+          </div>
+        </q-card-section>
+
+        <q-card-actions class="confirm-dialog__actions">
+          <q-btn
+            flat
+            no-caps
+            label="Cancelar"
+            class="secondary-btn"
+            :disable="excluindo"
+            @click="modalExclusao = false"
+          />
+
+          <q-btn
+            unelevated
+            no-caps
+            icon="delete_outline"
+            label="Excluir lojista"
+            :loading="excluindo"
+            class="danger-btn"
+            @click="excluirLojista"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+  </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import {
+  ref,
+  computed,
+  onMounted,
+  watch
+} from 'vue'
+
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
 import { useAuthStore } from 'stores/auth'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
-const isDark = computed(() => $q.dark.isActive)
 
-// Referência do formulário para disparar validação completa
 const formLojista = ref(null)
 
-// Estados de Lojistas
 const loading = ref(true)
+const salvando = ref(false)
+const excluindo = ref(false)
+const loadingRepresentantes = ref(false)
+const trocandoRepresentante = ref(false)
+
 const lojistas = ref([])
+const listaRepresentantes = ref([])
+const todosPedidos = ref([])
+const todosClientes = ref([])
+
 const busca = ref('')
 
-// Estados de Representantes (Para o Vínculo)
-const listaRepresentantes = ref([])
-const loadingRepresentantes = ref(false)
+const modalEdicao = ref(false)
+const modalExclusao = ref(false)
+const modalTrocaRepresentante = ref(false)
+const modalConfirmarTroca = ref(false)
+
+const lojistaEditando = ref({})
+const lojistaParaExcluir = ref(null)
+
+const representanteDestino = ref(null)
+const representanteDestinoId = ref(null)
+
+const tabEdicao = ref('dados')
+
+const ocultarSenha = ref(true)
+const ocultarConfirmacao = ref(true)
+const confirmarSenha = ref('')
+
+const buscaPedidos = ref('')
+const buscaClientes = ref('')
+const buscaRepresentante = ref('')
+const filtroStatusPedido = ref('todos')
 
 const paginacao = ref({
   sortBy: 'id',
@@ -241,80 +1705,676 @@ const paginacao = ref({
   rowsPerPage: 10
 })
 
-const modalEdicao = ref(false)
-const salvando = ref(false)
-const lojistaEditando = ref({})
-const ocultarSenha = ref(true)
-
-// Cálculo Dinâmico das Páginas
-const numeroDePaginas = computed(() => {
-  let total = lojistas.value.length
-
-  if (busca.value) {
-    const termo = String(busca.value).toLowerCase()
-    total = lojistas.value.filter(row => {
-      return Object.values(row).some(val =>
-        val !== null && val !== undefined && String(val).toLowerCase().includes(termo)
-      )
-    }).length
-  }
-
-  const limit = paginacao.value.rowsPerPage
-  return limit === 0 ? 1 : Math.ceil(total / limit) || 1
+const paginacaoPedidos = ref({
+  page: 1,
+  rowsPerPage: 7
 })
 
-const colunasVisiveis = [
-  { name: 'id', field: 'id', label: 'ID', align: 'left', sortable: true, style: 'width: 70px' },
-  { name: 'nome', field: 'nome', label: 'Lojista', align: 'left', sortable: true },
-  { name: 'contato', field: 'telefone', label: 'Contato', align: 'left' },
-  { name: 'representante', field: 'nome_representante', label: 'Representante', align: 'left', sortable: true },
-  { name: 'acoes', field: 'acoes', label: '', align: 'right', style: 'width: 60px' }
+const paginacaoClientes = ref({
+  page: 1,
+  rowsPerPage: 7
+})
+
+const headers = computed(() => ({
+  Authorization: `Bearer ${authStore.token}`
+}))
+
+const colunasLojistas = [
+  {
+    name: 'id',
+    field: 'id',
+    label: 'ID',
+    align: 'left',
+    sortable: true,
+    style: 'width: 72px'
+  },
+  {
+    name: 'lojista',
+    field: 'nome',
+    label: 'Lojista',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'contato',
+    field: 'telefone',
+    label: 'Contato',
+    align: 'left'
+  },
+  {
+    name: 'representante',
+    field: 'nome_representante',
+    label: 'Representante',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'atividade',
+    field: 'total_pedidos',
+    label: 'Atividade',
+    align: 'left'
+  },
+  {
+    name: 'acoes',
+    field: 'acoes',
+    label: '',
+    align: 'right',
+    style: 'width: 96px'
+  }
 ]
 
-async function carregarLojistas() {
+const colunasPedidos = [
+  {
+    name: 'projeto',
+    field: 'nome_projeto',
+    label: 'Projeto',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'cliente',
+    field: 'cliente',
+    label: 'Cliente',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'status',
+    field: 'status',
+    label: 'Status',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'valor',
+    field: 'valor',
+    label: 'Valor',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'datas',
+    field: 'data_pedido',
+    label: 'Datas',
+    align: 'left',
+    sortable: true
+  }
+]
+
+const colunasClientes = [
+  {
+    name: 'cliente',
+    field: 'nome',
+    label: 'Cliente',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'contato',
+    field: 'email',
+    label: 'Contato',
+    align: 'left'
+  },
+  {
+    name: 'relacionamento',
+    field: 'total_pedidos',
+    label: 'Relacionamento',
+    align: 'left',
+    sortable: true
+  },
+  {
+    name: 'ultimo',
+    field: 'ultimo_pedido',
+    label: 'Último projeto',
+    align: 'left',
+    sortable: true
+  }
+]
+
+const lojistasEnriquecidos = computed(() =>
+  lojistas.value.map(lojista => {
+    const pedidos =
+      todosPedidos.value.filter(pedido =>
+        String(pedido.id_lojista) ===
+        String(lojista.id)
+      )
+
+    const clientes =
+      new Set(
+        pedidos
+          .map(pedido => pedido.id_cliente)
+          .filter(Boolean)
+          .map(String)
+      )
+
+    return {
+      ...lojista,
+      total_pedidos: pedidos.length,
+      total_clientes: clientes.size
+    }
+  })
+)
+
+const totalClientesAtendidos = computed(() =>
+  new Set(
+    todosPedidos.value
+      .map(pedido => pedido.id_cliente)
+      .filter(Boolean)
+      .map(String)
+  ).size
+)
+
+const lojistasFiltrados = computed(() => {
+  const termo =
+    String(busca.value || '')
+      .trim()
+      .toLowerCase()
+
+  const base = lojistasEnriquecidos.value
+
+  if (!termo) {
+    return base
+  }
+
+  return base.filter(lojista =>
+    [
+      lojista.id,
+      lojista.nome,
+      lojista.email,
+      lojista.telefone,
+      lojista.nome_representante,
+      representanteNome(lojista.id_representante)
+    ].some(valor =>
+      String(valor ?? '')
+        .toLowerCase()
+        .includes(termo)
+    )
+  )
+})
+
+const numeroDePaginas = computed(() => {
+  const limite =
+    Number(paginacao.value.rowsPerPage)
+
+  return limite === 0
+    ? 1
+    : Math.ceil(
+        lojistasFiltrados.value.length /
+        limite
+      ) || 1
+})
+
+const lojistasPaginadosMobile = computed(() => {
+  const limite =
+    Number(paginacao.value.rowsPerPage)
+
+  if (!limite) {
+    return lojistasFiltrados.value
+  }
+
+  const inicio =
+    (Number(paginacao.value.page) - 1) *
+    limite
+
+  return lojistasFiltrados.value.slice(
+    inicio,
+    inicio + limite
+  )
+})
+
+const representanteAtual = computed(() =>
+  listaRepresentantes.value.find(rep =>
+    String(rep.id) ===
+    String(lojistaEditando.value.id_representante)
+  ) || null
+)
+
+const representantesDisponiveis = computed(() => {
+  const termo =
+    String(buscaRepresentante.value || '')
+      .trim()
+      .toLowerCase()
+
+  const base =
+    listaRepresentantes.value.filter(rep =>
+      String(rep.id) !==
+      String(lojistaEditando.value.id_representante)
+    )
+
+  if (!termo) {
+    return base
+  }
+
+  return base.filter(rep =>
+    [
+      rep.nome,
+      rep.email,
+      rep.telefone
+    ].some(valor =>
+      String(valor ?? '')
+        .toLowerCase()
+        .includes(termo)
+    )
+  )
+})
+
+const regraSenha = computed(() => {
+  const senha =
+    String(lojistaEditando.value.senha || '')
+
+  return {
+    tamanho: senha.length >= 8,
+    maiuscula: /[A-Z]/.test(senha),
+    minuscula: /[a-z]/.test(senha),
+    numero: /\d/.test(senha),
+    simbolo: /[\W_]/.test(senha)
+  }
+})
+
+const senhaValida = computed(() => {
+  const senha =
+    String(lojistaEditando.value.senha || '')
+
+  if (!senha) return false
+
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(
+    senha
+  )
+})
+
+const senhasConferem = computed(() =>
+  Boolean(lojistaEditando.value.senha) &&
+  lojistaEditando.value.senha ===
+    confirmarSenha.value
+)
+
+const pedidosDoLojista = computed(() => {
+  if (!lojistaEditando.value.id) {
+    return []
+  }
+
+  return todosPedidos.value.filter(pedido =>
+    String(pedido.id_lojista) ===
+    String(lojistaEditando.value.id)
+  )
+})
+
+const valorTotalPedidos = computed(() =>
+  pedidosDoLojista.value.reduce(
+    (total, pedido) =>
+      total + Number(pedido.valor || 0),
+    0
+  )
+)
+
+const opcoesStatusPedido = computed(() => {
+  const status =
+    [...new Set(
+      pedidosDoLojista.value
+        .map(pedido => pedido.status)
+        .filter(Boolean)
+        .map(String)
+    )].sort((a, b) =>
+      a.localeCompare(b, 'pt-BR')
+    )
+
+  return [
+    {
+      label: 'Todos os status',
+      value: 'todos'
+    },
+    ...status.map(item => ({
+      label: item,
+      value: item
+    }))
+  ]
+})
+
+const pedidosFiltrados = computed(() => {
+  const termo =
+    String(buscaPedidos.value || '')
+      .trim()
+      .toLowerCase()
+
+  return pedidosDoLojista.value.filter(pedido => {
+    const bateStatus =
+      filtroStatusPedido.value === 'todos' ||
+      String(pedido.status || '') ===
+        String(filtroStatusPedido.value)
+
+    if (!bateStatus) {
+      return false
+    }
+
+    if (!termo) {
+      return true
+    }
+
+    return [
+      pedido.id,
+      pedido.nome_projeto,
+      pedido.cliente,
+      pedido.status
+    ].some(valor =>
+      String(valor ?? '')
+        .toLowerCase()
+        .includes(termo)
+    )
+  })
+})
+
+const numeroPaginasPedidos = computed(() =>
+  Math.ceil(
+    pedidosFiltrados.value.length /
+    Number(paginacaoPedidos.value.rowsPerPage || 7)
+  ) || 1
+)
+
+const pedidosPaginadosMobile = computed(() => {
+  const limite =
+    Number(paginacaoPedidos.value.rowsPerPage || 7)
+
+  const inicio =
+    (Number(paginacaoPedidos.value.page) - 1) *
+    limite
+
+  return pedidosFiltrados.value.slice(
+    inicio,
+    inicio + limite
+  )
+})
+
+const clientesAtendidos = computed(() => {
+  const mapa = new Map()
+
+  pedidosDoLojista.value.forEach(pedido => {
+    if (!pedido.id_cliente) {
+      return
+    }
+
+    const id = String(pedido.id_cliente)
+
+    if (!mapa.has(id)) {
+      const cadastro =
+        todosClientes.value.find(cliente =>
+          String(cliente.id) === id
+        )
+
+      mapa.set(id, {
+        id: pedido.id_cliente,
+        nome:
+          cadastro?.nome ||
+          pedido.cliente ||
+          `Cliente #${pedido.id_cliente}`,
+        email: cadastro?.email || '',
+        telefone: cadastro?.telefone || '',
+        cpf_cnpj: cadastro?.cpf_cnpj || '',
+        total_pedidos: 0,
+        valor_total: 0,
+        ultimo_pedido: null
+      })
+    }
+
+    const cliente = mapa.get(id)
+
+    cliente.total_pedidos += 1
+    cliente.valor_total +=
+      Number(pedido.valor || 0)
+
+    const dataPedido =
+      pedido.data_pedido
+        ? String(pedido.data_pedido).slice(0, 10)
+        : null
+
+    if (
+      dataPedido &&
+      (
+        !cliente.ultimo_pedido ||
+        dataPedido > cliente.ultimo_pedido
+      )
+    ) {
+      cliente.ultimo_pedido = dataPedido
+    }
+  })
+
+  return [...mapa.values()].sort(
+    (a, b) =>
+      String(a.nome)
+        .localeCompare(
+          String(b.nome),
+          'pt-BR'
+        )
+  )
+})
+
+const clientesFiltrados = computed(() => {
+  const termo =
+    String(buscaClientes.value || '')
+      .trim()
+      .toLowerCase()
+
+  if (!termo) {
+    return clientesAtendidos.value
+  }
+
+  return clientesAtendidos.value.filter(cliente =>
+    [
+      cliente.id,
+      cliente.nome,
+      cliente.email,
+      cliente.telefone,
+      cliente.cpf_cnpj
+    ].some(valor =>
+      String(valor ?? '')
+        .toLowerCase()
+        .includes(termo)
+    )
+  )
+})
+
+const numeroPaginasClientes = computed(() =>
+  Math.ceil(
+    clientesFiltrados.value.length /
+    Number(paginacaoClientes.value.rowsPerPage || 7)
+  ) || 1
+)
+
+const clientesPaginadosMobile = computed(() => {
+  const limite =
+    Number(paginacaoClientes.value.rowsPerPage || 7)
+
+  const inicio =
+    (Number(paginacaoClientes.value.page) - 1) *
+    limite
+
+  return clientesFiltrados.value.slice(
+    inicio,
+    inicio + limite
+  )
+})
+
+watch(
+  () => busca.value,
+  () => {
+    paginacao.value.page = 1
+  }
+)
+
+watch(
+  () => paginacao.value.rowsPerPage,
+  () => {
+    paginacao.value.page = 1
+  }
+)
+
+watch(
+  [
+    () => buscaPedidos.value,
+    () => filtroStatusPedido.value
+  ],
+  () => {
+    paginacaoPedidos.value.page = 1
+  }
+)
+
+watch(
+  () => buscaClientes.value,
+  () => {
+    paginacaoClientes.value.page = 1
+  }
+)
+
+const validarEmail = email => {
+  if (!email) return true
+
+  return (
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+    'Formato de e-mail inválido'
+  )
+}
+
+const validarTelefone = telefone => {
+  const limpo =
+    String(telefone || '')
+      .replace(/\D/g, '')
+
+  return (
+    (limpo.length >= 10 &&
+      limpo.length <= 11) ||
+    'Telefone deve ter DDD + 8 ou 9 dígitos'
+  )
+}
+
+async function carregarBase() {
   loading.value = true
+  loadingRepresentantes.value = true
+
   try {
-    const response = await api.get('/lojistas', {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    lojistas.value = response.data.data || response.data || []
+    const [
+      lojistasResponse,
+      representantesResponse,
+      pedidosResponse,
+      clientesResponse
+    ] = await Promise.all([
+      api.get('/lojistas', {
+        headers: headers.value
+      }),
+
+      api.get('/representantes', {
+        headers: headers.value
+      }),
+
+      api.get('/pedidos', {
+        headers: headers.value
+      }),
+
+      api.get('/clientes', {
+        headers: headers.value
+      })
+    ])
+
+    lojistas.value =
+      lojistasResponse.data.data ||
+      lojistasResponse.data ||
+      []
+
+    listaRepresentantes.value =
+      representantesResponse.data.data ||
+      representantesResponse.data ||
+      []
+
+    todosPedidos.value =
+      pedidosResponse.data.data ||
+      pedidosResponse.data ||
+      []
+
+    todosClientes.value =
+      clientesResponse.data.data ||
+      clientesResponse.data ||
+      []
   } catch (error) {
-    console.error(error)
-    $q.notify({ type: 'negative', message: 'Erro ao carregar a lista de lojistas.' })
+    console.error(
+      'Erro ao carregar tela de lojistas:',
+      error
+    )
+
+    $q.notify({
+      type: 'negative',
+      message:
+        error.response?.data?.message ||
+        'Erro ao carregar os dados da tela de lojistas.',
+      position: 'top-right'
+    })
   } finally {
     loading.value = false
+    loadingRepresentantes.value = false
   }
 }
 
-async function carregarRepresentantes() {
-  loadingRepresentantes.value = true
-  try {
-    const response = await api.get('/representantes', {
-      headers: { Authorization: `Bearer ${authStore.token}` }
+async function atualizarBaseRelacionada() {
+  const [
+    lojistasResponse,
+    pedidosResponse
+  ] = await Promise.all([
+    api.get('/lojistas', {
+      headers: headers.value
+    }),
+
+    api.get('/pedidos', {
+      headers: headers.value
     })
-    listaRepresentantes.value = response.data.data || response.data || []
-  } catch (error) {
-    console.error('Erro ao buscar representantes', error)
-    $q.notify({ type: 'warning', message: 'Não foi possível carregar os representantes para vínculo.' })
-  } finally {
-    loadingRepresentantes.value = false
-  }
+  ])
+
+  lojistas.value =
+    lojistasResponse.data.data ||
+    lojistasResponse.data ||
+    []
+
+  todosPedidos.value =
+    pedidosResponse.data.data ||
+    pedidosResponse.data ||
+    []
 }
 
 function handleRowClick(evt, row) {
   abrirEdicao(row)
 }
 
-function abrirEdicao(lojista) {
-  lojistaEditando.value = JSON.parse(JSON.stringify(lojista))
+async function abrirEdicao(lojista) {
+  resetWorkspace()
 
-  // Se a lista de representantes estiver vazia, recarrega
-  if (listaRepresentantes.value.length === 0) carregarRepresentantes()
+  lojistaEditando.value =
+    JSON.parse(JSON.stringify(lojista))
 
+  tabEdicao.value = 'dados'
   modalEdicao.value = true
+
+  try {
+    const response =
+      await api.get(
+        `/lojistas/${lojista.id}`,
+        {
+          headers: headers.value
+        }
+      )
+
+    lojistaEditando.value = {
+      ...lojistaEditando.value,
+      ...(response.data.data ||
+         response.data ||
+         {})
+    }
+  } catch (error) {
+    console.error(
+      'Erro ao carregar lojista:',
+      error
+    )
+  }
 }
 
 function abrirNovo() {
+  resetWorkspace()
+
   lojistaEditando.value = {
     nome: '',
     email: '',
@@ -323,342 +2383,2612 @@ function abrirNovo() {
     id_representante: null
   }
 
-  if (listaRepresentantes.value.length === 0) carregarRepresentantes()
-
-  ocultarSenha.value = true
+  tabEdicao.value = 'dados'
   modalEdicao.value = true
 }
 
-async function salvarLojista() {
-  // Trava para validar todos os campos via Quasar antes do envio
-  const isFormValid = await formLojista.value.validate()
-  if (!isFormValid) {
-    $q.notify({
-      type: 'warning',
-      message: 'Existem campos inválidos. Por favor, verifique os dados preenchidos.',
-      position: 'top-right'
-    })
+function resetWorkspace() {
+  confirmarSenha.value = ''
+  ocultarSenha.value = true
+  ocultarConfirmacao.value = true
+
+  buscaPedidos.value = ''
+  buscaClientes.value = ''
+  buscaRepresentante.value = ''
+  filtroStatusPedido.value = 'todos'
+
+  paginacaoPedidos.value.page = 1
+  paginacaoClientes.value.page = 1
+
+  representanteDestino.value = null
+  representanteDestinoId.value = null
+
+  modalTrocaRepresentante.value = false
+  modalConfirmarTroca.value = false
+}
+
+function fecharModal() {
+  if (
+    salvando.value ||
+    trocandoRepresentante.value
+  ) {
     return
   }
 
+  modalEdicao.value = false
+}
+
+async function salvarLojista() {
+  let formularioValido = true
+
+  if (
+    formLojista.value &&
+    tabEdicao.value === 'dados'
+  ) {
+    formularioValido =
+      await formLojista.value.validate()
+  } else {
+    formularioValido =
+      validarDadosCadastro()
+  }
+
+  if (!formularioValido) {
+    tabEdicao.value = 'dados'
+
+    $q.notify({
+      type: 'warning',
+      message:
+        'Revise os dados cadastrais antes de continuar.',
+      position: 'top-right'
+    })
+
+    return
+  }
+
+  if (!lojistaEditando.value.id_representante) {
+    tabEdicao.value = 'representante'
+
+    $q.notify({
+      type: 'warning',
+      message:
+        'Selecione o representante responsável pelo lojista.',
+      position: 'top-right'
+    })
+
+    return
+  }
+
+  if (!lojistaEditando.value.id) {
+    if (!lojistaEditando.value.senha) {
+      tabEdicao.value = 'dados'
+
+      $q.notify({
+        type: 'warning',
+        message:
+          'Informe a senha inicial do lojista.',
+        position: 'top-right'
+      })
+
+      return
+    }
+
+    if (!senhaValida.value) {
+      tabEdicao.value = 'dados'
+
+      $q.notify({
+        type: 'warning',
+        message:
+          'A senha ainda não atende aos requisitos de segurança.',
+        position: 'top-right'
+      })
+
+      return
+    }
+
+    if (!senhasConferem.value) {
+      tabEdicao.value = 'dados'
+
+      $q.notify({
+        type: 'warning',
+        message:
+          'A confirmação da senha não confere.',
+        position: 'top-right'
+      })
+
+      return
+    }
+  }
+
   salvando.value = true
+
   try {
     const payload = {
-      nome: lojistaEditando.value.nome,
-      email: lojistaEditando.value.email,
-      telefone: lojistaEditando.value.telefone,
-      id_representante: lojistaEditando.value.id_representante || null
+      nome:
+        String(lojistaEditando.value.nome || '')
+          .trim(),
+
+      email:
+        String(lojistaEditando.value.email || '')
+          .trim(),
+
+      telefone:
+        String(lojistaEditando.value.telefone || '')
+          .replace(/\D/g, ''),
+
+      id_representante:
+        lojistaEditando.value.id_representante
     }
 
     if (lojistaEditando.value.id) {
-      await api.patch(`/lojistas/${lojistaEditando.value.id}`, payload, {
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
-      $q.notify({ type: 'positive', message: 'Lojista atualizado com sucesso.' })
-    } else {
-      payload.senha = lojistaEditando.value.senha
+      const response =
+        await api.patch(
+          `/lojistas/${lojistaEditando.value.id}`,
+          payload,
+          {
+            headers: headers.value
+          }
+        )
 
-      await api.post('/lojistas', payload, {
-        headers: { Authorization: `Bearer ${authStore.token}` }
+      lojistaEditando.value = {
+        ...lojistaEditando.value,
+        ...(response.data.data ||
+           response.data ||
+           {})
+      }
+
+      $q.notify({
+        type: 'positive',
+        message:
+          'Lojista atualizado com sucesso.',
+        icon: 'check_circle',
+        position: 'top-right'
       })
-      $q.notify({ type: 'positive', message: 'Novo lojista adicionado com sucesso.' })
+    } else {
+      payload.senha =
+        lojistaEditando.value.senha
+
+      const response =
+        await api.post(
+          '/lojistas',
+          payload,
+          {
+            headers: headers.value
+          }
+        )
+
+      const novoId =
+        response.data.id_lojista ||
+        response.data.lojista?.id
+
+      if (!novoId) {
+        throw new Error(
+          'O backend não retornou o ID do novo lojista.'
+        )
+      }
+
+      lojistaEditando.value = {
+        ...(response.data.lojista || {}),
+        id: novoId,
+        nome: payload.nome,
+        email: payload.email,
+        telefone: payload.telefone,
+        id_representante:
+          payload.id_representante
+      }
+
+      confirmarSenha.value = ''
+
+      $q.notify({
+        type: 'positive',
+        message:
+          'Lojista criado. As abas de projetos e clientes foram liberadas.',
+        icon: 'check_circle',
+        position: 'top-right'
+      })
     }
 
-    modalEdicao.value = false
-    await carregarLojistas()
+    await atualizarBaseRelacionada()
   } catch (error) {
-    console.error(error)
+    console.error(
+      'Erro ao salvar lojista:',
+      error
+    )
+
     $q.notify({
       type: 'negative',
-      message: error.response?.data?.message || 'Falha ao salvar dados.'
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        'Falha ao salvar lojista.',
+      position: 'top-right'
     })
   } finally {
     salvando.value = false
   }
 }
 
-function formatarData(dataISO) {
-  if (!dataISO) return '---'
-  return new Date(dataISO).toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  })
+function validarDadosCadastro() {
+  const nome =
+    String(lojistaEditando.value.nome || '')
+      .trim()
+
+  const email =
+    String(lojistaEditando.value.email || '')
+      .trim()
+
+  const telefone =
+    String(lojistaEditando.value.telefone || '')
+      .replace(/\D/g, '')
+
+  return (
+    nome.length >= 3 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+    telefone.length >= 10 &&
+    telefone.length <= 11
+  )
 }
 
-function formatarTelefone(val) {
-  if (!val) return '---'
-  const clean = String(val).replace(/\D/g, '')
-  if (clean.length === 11) {
-    return clean.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+function abrirTrocaRepresentante() {
+  buscaRepresentante.value = ''
+  representanteDestino.value = null
+  representanteDestinoId.value = null
+  modalTrocaRepresentante.value = true
+}
+
+function confirmarTrocaRepresentante(rep) {
+  representanteDestino.value =
+    JSON.parse(JSON.stringify(rep))
+
+  representanteDestinoId.value = rep.id
+  modalConfirmarTroca.value = true
+}
+
+async function trocarRepresentante() {
+  if (
+    !lojistaEditando.value.id ||
+    !representanteDestino.value?.id
+  ) {
+    return
   }
-  if (clean.length === 10) {
-    return clean.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
+
+  trocandoRepresentante.value = true
+
+  try {
+    const response =
+      await api.patch(
+        `/lojistas/${lojistaEditando.value.id}`,
+        {
+          id_representante:
+            representanteDestino.value.id
+        },
+        {
+          headers: headers.value
+        }
+      )
+
+    lojistaEditando.value = {
+      ...lojistaEditando.value,
+      ...(response.data.data ||
+         response.data ||
+         {}),
+      id_representante:
+        representanteDestino.value.id,
+      nome_representante:
+        representanteDestino.value.nome
+    }
+
+    $q.notify({
+      type: 'positive',
+      message:
+        `${lojistaEditando.value.nome} agora pertence à carteira de ${representanteDestino.value.nome}.`,
+      icon: 'swap_horiz',
+      position: 'top-right'
+    })
+
+    modalConfirmarTroca.value = false
+    modalTrocaRepresentante.value = false
+
+    representanteDestino.value = null
+    representanteDestinoId.value = null
+
+    await atualizarBaseRelacionada()
+  } catch (error) {
+    console.error(
+      'Erro ao trocar representante:',
+      error
+    )
+
+    $q.notify({
+      type: 'negative',
+      message:
+        error.response?.data?.message ||
+        'Erro ao trocar o representante do lojista.',
+      position: 'top-right'
+    })
+  } finally {
+    trocandoRepresentante.value = false
   }
-  return val
 }
 
 function confirmarExclusao(lojista) {
-  $q.dialog({
-    title: 'Confirmar Exclusão',
-    message: `Tem certeza que deseja excluir o lojista <strong>${lojista.nome}</strong>?<br><br><span class="text-caption text-negative">Nota: Lojistas com pedidos vinculados no sistema não poderão ser excluídos.</span>`,
-    html: true,
-    cancel: { label: 'Cancelar', flat: true, color: 'grey-7' },
-    ok: { label: 'Excluir', color: 'negative', unelevated: true },
-    persistent: true
-  }).onOk(async () => {
-    try {
-      await api.delete(`/lojistas/${lojista.id}`, {
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
+  lojistaParaExcluir.value =
+    JSON.parse(JSON.stringify(lojista))
 
-      $q.notify({ type: 'positive', message: 'Lojista removido com sucesso!' })
+  modalExclusao.value = true
+}
 
-      await carregarLojistas()
-    } catch (error) {
-      console.error('Erro ao excluir:', error)
-      $q.notify({
-        type: 'negative',
-        message: error.response?.data?.message || 'Erro ao excluir o lojista. Verifique se ele possui pedidos vinculados.'
-      })
+async function excluirLojista() {
+  if (!lojistaParaExcluir.value?.id) {
+    return
+  }
+
+  excluindo.value = true
+
+  try {
+    await api.delete(
+      `/lojistas/${lojistaParaExcluir.value.id}`,
+      {
+        headers: headers.value
+      }
+    )
+
+    $q.notify({
+      type: 'positive',
+      message:
+        'Lojista removido com sucesso.',
+      icon: 'check_circle',
+      position: 'top-right'
+    })
+
+    modalExclusao.value = false
+    lojistaParaExcluir.value = null
+
+    await atualizarBaseRelacionada()
+  } catch (error) {
+    console.error(
+      'Erro ao excluir lojista:',
+      error
+    )
+
+    $q.notify({
+      type: 'negative',
+      message:
+        error.response?.data?.message ||
+        'Erro ao excluir o lojista.',
+      position: 'top-right'
+    })
+  } finally {
+    excluindo.value = false
+  }
+}
+
+function representanteNome(id) {
+  return (
+    listaRepresentantes.value.find(rep =>
+      String(rep.id) === String(id)
+    )?.nome ||
+    'Representante não encontrado'
+  )
+}
+
+function iniciais(nome) {
+  const partes =
+    String(nome || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+
+  if (!partes.length) {
+    return 'U'
+  }
+
+  if (partes.length === 1) {
+    return partes[0]
+      .charAt(0)
+      .toUpperCase()
+  }
+
+  return (
+    partes[0].charAt(0) +
+    partes[partes.length - 1].charAt(0)
+  ).toUpperCase()
+}
+
+function formatarTelefone(valor) {
+  if (!valor) {
+    return 'Não informado'
+  }
+
+  const clean =
+    String(valor).replace(/\D/g, '')
+
+  if (clean.length === 11) {
+    return clean.replace(
+      /(\d{2})(\d{5})(\d{4})/,
+      '($1) $2-$3'
+    )
+  }
+
+  if (clean.length === 10) {
+    return clean.replace(
+      /(\d{2})(\d{4})(\d{4})/,
+      '($1) $2-$3'
+    )
+  }
+
+  return valor
+}
+
+function formatarData(dataISO) {
+  if (!dataISO) return '---'
+
+  const data = new Date(dataISO)
+
+  if (Number.isNaN(data.getTime())) {
+    return '---'
+  }
+
+  return data.toLocaleString(
+    'pt-BR',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     }
-  })
+  )
 }
 
-// --- FUNÇÕES DE VALIDAÇÃO ---
-const validarEmail = (email) => {
-  if (!email) return true 
-  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return regex.test(email) || 'Formato de e-mail inválido'
+function formatarDataCurta(dataISO) {
+  if (!dataISO) {
+    return 'Não definida'
+  }
+
+  const data =
+    new Date(
+      `${String(dataISO).slice(0, 10)}T12:00:00`
+    )
+
+  if (Number.isNaN(data.getTime())) {
+    return 'Não definida'
+  }
+
+  return data.toLocaleDateString(
+    'pt-BR',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }
+  )
 }
 
-const validarTelefone = (tel) => {
-  if (!tel) return true
-  const limpo = String(tel).replace(/\D/g, '')
-  return (limpo.length >= 10 && limpo.length <= 11) || 'Telefone deve ter DDD + 8 ou 9 dígitos'
+function formatarMoeda(valor) {
+  return Number(valor || 0).toLocaleString(
+    'pt-BR',
+    {
+      style: 'currency',
+      currency: 'BRL'
+    }
+  )
 }
 
-const validarSenhaForte = (senha) => {
-  if (!senha) return true // Se estiver vazio, a regra de campo obrigatório já segura
-  
-  if (senha.length < 8) return 'A senha deve ter no mínimo 8 caracteres'
-  if (!/[A-Z]/.test(senha)) return 'Deve conter pelo menos uma letra maiúscula'
-  if (!/[a-z]/.test(senha)) return 'Deve conter pelo menos uma letra minúscula'
-  if (!/[0-9]/.test(senha)) return 'Deve conter pelo menos um número'
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(senha)) return 'Deve conter pelo menos um caractere especial'
-  
-  return true
-}
-// ----------------------------
-
-onMounted(() => {
-  carregarLojistas()
-  carregarRepresentantes()
-})
+onMounted(carregarBase)
 </script>
 
 <style scoped>
-/* Grid & Estrutura Master */
-.modern-card {
-  border-radius: 12px;
+.lojistas-page {
+  padding: 28px 28px 52px;
+  color: var(--text-base);
+}
+
+.panel {
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+}
+
+.page-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.page-hero__copy {
+  min-width: 0;
+}
+
+.eyebrow,
+.section-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.eyebrow__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+
+.page-hero h1 {
+  margin: 10px 0 8px;
+  color: var(--text-strong);
+  font-size: clamp(28px, 3vw, 39px);
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+
+.page-hero h1 span {
+  color: var(--brand);
+}
+
+.page-hero p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.hero-summary {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  min-width: 430px;
+  padding: 14px 16px;
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--brand);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-summary__item {
+  min-width: 105px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hero-summary__item span {
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.hero-summary__item strong {
+  margin-top: 5px;
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.hero-summary__divider {
+  width: 1px;
+  margin: 0 14px;
+  background: var(--border-soft);
+}
+
+.lojistas-panel {
+  min-width: 0;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border-radius: 18px;
 }
 
-.border-light-sharp {
-  border: 1px solid rgba(0, 0, 0, 0.06);
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
-.border-dark-sharp {
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.list-toolbar > div {
+  min-width: 0;
 }
 
-.bg-dark-card {
-  background-color: #1d222b !important;
+.list-toolbar h2 {
+  margin: 6px 0 0;
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 800;
 }
 
-.bg-dark-modal {
-  background-color: #14181e !important;
+.list-toolbar p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 9px;
 }
 
-.bg-dark-inner {
-  background-color: #1c2128 !important;
-  border: 1px solid #2e353f;
+.list-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
 }
 
-/* Filtros */
-.filter-card {
-  border-radius: 12px;
+.search-field {
+  width: 330px;
+  min-width: 0;
 }
 
-/* Tabela Interativa (Row Click) */
-:deep(.modern-table tbody tr) {
+.search-field :deep(.q-field__control),
+.rows-select :deep(.q-field__control),
+.status-filter :deep(.q-field__control) {
+  color: var(--text-strong);
+  background: var(--surf-2);
+  border-radius: 9px;
+}
+
+.search-field :deep(.q-field__native),
+.search-field :deep(.q-field__input),
+.search-field :deep(.q-field__prepend),
+.rows-select :deep(.q-field__native),
+.status-filter :deep(.q-field__native),
+.status-filter :deep(.q-field__input) {
+  color: var(--text-strong);
+}
+
+.search-field :deep(.q-field__control:before),
+.rows-select :deep(.q-field__control:before),
+.status-filter :deep(.q-field__control:before) {
+  border-color: var(--border-soft);
+}
+
+.primary-btn {
+  min-height: 39px;
+  padding: 0 14px;
+  color: #fff !important;
+  background:
+    linear-gradient(
+      135deg,
+      var(--brand),
+      #ff9634
+    ) !important;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(255, 123, 0, .18);
+  font-weight: 750;
+}
+
+.data-table,
+.related-table {
+  background: transparent;
+}
+
+:deep(.data-table__header),
+:deep(.related-table__header) {
+  background: var(--surf-2);
+}
+
+:deep(.data-table__header th),
+:deep(.related-table__header th) {
+  padding: 12px 16px !important;
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  font-size: 8.5px;
+  font-weight: 800 !important;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+:deep(.data-table__body tbody td),
+:deep(.related-table__body tbody td) {
+  padding: 12px 16px !important;
+  color: var(--text-base);
+  border-bottom: 1px solid var(--border-soft) !important;
+}
+
+:deep(.data-table__body tbody tr) {
   cursor: pointer;
-  transition: background-color 0.15s ease;
 }
 
-:deep(.modern-table tbody tr:hover) {
-  background-color: v-bind("isDark ? '#232932' : '#f8fafc'") !important;
+:deep(.data-table__body tbody tr:hover),
+:deep(.related-table__body tbody tr:hover) {
+  background: var(--surf-2) !important;
 }
 
-:deep(.modern-table tbody tr:hover .action-btn) {
-  transform: scale(1.1);
-  background-color: rgba(25, 118, 210, 0.1);
+.id-badge {
+  color: var(--text-muted);
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-size: 10px;
+  font-weight: 750;
 }
 
-.action-btn {
-  transition: all 0.2s ease;
+.person-cell,
+.project-cell,
+.representative-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
-/* Customização de Cabeçalhos e Células */
-:deep(.modern-header) {
-  background-color: v-bind("isDark ? '#14181e' : '#f8fafc'") !important;
+.store-avatar,
+.client-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255, 123, 0, .14);
+  border-radius: 11px;
+  font-size: 10px;
+  font-weight: 850;
 }
 
-:deep(.modern-header th) {
-  font-weight: 600 !important;
-  color: v-bind("isDark ? '#8a94a6' : '#64748b'") !important;
-  text-transform: uppercase;
+.person-cell strong,
+.person-cell span,
+.project-cell strong,
+.project-cell span,
+.representative-cell strong,
+.representative-cell span {
+  display: block;
+}
+
+.person-cell strong,
+.project-cell strong,
+.representative-cell strong {
+  color: var(--text-strong);
+  font-size: 10.5px;
+}
+
+.person-cell span,
+.project-cell span,
+.representative-cell span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 8.3px;
+}
+
+.representative-cell__icon {
+  width: 33px;
+  height: 33px;
+  flex: 0 0 33px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 10px;
+}
+
+.contact-cell,
+.activity-cell {
+  display: grid;
+  gap: 5px;
+}
+
+.contact-cell div,
+.activity-cell span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.contact-cell span {
+  overflow-wrap: anywhere;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.table-action-btn {
+  color: var(--text-muted);
+}
+
+.table-action-btn:hover {
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.table-action-btn--danger:hover {
+  color: #d95050;
+  background: rgba(217, 80, 80, .09);
+}
+
+.empty-state,
+.mobile-loading {
+  width: 100%;
+  min-height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty-state__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 14px;
+}
+
+.empty-state strong {
+  color: var(--text-strong);
   font-size: 11px;
-  letter-spacing: 0.6px;
-  padding: 14px 18px !important;
-  border-bottom: 1px solid v-bind("isDark ? '#2e353f' : '#eaedf3'") !important;
 }
 
-:deep(.q-table tbody td) {
-  padding: 16px 18px !important;
-  border-bottom: 1px solid v-bind("isDark ? '#252b35' : '#f1f5f9'") !important;
+.empty-state span,
+.mobile-loading span {
+  max-width: 360px;
+  font-size: 9px;
+  line-height: 1.45;
 }
 
-/* Rodapé Externo de Paginação */
+.empty-state--related {
+  min-height: 190px;
+}
+
+.mobile-list {
+  display: none;
+  padding: 12px;
+  background: var(--surf-2);
+}
+
+.mobile-card {
+  margin-bottom: 10px;
+  padding: 14px;
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 13px;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+
+.mobile-card__head {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+}
+
+.store-avatar--mobile {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+}
+
+.mobile-card__identity strong,
+.mobile-card__identity span {
+  display: block;
+}
+
+.mobile-card__identity strong {
+  color: var(--text-strong);
+  font-size: 11px;
+}
+
+.mobile-card__identity span {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 8.5px;
+}
+
+.mobile-card__representative {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 10px;
+}
+
+.mobile-card__representative div {
+  min-width: 0;
+}
+
+.mobile-card__representative span,
+.mobile-card__representative strong {
+  display: block;
+}
+
+.mobile-card__representative span {
+  color: var(--text-muted);
+  font-size: 7.5px;
+  text-transform: uppercase;
+}
+
+.mobile-card__representative strong {
+  margin-top: 2px;
+  color: var(--text-strong);
+  font-size: 9px;
+}
+
+.mobile-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.mobile-card__stats span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 8.5px;
+}
+
 .pagination-footer {
-  border-top: 1px dashed v-bind("isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'");
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 18px;
+  background: var(--surf-2);
+  border-top: 1px solid var(--border-soft);
 }
 
-/* Cores de Texto e Utilitários */
-.text-slate-main {
-  color: v-bind("isDark ? '#f1f5f9' : '#1e293b'");
+.pagination-footer__left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 8.5px;
+  font-weight: 650;
 }
 
-.text-slate-sub {
-  color: v-bind("isDark ? '#cbd5e1' : '#475569'");
+.rows-select {
+  width: 68px;
 }
 
-/* Visual Clean do Modal */
-.header-border {
-  border-bottom: 1px solid v-bind("isDark ? '#2e353f' : '#f1f5f9'");
+/* WORKSPACE */
+.lojista-dialog {
+  width: min(1180px, calc(100vw - 28px));
+  height: min(880px, calc(100vh - 28px));
+  max-width: none;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  color: var(--text-base);
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
 }
 
-.inner-section-card {
-  padding: 20px;
-  border-radius: 8px;
+.workspace-head {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto
+    36px;
+  align-items: center;
+  gap: 18px;
+  min-height: 92px;
+  padding: 17px 20px;
 }
 
-.bg-slate-light {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+.workspace-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
-/* Títulos das seções */
-.form-section-title {
-  font-size: 11px;
-  font-weight: 700;
+.workspace-avatar {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255, 123, 0, .15);
+  border-radius: 14px;
+}
+
+.workspace-identity > div:last-child {
+  min-width: 0;
+}
+
+.workspace-identity h2 {
+  margin: 5px 0 2px;
+  color: var(--text-strong);
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.workspace-identity p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.workspace-summary {
+  display: flex;
+  padding: 8px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+}
+
+.workspace-summary div {
+  min-width: 70px;
+  padding: 0 10px;
+  text-align: center;
+}
+
+.workspace-summary div + div {
+  border-left: 1px solid var(--border-soft);
+}
+
+.workspace-summary span,
+.workspace-summary strong {
+  display: block;
+}
+
+.workspace-summary span {
+  color: var(--text-muted);
+  font-size: 7px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--q-primary) !important;
 }
 
-/* Inputs Premium */
-.premium-field :deep(.q-field__control) {
-  border-radius: 6px !important;
-  transition: all 0.2s ease;
-}
-
-.bg-dark-modal .premium-field :deep(.q-field__control) {
-  background-color: #14181e !important;
-}
-
-.bg-white .premium-field :deep(.q-field__control) {
-  background-color: #ffffff !important;
-}
-
-.bg-dark-modal .premium-field :deep(.q-field__control:before) {
-  border-color: #334155 !important;
-}
-
-.bg-white .premium-field :deep(.q-field__control:before) {
-  border-color: #e2e8f0 !important;
-}
-
-.bg-dark-modal .premium-field :deep(.q-field__control:hover:before) {
-  border-color: #475569 !important;
-}
-
-.bg-white .premium-field :deep(.q-field__control:hover:before) {
-  border-color: #cbd5e1 !important;
-}
-
-.bg-dark-modal .premium-field :deep(.q-field__control:after) {
-  border-color: #94a3b8 !important;
-  border-width: 1px !important;
-  box-shadow: none !important;
-}
-
-.bg-white .premium-field :deep(.q-field__control:after) {
-  border-color: #64748b !important;
-  border-width: 1px !important;
-  box-shadow: none !important;
-}
-
-.bg-dark-modal .premium-field :deep(.q-field__native),
-.bg-dark-modal .premium-field :deep(.q-field__input) {
-  color: #f1f5f9 !important;
-  font-size: 13px;
-}
-
-.bg-white .premium-field :deep(.q-field__native),
-.bg-white .premium-field :deep(.q-field__input) {
-  color: #1e293b !important;
-  font-size: 13px;
-}
-
-.bg-dark-modal .premium-field :deep(.q-field__label) {
-  color: #8a94a6 !important;
-}
-
-.bg-white .premium-field :deep(.q-field__label) {
-  color: #64748b !important;
-}
-
-/* Utilitários Extras */
-.metadata-row {
-  border-top: 1px dashed v-bind("isDark ? '#2e353f' : '#e2e8f0'");
-}
-
-.font-11 {
-  font-size: 11px;
-}
-
-.font-12 {
+.workspace-summary strong {
+  margin-top: 3px;
+  color: var(--text-strong);
   font-size: 12px;
 }
 
-.font-13 {
-  font-size: 13px;
+.workspace-close {
+  color: var(--text-muted);
 }
 
-.font-14 {
-  font-size: 14px;
+/* PREMIUM TABS */
+.workspace-tabbar-shell {
+  flex: 0 0 auto;
+  padding: 13px 16px;
+  background: var(--surf-2);
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  overflow: hidden;
 }
 
-.text-mono {
-  font-family: monospace;
+.workspace-tabbar {
+  display: grid;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
 }
 
-.tracking-tight {
-  letter-spacing: -0.4px;
+.workspace-tabbar--four {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
 }
 
-.radius-8 {
+.workspace-tab-card {
+  position: relative;
+  min-width: 0;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  color: var(--text-base);
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, .025);
+  transition:
+    transform .16s ease,
+    border-color .16s ease,
+    box-shadow .16s ease;
+}
+
+.workspace-tab-card:not(.workspace-tab-card--disabled):hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 123, 0, .26);
+  box-shadow: 0 7px 18px rgba(16, 24, 40, .055);
+}
+
+.workspace-tab-card--active {
+  color: var(--brand);
+  background:
+    linear-gradient(
+      135deg,
+      var(--brand-soft),
+      var(--surf-1) 72%
+    );
+  border-color: rgba(255, 123, 0, .35);
+  box-shadow:
+    0 8px 22px rgba(255, 123, 0, .09),
+    inset 3px 0 0 var(--brand);
+}
+
+.workspace-tab-card__icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.workspace-tab-card--active .workspace-tab-card__icon {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: rgba(255, 123, 0, .2);
+}
+
+.workspace-tab-card__copy {
+  min-width: 0;
+}
+
+.workspace-tab-card__copy strong,
+.workspace-tab-card__copy small {
+  display: block;
+}
+
+.workspace-tab-card__copy strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 10.5px;
+  line-height: 1.25;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-tab-card--active .workspace-tab-card__copy strong {
+  color: var(--brand);
+}
+
+.workspace-tab-card__copy small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 8px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.workspace-tab-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.workspace-tab-count {
+  flex: 0 0 auto;
+  min-width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 6px;
+  color: var(--text-muted);
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  font-size: 7.5px;
+  font-weight: 850;
+}
+
+.workspace-tab-card--active .workspace-tab-count {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: rgba(255, 123, 0, .18);
+}
+
+.workspace-tab-card__active-mark {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--brand);
+  border-radius: 7px;
+  box-shadow: 0 5px 12px rgba(255, 123, 0, .22);
+}
+
+.workspace-tab-lock {
+  color: var(--text-muted);
+}
+
+.workspace-tab-card--disabled {
+  cursor: not-allowed;
+  opacity: .5;
+  background: var(--surf-2);
+  box-shadow: none;
+}
+
+.workspace-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.workspace-panels {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.workspace-panel {
+  height: 100%;
+  padding: 22px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.tab-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.tab-heading h3 {
+  margin: 6px 0 3px;
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.tab-heading p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.record-badge {
+  padding: 6px 9px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255, 123, 0, .14);
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.form-card {
+  margin-bottom: 14px;
+  padding: 16px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 13px;
+}
+
+.form-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.form-card__number {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
   border-radius: 8px;
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.form-card__head strong,
+.form-card__head span {
+  display: block;
+}
+
+.form-card__head strong {
+  color: var(--text-strong);
+  font-size: 10.5px;
+}
+
+.form-card__head span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 8.5px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.field-block {
+  min-width: 0;
+}
+
+.field-block--full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  display: block;
+  margin: 0 0 6px 2px;
+  color: var(--text-base);
+  font-size: 9.5px;
+  font-weight: 750;
+}
+
+.premium-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.premium-field :deep(.q-field__control) {
+  min-height: 42px;
+  color: var(--text-strong);
+  background: var(--surf-1);
+  border-radius: 9px;
+}
+
+.premium-field :deep(.q-field__native),
+.premium-field :deep(.q-field__input),
+.premium-field :deep(.q-field__prepend),
+.premium-field :deep(.q-field__append) {
+  color: var(--text-strong);
+}
+
+.premium-field :deep(.q-field__prepend),
+.premium-field :deep(.q-field__append) {
+  color: var(--text-muted);
+}
+
+.premium-field :deep(.q-field__control:before) {
+  border-color: var(--border-soft);
+}
+
+.premium-field.q-field--focused :deep(.q-field__control) {
+  box-shadow:
+    0 0 0 3px rgba(255, 123, 0, .08);
+}
+
+.premium-field :deep(.q-field__bottom) {
+  min-height: 30px;
+  padding: 5px 9px 0;
+}
+
+.premium-field--no-bottom :deep(.q-field__bottom) {
+  display: none;
+}
+
+.password-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(230px, 270px);
+  gap: 18px;
+  align-items: start;
+}
+
+.password-fields {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.validation-slot {
+  width: 100%;
+  height: 34px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 5px 9px 0;
+  color: transparent;
+  box-sizing: border-box;
+  font-size: 8.7px;
+  line-height: 1.35;
+}
+
+.validation-slot--error {
+  color: #d95050;
+}
+
+.password-rules {
+  padding: 15px;
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+}
+
+.password-rules__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--brand);
+}
+
+.password-rules__head strong {
+  color: var(--text-strong);
+  font-size: 9.5px;
+}
+
+.password-rules ul {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.password-rules li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 8.7px;
+  font-weight: 650;
+}
+
+.password-rules li.rule-ok {
+  color: #21ba45;
+}
+
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+  color: var(--text-muted);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255, 123, 0, .12);
+  border-radius: 10px;
+}
+
+.info-banner .q-icon {
+  color: var(--brand);
+  flex: 0 0 auto;
+}
+
+.info-banner strong,
+.info-banner span {
+  display: block;
+}
+
+.info-banner strong {
+  color: var(--text-strong);
+  font-size: 9.5px;
+}
+
+.info-banner span {
+  margin-top: 3px;
+  font-size: 8.5px;
+}
+
+.metadata-card {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.metadata-card span,
+.metadata-card strong {
+  display: block;
+}
+
+.metadata-card span {
+  color: var(--text-muted);
+  font-size: 7.8px;
+  text-transform: uppercase;
+}
+
+.metadata-card strong {
+  margin-top: 3px;
+  color: var(--text-base);
+  font-size: 8.7px;
+}
+
+.tab-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.secondary-btn {
+  color: var(--text-muted);
+  border-radius: 9px;
+}
+
+.save-btn {
+  color: #fff !important;
+  background:
+    linear-gradient(
+      135deg,
+      var(--brand),
+      #ff9634
+    ) !important;
+  border-radius: 9px;
+}
+
+.danger-btn {
+  color: #fff !important;
+  background: #d95050 !important;
+  border-radius: 9px;
+}
+
+/* REPRESENTANTE */
+.representative-selection-card,
+.current-representative-card {
+  padding: 18px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+}
+
+.representative-selection-card__head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 18px;
+}
+
+.representative-big-icon {
+  width: 45px;
+  height: 45px;
+  flex: 0 0 45px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 12px;
+}
+
+.representative-selection-card__head strong,
+.representative-selection-card__head span {
+  display: block;
+}
+
+.representative-selection-card__head strong {
+  color: var(--text-strong);
+  font-size: 11px;
+}
+
+.representative-selection-card__head span {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 8.7px;
+}
+
+.representative-create-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 4px;
+  padding: 10px;
+  color: var(--text-muted);
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  font-size: 8.5px;
+}
+
+.representative-create-note .q-icon {
+  color: var(--brand);
+  flex: 0 0 auto;
+}
+
+.current-representative-card__top {
+  display: grid;
+  grid-template-columns:
+    54px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.representative-avatar {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid rgba(255, 123, 0, .16);
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.current-representative-card__identity > span {
+  color: var(--text-muted);
+  font-size: 7.7px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.current-representative-card__identity h4 {
+  margin: 4px 0 0;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.current-representative-card__identity p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 8.5px;
+}
+
+.current-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  color: #168c36;
+  background: rgba(33, 186, 69, .09);
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.current-representative-card__contacts {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.current-representative-card__contacts div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 10px;
+  color: var(--text-muted);
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  font-size: 8.7px;
+}
+
+.current-representative-card__contacts .q-icon {
+  color: var(--brand);
+  flex: 0 0 auto;
+}
+
+.current-representative-card__contacts span {
+  overflow-wrap: anywhere;
+}
+
+.current-representative-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.current-representative-card__actions > div {
+  min-width: 0;
+}
+
+.current-representative-card__actions strong,
+.current-representative-card__actions span {
+  display: block;
+}
+
+.current-representative-card__actions strong {
+  color: var(--text-strong);
+  font-size: 9.5px;
+}
+
+.current-representative-card__actions span {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 8.3px;
+}
+
+/* RELATED */
+.related-summary {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.related-summary--three {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+}
+
+.related-summary article {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+}
+
+.related-summary__icon {
+  width: 37px;
+  height: 37px;
+  flex: 0 0 37px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 10px;
+}
+
+.related-summary span,
+.related-summary strong {
+  display: block;
+}
+
+.related-summary span {
+  color: var(--text-muted);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.related-summary strong {
+  margin-top: 3px;
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.related-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.related-toolbar--orders {
+  justify-content: flex-start;
+}
+
+.search-field--related {
+  width: min(360px, 100%);
+}
+
+.status-filter {
+  width: 190px;
+}
+
+.related-count {
+  color: var(--text-muted);
+  font-size: 8.5px;
+}
+
+.project-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 10px;
+}
+
+.client-cell strong,
+.client-cell span,
+.relationship-cell strong,
+.relationship-cell span {
+  display: block;
+}
+
+.client-cell strong,
+.relationship-cell strong {
+  color: var(--text-strong);
+  font-size: 9.5px;
+}
+
+.client-cell span,
+.relationship-cell span {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 8.3px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 8.3px;
+  font-weight: 750;
+}
+
+.status-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.money-cell {
+  color: var(--text-strong);
+  font-size: 9.5px;
+}
+
+.dates-cell {
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 8.3px;
+}
+
+.dates-cell strong {
+  color: var(--text-strong);
+  font-size: 8.7px;
+}
+
+.orders-mobile,
+.clients-mobile {
+  display: none;
+}
+
+.order-mobile-card,
+.client-mobile-card {
+  margin-bottom: 9px;
+  padding: 13px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+}
+
+.order-mobile-card__top,
+.client-mobile-card__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.order-mobile-card__top strong,
+.order-mobile-card__top span,
+.client-mobile-card__head strong,
+.client-mobile-card__head span {
+  display: block;
+}
+
+.order-mobile-card__top strong,
+.client-mobile-card__head strong {
+  color: var(--text-strong);
+  font-size: 10px;
+}
+
+.order-mobile-card__top span,
+.client-mobile-card__head span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.order-mobile-card > .status-badge {
+  margin-top: 10px;
+}
+
+.order-mobile-card__grid,
+.client-mobile-card__stats {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.order-mobile-card__grid span,
+.order-mobile-card__grid strong,
+.client-mobile-card__stats span,
+.client-mobile-card__stats strong {
+  display: block;
+}
+
+.order-mobile-card__grid span,
+.client-mobile-card__stats span {
+  color: var(--text-muted);
+  font-size: 7.5px;
+  text-transform: uppercase;
+}
+
+.order-mobile-card__grid strong,
+.client-mobile-card__stats strong {
+  margin-top: 3px;
+  color: var(--text-strong);
+  font-size: 8.7px;
+  overflow-wrap: anywhere;
+}
+
+.client-mobile-card__contacts {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.client-mobile-card__contacts span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 8.5px;
+  overflow-wrap: anywhere;
+}
+
+.related-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+/* REPRESENTATIVE DIALOG */
+.representative-dialog {
+  width: min(720px, calc(100vw - 24px));
+  max-height: min(82vh, 720px);
+  display: flex;
+  flex-direction: column;
+  color: var(--text-base);
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.representative-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px 14px;
+}
+
+.representative-dialog__head h3 {
+  margin: 6px 0 3px;
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.representative-dialog__head p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.representative-dialog__head p strong {
+  color: var(--text-strong);
+}
+
+.representative-dialog__toolbar {
+  padding: 10px 20px;
+  background: var(--surf-2);
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.search-field--modal {
+  width: 100%;
+}
+
+.representative-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.representative-option {
+  display: grid;
+  grid-template-columns:
+    42px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 11px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+}
+
+.representative-avatar--small {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border-radius: 11px;
+  font-size: 11px;
+}
+
+.representative-option__copy {
+  min-width: 0;
+}
+
+.representative-option__copy strong,
+.representative-option__copy span {
+  display: block;
+}
+
+.representative-option__copy strong {
+  color: var(--text-strong);
+  font-size: 9.5px;
+}
+
+.representative-option__copy span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
+
+.select-representative-btn {
+  min-height: 34px;
+  color: var(--brand);
+  background: var(--brand-soft) !important;
+  border: 1px solid rgba(255, 123, 0, .14);
+  border-radius: 8px;
+  font-size: 8.5px;
+}
+
+/* CONFIRM */
+.confirm-dialog {
+  width: min(470px, calc(100vw - 24px));
+  color: var(--text-base);
+  background: var(--surf-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 17px;
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
+}
+
+.confirm-dialog__head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 18px 20px 13px;
+}
+
+.confirm-dialog__icon {
+  width: 41px;
+  height: 41px;
+  flex: 0 0 41px;
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 11px;
+}
+
+.confirm-dialog__icon--danger {
+  color: #d95050;
+  background: rgba(217, 80, 80, .09);
+}
+
+.section-kicker--danger {
+  color: #d95050;
+}
+
+.confirm-dialog h3 {
+  margin: 5px 0 0;
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.confirm-dialog__body {
+  padding: 0 20px 17px;
+}
+
+.confirm-dialog__body > p {
+  margin: 0 0 11px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.confirm-dialog__body > p strong {
+  color: var(--text-strong);
+}
+
+.transfer-summary {
+  display: grid;
+  grid-template-columns:
+    1fr
+    24px
+    1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 11px;
+  padding: 12px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.transfer-summary > div {
+  min-width: 0;
+}
+
+.transfer-summary span,
+.transfer-summary strong {
+  display: block;
+}
+
+.transfer-summary span {
+  color: var(--text-muted);
+  font-size: 7.5px;
+  text-transform: uppercase;
+}
+
+.transfer-summary strong {
+  margin-top: 3px;
+  color: var(--text-strong);
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+.transfer-summary .q-icon {
+  color: var(--brand);
+}
+
+.confirm-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 11px;
+  color: var(--text-muted);
+  background: var(--surf-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  font-size: 8.7px;
+  line-height: 1.45;
+}
+
+.confirm-note--warning {
+  color: #9b6507;
+  background: rgba(242, 160, 7, .08);
+  border-color: rgba(242, 160, 7, .15);
+}
+
+.confirm-note .q-icon {
+  flex: 0 0 auto;
+}
+
+.confirm-dialog__actions {
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* RESPONSIVE */
+@media (max-width: 1180px) {
+  .lojistas-page {
+    padding: 24px 20px 44px;
+  }
+
+  .page-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero-summary {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero-summary__item {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .search-field {
+    width: 280px;
+  }
+
+  .workspace-tabbar--four {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .password-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .lojistas-page {
+    padding: 20px 14px 36px;
+  }
+
+  .list-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .list-toolbar__actions {
+    width: 100%;
+  }
+
+  .search-field {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .desktop-list {
+    display: none;
+  }
+
+  .mobile-list {
+    display: block;
+  }
+
+  .lojista-dialog {
+    width: calc(100vw - 18px);
+    height: calc(100vh - 18px);
+    border-radius: 16px;
+  }
+
+  .workspace-head {
+    grid-template-columns:
+      minmax(0, 1fr)
+      36px;
+  }
+
+  .workspace-summary {
+    display: none;
+  }
+
+  .orders-desktop,
+  .clients-desktop {
+    display: none;
+  }
+
+  .orders-mobile,
+  .clients-mobile {
+    display: block;
+  }
+}
+
+@media (max-width: 680px) {
+  .lojistas-page {
+    padding: 16px 10px 30px;
+  }
+
+  .page-hero h1 {
+    font-size: 27px;
+  }
+
+  .page-hero p {
+    font-size: 11.5px;
+  }
+
+  .hero-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 11px;
+  }
+
+  .hero-summary__divider {
+    display: none;
+  }
+
+  .hero-summary__item {
+    padding: 7px;
+  }
+
+  .hero-summary__item:last-child {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .list-toolbar {
+    padding: 15px 12px;
+  }
+
+  .list-toolbar__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-field,
+  .primary-btn {
+    width: 100%;
+  }
+
+  .pagination-footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .pagination-footer :deep(.q-pagination) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lojista-dialog {
+    width: 100vw;
+    height: 100vh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .workspace-head {
+    min-height: 78px;
+    padding: 13px 12px;
+  }
+
+  .workspace-avatar {
+    width: 43px;
+    height: 43px;
+    flex-basis: 43px;
+  }
+
+  .workspace-identity h2 {
+    font-size: 15px;
+  }
+
+  .workspace-identity p {
+    display: none;
+  }
+
+  .workspace-tabbar-shell {
+    padding: 9px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .workspace-tabbar-shell::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .workspace-tabbar-shell::-webkit-scrollbar-thumb {
+    background: var(--border-soft);
+    border-radius: 999px;
+  }
+
+  .workspace-tabbar--four {
+    grid-template-columns:
+      repeat(4, 150px);
+    width: max-content;
+    min-width: max-content;
+    gap: 7px;
+  }
+
+  .workspace-tab-card {
+    min-height: 55px;
+    grid-template-columns:
+      32px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 9px;
+  }
+
+  .workspace-tab-card__icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .workspace-tab-card__copy strong {
+    font-size: 9px;
+  }
+
+  .workspace-tab-card__copy small {
+    font-size: 7px;
+  }
+
+  .workspace-tab-card__active-mark,
+  .workspace-tab-lock {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+  }
+
+  .workspace-tab-card__active-mark {
+    width: 18px;
+    height: 18px;
+  }
+
+  .workspace-panel {
+    padding: 16px 12px 22px;
+  }
+
+  .tab-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .form-grid,
+  .related-summary--three,
+  .current-representative-card__contacts {
+    grid-template-columns: 1fr;
+  }
+
+  .field-block--full {
+    grid-column: auto;
+  }
+
+  .metadata-card {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .tab-actions .q-btn {
+    width: 100%;
+  }
+
+  .current-representative-card__top {
+    grid-template-columns:
+      48px minmax(0, 1fr);
+  }
+
+  .representative-avatar {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+
+  .current-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .current-representative-card__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .current-representative-card__actions .primary-btn {
+    width: 100%;
+  }
+
+  .related-toolbar,
+  .related-toolbar--orders {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-field--related,
+  .status-filter {
+    width: 100%;
+  }
+
+  .related-pagination {
+    justify-content: center;
+  }
+
+  .order-mobile-card__grid,
+  .client-mobile-card__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .representative-dialog {
+    width: calc(100vw - 14px);
+    max-height: calc(100vh - 14px);
+  }
+
+  .representative-option {
+    grid-template-columns:
+      42px minmax(0, 1fr);
+  }
+
+  .representative-option .select-representative-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .confirm-dialog {
+    width: calc(100vw - 14px);
+  }
+
+  .confirm-dialog__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .confirm-dialog__actions .q-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .lojistas-page {
+    padding-inline: 8px;
+  }
+
+  .hero-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-summary__item:last-child {
+    grid-column: 1;
+  }
+
+  .hero-summary__item + .hero-summary__item {
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .workspace-tabbar--four {
+    grid-template-columns:
+      repeat(4, 138px);
+  }
+
+  .mobile-card {
+    padding: 12px;
+  }
+
+  .transfer-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .transfer-summary .q-icon {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
 }
 </style>
