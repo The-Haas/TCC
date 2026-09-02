@@ -24,7 +24,7 @@
 import { computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth' 
-import ClientesComponent from 'components/clientes/ClientesLojista.vue'
+import ClientesComponent from 'components/clientes/ClientesGeral.vue'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
