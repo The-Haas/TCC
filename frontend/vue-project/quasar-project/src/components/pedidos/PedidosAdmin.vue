@@ -817,15 +817,19 @@
                     <div class="field-block">
                       <span class="field-label">Valor</span>
                       <q-input
-                        v-model.number="pedidoEditando.valor"
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        :model-value="valorProjetoInput"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
                         outlined
                         dense
                         color="orange"
                         class="premium-field"
                         prefix="R$"
+                        placeholder="0,00"
+                        @keydown="bloquearTeclaValor"
+                        @update:model-value="atualizarValorProjetoInput"
+                        @blur="normalizarValorProjetoInput"
                       >
                         <template #prepend><q-icon name="payments" size="18px" /></template>
                       </q-input>
@@ -1698,6 +1702,7 @@ const $q = useQuasar()
 const authStore = useAuthStore()
 
 const formPedido = ref(null)
+const valorProjetoInput = ref('')
 
 const loading = ref(true)
 const carregandoDetalhe = ref(false)
@@ -2381,6 +2386,11 @@ async function abrirPedido(pedido) {
   pedidoEditando.value =
     criarFormularioPedido(pedido)
 
+  valorProjetoInput.value =
+    formatarValorCampo(
+      pedidoEditando.value.valor
+    )
+
   tabPedido.value = 'acompanhamento'
   buscaItens.value = ''
   mostrarXml.value = false
@@ -2422,6 +2432,11 @@ async function recarregarPedidoAtual() {
     pedidoEditando.value =
       criarFormularioPedido(
         pedidoDetalhe.value
+      )
+
+    valorProjetoInput.value =
+      formatarValorCampo(
+        pedidoEditando.value.valor
       )
   } catch (error) {
     console.error(
@@ -2477,6 +2492,8 @@ function fecharPedido() {
 }
 
 async function salvarResumoPedido() {
+  normalizarValorProjetoInput()
+
   const valido =
     await formPedido.value.validate()
 
@@ -2505,10 +2522,13 @@ async function salvarResumoPedido() {
 
         valor:
           pedidoEditando.value.valor === '' ||
-          pedidoEditando.value.valor === null
+          pedidoEditando.value.valor === null ||
+          pedidoEditando.value.valor === undefined
             ? null
             : Number(
-                pedidoEditando.value.valor
+                Number(
+                  pedidoEditando.value.valor
+                ).toFixed(2)
               ),
 
         id_cliente:
@@ -3209,6 +3229,184 @@ function formatarData(dataISO) {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
+    }
+  )
+}
+
+function bloquearTeclaValor(event) {
+  if (
+    event.ctrlKey ||
+    event.metaKey
+  ) {
+    return
+  }
+
+  const teclasPermitidas = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+    'Enter'
+  ]
+
+  if (
+    teclasPermitidas.includes(event.key) ||
+    /^\d$/.test(event.key) ||
+    event.key === ',' ||
+    event.key === '.'
+  ) {
+    return
+  }
+
+  event.preventDefault()
+}
+
+function converterValorDigitado(valor) {
+  const texto =
+    String(valor ?? '')
+      .trim()
+
+  if (!texto) {
+    return null
+  }
+
+  const ultimoSeparador =
+    Math.max(
+      texto.lastIndexOf(','),
+      texto.lastIndexOf('.')
+    )
+
+  let inteiro = ''
+  let decimal = ''
+
+  if (ultimoSeparador >= 0) {
+    inteiro =
+      texto
+        .slice(0, ultimoSeparador)
+        .replace(/\D/g, '')
+
+    decimal =
+      texto
+        .slice(ultimoSeparador + 1)
+        .replace(/\D/g, '')
+        .slice(0, 2)
+  } else {
+    inteiro =
+      texto.replace(/\D/g, '')
+  }
+
+  if (!inteiro && !decimal) {
+    return null
+  }
+
+  const numero =
+    Number(
+      `${inteiro || '0'}${decimal ? `.${decimal}` : ''}`
+    )
+
+  return Number.isFinite(numero)
+    ? Math.max(0, numero)
+    : null
+}
+
+function atualizarValorProjetoInput(valor) {
+  const textoOriginal =
+    String(valor ?? '')
+
+  const ultimoSeparador =
+    Math.max(
+      textoOriginal.lastIndexOf(','),
+      textoOriginal.lastIndexOf('.')
+    )
+
+  let inteiro = ''
+  let decimal = ''
+  let temSeparador = false
+
+  if (ultimoSeparador >= 0) {
+    temSeparador = true
+
+    inteiro =
+      textoOriginal
+        .slice(0, ultimoSeparador)
+        .replace(/\D/g, '')
+
+    decimal =
+      textoOriginal
+        .slice(ultimoSeparador + 1)
+        .replace(/\D/g, '')
+        .slice(0, 2)
+  } else {
+    inteiro =
+      textoOriginal
+        .replace(/\D/g, '')
+  }
+
+  const valorLimpo =
+    inteiro || temSeparador
+      ? `${inteiro || '0'}${temSeparador ? `,${decimal}` : ''}`
+      : ''
+
+  valorProjetoInput.value =
+    valorLimpo
+
+  pedidoEditando.value.valor =
+    converterValorDigitado(valorLimpo)
+}
+
+function normalizarValorProjetoInput() {
+  const numero =
+    converterValorDigitado(
+      valorProjetoInput.value
+    )
+
+  if (
+    numero === null ||
+    !Number.isFinite(numero)
+  ) {
+    valorProjetoInput.value = ''
+    pedidoEditando.value.valor = null
+    return
+  }
+
+  const valorNormalizado =
+    Number(numero.toFixed(2))
+
+  pedidoEditando.value.valor =
+    valorNormalizado
+
+  valorProjetoInput.value =
+    formatarValorCampo(
+      valorNormalizado
+    )
+}
+
+function formatarValorCampo(valor) {
+  if (
+    valor === null ||
+    valor === undefined ||
+    valor === ''
+  ) {
+    return ''
+  }
+
+  const numero =
+    Number(valor)
+
+  if (!Number.isFinite(numero)) {
+    return ''
+  }
+
+  return numero.toLocaleString(
+    'pt-BR',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }
   )
 }
