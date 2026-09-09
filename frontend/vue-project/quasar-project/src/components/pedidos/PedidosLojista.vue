@@ -299,6 +299,17 @@
                   <q-tooltip>Abrir projeto</q-tooltip>
                 </q-btn>
 
+                <q-btn
+                  v-if="podeExcluirPedido(props.row)"
+                  flat
+                  round
+                  dense
+                  icon="delete_outline"
+                  class="table-action-btn table-action-btn--danger"
+                  @click.stop="confirmarExclusao(props.row)"
+                >
+                  <q-tooltip>Excluir projeto</q-tooltip>
+                </q-btn>
               </div>
             </q-td>
           </template>
@@ -403,6 +414,18 @@
                 }}
               </strong>
             </span>
+
+            <q-btn
+              v-if="podeExcluirPedido(pedido)"
+              flat
+              round
+              dense
+              icon="delete_outline"
+              class="mobile-delete-btn"
+              @click.stop="confirmarExclusao(pedido)"
+            >
+              <q-tooltip>Excluir projeto</q-tooltip>
+            </q-btn>
           </div>
         </article>
       </div>
@@ -467,6 +490,18 @@
           </div>
 
           <div class="workspace-head__actions">
+            <q-btn
+              v-if="podeExcluirPedido(pedidoDetalhe)"
+              flat
+              round
+              dense
+              icon="delete_outline"
+              class="workspace-delete-btn"
+              @click="confirmarExclusao(pedidoDetalhe)"
+            >
+              <q-tooltip>Excluir projeto</q-tooltip>
+            </q-btn>
+
             <q-btn flat round dense icon="close" class="workspace-close" @click="fecharPedido" />
           </div>
         </q-card-section>
@@ -1107,6 +1142,78 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="modalExclusao" persistent>
+      <q-card class="confirm-dialog">
+        <q-card-section class="confirm-dialog__head">
+          <div class="confirm-dialog__icon confirm-dialog__icon--danger">
+            <q-icon name="delete_outline" size="22px" />
+          </div>
+
+          <div>
+            <div class="section-kicker section-kicker--danger">Ação irreversível</div>
+            <h3>Excluir projeto?</h3>
+          </div>
+        </q-card-section>
+
+        <q-card-section class="confirm-dialog__body">
+          <p>
+            O projeto
+            <strong>
+              #{{ pedidoParaExcluir?.id }} ·
+              {{ pedidoParaExcluir?.nome_projeto || 'Projeto sem nome' }}
+            </strong>
+            será removido permanentemente.
+          </p>
+
+          <div class="delete-project-summary">
+            <div>
+              <span>Status</span>
+              <strong>{{ pedidoParaExcluir?.status || '—' }}</strong>
+            </div>
+
+            <div>
+              <span>Cliente</span>
+              <strong>{{ pedidoParaExcluir?.cliente || '—' }}</strong>
+            </div>
+
+            <div>
+              <span>Valor</span>
+              <strong>{{ formatarMoeda(pedidoParaExcluir?.valor) }}</strong>
+            </div>
+          </div>
+
+          <div class="confirm-note confirm-note--warning">
+            <q-icon name="warning_amber" size="18px" />
+            <span>
+              O lojista só pode excluir projetos cujo status atual tenha ordem 0 ou 1.
+              Esta operação não pode ser desfeita.
+            </span>
+          </div>
+        </q-card-section>
+
+        <q-card-actions class="confirm-dialog__actions">
+          <q-btn
+            flat
+            no-caps
+            label="Cancelar"
+            class="secondary-btn"
+            :disable="excluindo"
+            @click="modalExclusao = false"
+          />
+
+          <q-btn
+            unelevated
+            no-caps
+            icon="delete_outline"
+            label="Excluir projeto"
+            :loading="excluindo"
+            class="danger-btn"
+            @click="excluirPedido"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -1133,6 +1240,7 @@ const authStore = useAuthStore()
 const loading = ref(true)
 const carregandoDetalhe = ref(false)
 const importando = ref(false)
+const excluindo = ref(false)
 
 const pedidos = ref([])
 const listaStatus = ref([])
@@ -1149,9 +1257,11 @@ const mostrarFiltros = ref(false)
 
 const modalPedido = ref(false)
 const modalImportar = ref(false)
+const modalExclusao = ref(false)
 
 const pedidoResumoSelecionado = ref(null)
 const pedidoDetalhe = ref({})
+const pedidoParaExcluir = ref(null)
 
 const tabPedido = ref('acompanhamento')
 const buscaItens = ref('')
@@ -1835,6 +1945,111 @@ async function recarregarPedidoAtual() {
 
 function fecharPedido() {
   modalPedido.value = false
+}
+
+function podeExcluirPedido(pedido) {
+  const ordem =
+    pedido?.ordem_status === null ||
+    pedido?.ordem_status === undefined
+      ? null
+      : Number(pedido.ordem_status)
+
+  return ordem === 0 || ordem === 1
+}
+
+function confirmarExclusao(pedido) {
+  if (!pedido?.id) {
+    return
+  }
+
+  if (!podeExcluirPedido(pedido)) {
+    $q.notify({
+      type: 'warning',
+      message:
+        'Este projeto não pode ser excluído. O lojista só pode excluir projetos com status de ordem 0 ou 1.',
+      position: 'top-right'
+    })
+
+    return
+  }
+
+  pedidoParaExcluir.value =
+    JSON.parse(JSON.stringify(pedido))
+
+  modalExclusao.value = true
+}
+
+async function excluirPedido() {
+  const pedido =
+    pedidoParaExcluir.value
+
+  if (!pedido?.id) {
+    return
+  }
+
+  if (!podeExcluirPedido(pedido)) {
+    modalExclusao.value = false
+
+    $q.notify({
+      type: 'warning',
+      message:
+        'Este projeto não está mais em uma situação que permite exclusão.',
+      position: 'top-right'
+    })
+
+    return
+  }
+
+  excluindo.value = true
+
+  try {
+    const id = pedido.id
+
+    await api.delete(
+      `/pedidos/${id}`,
+      {
+        headers: headers.value
+      }
+    )
+
+    modalExclusao.value = false
+    pedidoParaExcluir.value = null
+
+    if (
+      String(pedidoDetalhe.value.id) ===
+      String(id)
+    ) {
+      modalPedido.value = false
+      pedidoDetalhe.value = {}
+      pedidoResumoSelecionado.value = null
+    }
+
+    $q.notify({
+      type: 'positive',
+      message: 'Projeto excluído com sucesso.',
+      icon: 'check_circle',
+      position: 'top-right'
+    })
+
+    await carregarPedidos({
+      silencioso: false
+    })
+  } catch (error) {
+    console.error(
+      'Erro ao excluir projeto:',
+      error
+    )
+
+    $q.notify({
+      type: 'negative',
+      message:
+        error.response?.data?.message ||
+        'Não foi possível excluir o projeto.',
+      position: 'top-right'
+    })
+  } finally {
+    excluindo.value = false
+  }
 }
 
 function statusAtual(status) {
