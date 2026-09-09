@@ -83,8 +83,25 @@ async function verificarAcessoClientePorId(req, res, next) {
   }
 
   if (tipo === "lojista") {
-    // Como os lojistas agora podem editar clientes mesmo sem pedidos vinculados, 
-    // a trava que consultava a tabela 'pedidos' foi removida, liberando o acesso direto.
+    const acesso = await db.query(
+      `
+    SELECT 1
+    FROM pedidos
+    WHERE id_cliente = $1
+      AND id_lojista = $2
+    LIMIT 1
+    `,
+      [clienteId, userId]
+    );
+
+    if (acesso.rows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Acesso negado: este cliente não possui projetos vinculados à sua loja",
+      });
+    }
+
     return next();
   }
 

@@ -93,9 +93,34 @@ async function postCliente(dados) {
     }
 }
 
-async function getClientes() {
+async function getClientes(filtroLojista = null) {
     try {
-        const result = await db.query(`
+        const params = [];
+        let whereClause = '';
+
+        // Admin:
+        // filtroLojista = null
+        // → vê todos os clientes.
+        //
+        // Lojista:
+        // filtroLojista = id do lojista logado
+        // → vê somente clientes que possuem pelo menos
+        //   um projeto vinculado à loja dele.
+        if (filtroLojista !== null && filtroLojista !== undefined) {
+            params.push(filtroLojista);
+
+            whereClause = `
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM pedidos p
+                    WHERE p.id_cliente = c.id
+                      AND p.id_lojista = $1
+                )
+            `;
+        }
+
+        const result = await db.query(
+            `
             SELECT
                 c.id AS cliente_id,
                 c.nome,
@@ -112,16 +137,29 @@ async function getClientes() {
                 c.endereco_entrega,
                 c.created_at,
                 c.updated_at
-
             FROM clientes c
+            ${whereClause}
             ORDER BY c.id ASC;
-        `);
+            `,
+            params
+        );
 
-        return { success: true, clientes: result.rows };
+        return {
+            success: true,
+            clientes: result.rows
+        };
 
     } catch (error) {
-        console.error("Erro ao buscar clientes:", error);
-        return { success: false, message: "Erro ao buscar clientes.", error: error.message };
+        console.error(
+            "Erro ao buscar clientes:",
+            error
+        );
+
+        return {
+            success: false,
+            message: "Erro ao buscar clientes.",
+            error: error.message
+        };
     }
 }
 

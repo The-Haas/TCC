@@ -990,12 +990,14 @@ const Field = (props, { slots }) =>
 Field.props = { label: String, full: Boolean, wide: Boolean }
 
 
-const props = defineProps({
-  podeEditar: { type: Boolean, default: false }
-})
-
 const $q = useQuasar()
 const authStore = useAuthStore()
+
+const podeEditar = computed(() =>
+  ['admin', 'lojista'].includes(
+    String(authStore.userTipo || '').toLowerCase()
+  )
+)
 
 const formDados = ref(null)
 const formEndereco = ref(null)
@@ -1271,7 +1273,7 @@ function fecharModal() {
 }
 
 async function salvarDados() {
-  if (!props.podeEditar) return
+if (!podeEditar.value) return
   if (!(await formDados.value.validate())) return
 
   await executarPatch({
@@ -1284,7 +1286,7 @@ async function salvarDados() {
 }
 
 async function salvarEndereco() {
-  if (!props.podeEditar) return
+if (!podeEditar.value) return
   if (!(await formEndereco.value.validate())) return
 
   await executarPatch({
