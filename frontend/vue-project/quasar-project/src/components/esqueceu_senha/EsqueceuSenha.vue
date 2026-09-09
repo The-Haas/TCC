@@ -269,13 +269,16 @@
                   v-model="novaSenha"
                   class="recovery-input"
                   :type="showNovaSenha ? 'text' : 'password'"
-                  placeholder="Mínimo de 8 caracteres"
+                  placeholder="Crie uma senha forte"
                   outlined
                   dark
                   color="orange"
                   hide-bottom-space
                   autocomplete="new-password"
-                  :rules="[val => (val && val.length >= 8) || 'Mínimo 8 caracteres']"
+                  :rules="[
+                    val => !!val || 'Informe a nova senha',
+                    val => senhaAtendePolitica(val) || 'A senha ainda não atende a todos os requisitos',
+                  ]"
                 >
                   <template #prepend>
                     <q-icon name="lock_outline" size="19px" />
@@ -329,9 +332,26 @@
                 </q-input>
               </div>
 
-              <div class="password-hint" :class="{ 'password-hint--ok': senhaMinimaValida }">
-                <q-icon :name="senhaMinimaValida ? 'check_circle' : 'radio_button_unchecked'" size="15px" />
-                <span>Use pelo menos 8 caracteres.</span>
+              <div class="password-requirements">
+                <div class="password-requirements__head">
+                  <q-icon name="shield" size="15px" />
+                  <span>A nova senha deve conter:</span>
+                </div>
+
+                <div class="password-requirements__grid">
+                  <div
+                    v-for="criterio in criteriosSenha"
+                    :key="criterio.key"
+                    class="password-requirement"
+                    :class="{ 'password-requirement--ok': criterio.ok }"
+                  >
+                    <q-icon
+                      :name="criterio.ok ? 'check_circle' : 'radio_button_unchecked'"
+                      size="14px"
+                    />
+                    <span>{{ criterio.label }}</span>
+                  </div>
+                </div>
               </div>
 
               <q-btn
@@ -404,7 +424,54 @@ const showNovaSenha = ref(false)
 const showConfirmarSenha = ref(false)
 
 const currentYear = new Date().getFullYear()
-const senhaMinimaValida = computed(() => novaSenha.value.length >= 8)
+
+function senhaAtendePolitica(valor) {
+  const senha = String(valor || '')
+
+  return (
+    senha.length >= 8 &&
+    /[a-z]/.test(senha) &&
+    /[A-Z]/.test(senha) &&
+    /\d/.test(senha) &&
+    /[^A-Za-z0-9\s]/.test(senha)
+  )
+}
+
+const criteriosSenha = computed(() => {
+  const senha = String(novaSenha.value || '')
+
+  return [
+    {
+      key: 'tamanho',
+      label: '8 caracteres ou mais',
+      ok: senha.length >= 8,
+    },
+    {
+      key: 'minuscula',
+      label: '1 letra minúscula',
+      ok: /[a-z]/.test(senha),
+    },
+    {
+      key: 'maiuscula',
+      label: '1 letra maiúscula',
+      ok: /[A-Z]/.test(senha),
+    },
+    {
+      key: 'numero',
+      label: '1 número',
+      ok: /\d/.test(senha),
+    },
+    {
+      key: 'especial',
+      label: '1 caractere especial',
+      ok: /[^A-Za-z0-9\s]/.test(senha),
+    },
+  ]
+})
+
+const senhaValida = computed(() =>
+  senhaAtendePolitica(novaSenha.value)
+)
 
 // Mantém os identificadores mutuamente exclusivos:
 // ao preencher um deles, o outro fica bloqueado até o campo ativo ser limpo.
@@ -468,6 +535,33 @@ const solicitarCodigo = async () => {
 }
 
 const redefinirSenhaLocal = async () => {
+  if (String(codigo.value || '').length !== 6) {
+    $q.notify({
+      type: 'warning',
+      message: 'Digite o código de recuperação com 6 dígitos.',
+      position: 'top',
+    })
+    return
+  }
+
+  if (!senhaValida.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'A nova senha ainda não atende a todos os requisitos de segurança.',
+      position: 'top',
+    })
+    return
+  }
+
+  if (confirmarSenha.value !== novaSenha.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'A confirmação da senha não coincide com a nova senha.',
+      position: 'top',
+    })
+    return
+  }
+
   loading.value = true
 
   const identificadorParaEnviar = email.value.trim() || cpf.value.trim()
@@ -1112,16 +1206,6 @@ const redefinirSenhaLocal = async () => {
 }
 
 .helper-note,
-.password-hint {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 13px;
-  color: rgba(255,255,255,.3);
-  font-size: 9.5px;
-  line-height: 1.4;
-}
-
 .helper-note :deep(.q-icon) {
   color: rgba(255,123,0,.58);
 }
@@ -1131,15 +1215,56 @@ const redefinirSenhaLocal = async () => {
   font-weight: 700;
 }
 
-.password-hint :deep(.q-icon) {
-  color: rgba(255,255,255,.26);
+.password-requirements {
+  margin-top: 13px;
+  padding: 10px 11px;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 12px;
+  background: rgba(255,255,255,.025);
 }
 
-.password-hint--ok {
-  color: rgba(142,229,174,.64);
+.password-requirements__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255,255,255,.42);
+  font-size: 9px;
+  font-weight: 700;
 }
 
-.password-hint--ok :deep(.q-icon) {
+.password-requirements__head :deep(.q-icon) {
+  color: rgba(255,123,0,.68);
+}
+
+.password-requirements__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin-top: 8px;
+}
+
+.password-requirement {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,.3);
+  font-size: 8.8px;
+  line-height: 1.3;
+  transition: color .18s ease;
+}
+
+.password-requirement :deep(.q-icon) {
+  flex: 0 0 auto;
+  color: rgba(255,255,255,.22);
+  transition: color .18s ease;
+}
+
+.password-requirement--ok {
+  color: rgba(142,229,174,.72);
+}
+
+.password-requirement--ok :deep(.q-icon) {
   color: #65c88a;
 }
 
@@ -1381,9 +1506,18 @@ const redefinirSenhaLocal = async () => {
     margin: 10px 0;
   }
 
-  .helper-note,
-  .password-hint {
+  .helper-note {
     margin-top: 9px;
+  }
+
+  .password-requirements {
+    margin-top: 9px;
+    padding: 8px 9px;
+  }
+
+  .password-requirements__grid {
+    gap: 5px 9px;
+    margin-top: 6px;
   }
 
   .sent-banner {
@@ -1521,10 +1655,27 @@ const redefinirSenhaLocal = async () => {
     margin: 7px 0;
   }
 
-  .helper-note,
-  .password-hint {
+  .helper-note {
     margin-top: 6px;
     font-size: 8.8px;
+  }
+
+  .password-requirements {
+    margin-top: 6px;
+    padding: 6px 8px;
+  }
+
+  .password-requirements__head {
+    font-size: 8.2px;
+  }
+
+  .password-requirements__grid {
+    gap: 4px 8px;
+    margin-top: 5px;
+  }
+
+  .password-requirement {
+    font-size: 8px;
   }
 
   .sent-banner {
@@ -1611,6 +1762,10 @@ const redefinirSenhaLocal = async () => {
 }
 
 @media (max-width: 520px) {
+  .password-requirements__grid {
+    grid-template-columns: 1fr;
+  }
+
   .recovery-access {
     padding: 25px 15px;
     align-items: flex-start;
