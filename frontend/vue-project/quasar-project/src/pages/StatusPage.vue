@@ -1,17 +1,5 @@
 <template>
   <q-page class="page q-pa-md column">
-    <!-- Cabeçalho da Página -->
-    <div class="page-header q-mb-lg row justify-between items-center">
-      <div>
-        <h1 class="text-h5 text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'">
-          <q-icon name="label" color="primary" class="q-mr-sm" size="28px" />
-          Status
-        </h1>
-        <p class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-          Gerencie os estágios e nomenclaturas de status utilizados no sistema.
-        </p>
-      </div>
-    </div>
 
     <!-- Componente de Status (Acesso Exclusivo Admin) -->
     <StatusAdmin 

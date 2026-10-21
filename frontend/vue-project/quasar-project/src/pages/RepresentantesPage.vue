@@ -1,17 +1,6 @@
 <template>
   <q-page class="page q-pa-md column">
-    <!-- Cabeçalho da Página -->
-    <div class="page-header q-mb-lg row justify-between items-center">
-      <div>
-        <h1 class="text-h5 text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'">
-          <q-icon name="badge" color="primary" class="q-mr-sm" size="28px" />
-          Representantes
-        </h1>
-        <p class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-          Gerencie o cadastro de representantes e seus acessos ao sistema.
-        </p>
-      </div>
-    </div>
+
 
     <!-- Componente de Representantes (Acesso Exclusivo Admin) -->
     <RepresentantesAdmin 

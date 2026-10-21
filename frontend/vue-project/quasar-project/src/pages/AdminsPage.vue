@@ -1,17 +1,5 @@
 <template>
   <q-page class="page q-pa-md column">
-    <!-- Cabeçalho da Página -->
-    <div class="page-header q-mb-lg row justify-between items-center">
-      <div>
-        <h1 class="text-h5 text-weight-bold" :class="isDark ? 'text-white' : 'text-grey-9'">
-          <q-icon name="admin_panel_settings" color="primary" class="q-mr-sm" size="28px" />
-          Administradores
-        </h1>
-        <p class="text-caption" :class="isDark ? 'text-grey-5' : 'text-grey-6'">
-          Gerencie o acesso total à plataforma controlando os usuários com privilégio de administrador.
-        </p>
-      </div>
-    </div>
 
     <!-- Componente de Administradores (Acesso Exclusivo) -->
     <AdminsAdmin 
